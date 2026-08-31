@@ -1,0 +1,2696 @@
+<title>4-DOF Arm Design Bench</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Serif:ital,wght@1,400;1,500&display=swap">
+<style>
+:root{
+  color-scheme: light;
+  --paper:#eef1f4;
+  --surface:#ffffff;
+  --inset:#f6f8fa;
+  --ink:#0f2230;
+  --ink-2:#4b6070;
+  --ink-3:#7d919e;
+  --rule:#dee5ea;
+  --rule-2:#c7d3db;
+  --grid:#e8eef2;
+  --accent:#2a78d6;
+  --accent-deep:#1a5aa8;
+  --accent-wash:#e8f1fc;
+  --good:#0ca30c;   --good-ink:#006300;  --good-wash:#e8f6e8;
+  --warn:#fab219;   --warn-ink:#8a5a00;  --warn-wash:#fdf3de;
+  --crit:#d03b3b;   --crit-ink:#a32020;  --crit-wash:#fbeaea;
+  --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a; --s4:#eda100; --s5:#e87ba4;
+  --shadow:0 1px 2px rgba(15,34,48,.05), 0 6px 18px -10px rgba(15,34,48,.18);
+  --r:7px;
+  --sans:"IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono:"IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --serif:"IBM Plex Serif", Georgia, serif;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:13.5px;line-height:1.5;-webkit-font-smoothing:antialiased}
+h1,h2,h3,h4{margin:0;font-weight:600;text-wrap:balance;letter-spacing:-.01em}
+button,input,select{font:inherit;color:inherit}
+a{color:var(--accent-deep)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:3px}
+.tnum{font-variant-numeric:tabular-nums}
+
+/* ---------- shell ---------- */
+.app{display:grid;grid-template-columns:334px minmax(0,1fr);min-height:100vh}
+.rail{background:var(--surface);border-right:1px solid var(--rule);display:flex;flex-direction:column;position:sticky;top:0;height:100vh}
+.railhead{padding:16px 18px 13px;border-bottom:1px solid var(--rule);display:flex;gap:11px;align-items:center}
+.mark{width:30px;height:30px;flex:none}
+.brandname{font-size:14px;font-weight:600;letter-spacing:-.015em;line-height:1.15}
+.brandsub{font-size:10.5px;color:var(--ink-3);letter-spacing:.07em;text-transform:uppercase;font-weight:500}
+.railbody{overflow-y:auto;flex:1;padding-bottom:60px}
+.railfoot{border-top:1px solid var(--rule);padding:9px 14px;display:flex;gap:8px;background:var(--surface)}
+
+.main{min-width:0;display:flex;flex-direction:column}
+.topbar{position:sticky;top:0;z-index:20;background:rgba(238,241,244,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--rule);padding:0 26px;display:flex;align-items:center;gap:20px;min-height:57px;flex-wrap:wrap}
+.tabs{display:flex;gap:2px;margin-right:auto}
+.tab{background:none;border:0;padding:18px 13px 15px;font-size:13px;font-weight:500;color:var(--ink-2);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px}
+.tab:hover{color:var(--ink)}
+.tab[aria-selected="true"]{color:var(--accent-deep);border-bottom-color:var(--accent)}
+.content{padding:22px 26px 90px;display:grid;gap:16px;max-width:1560px;width:100%}
+.panel[hidden]{display:none}
+.panel{display:grid;gap:16px}
+
+/* ---------- cards ---------- */
+.card{background:var(--surface);border:1px solid var(--rule);border-radius:var(--r);box-shadow:var(--shadow)}
+.card > header{padding:13px 16px 11px;border-bottom:1px solid var(--rule);display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.card > header h3{font-size:13px}
+.card .sub{font-size:11.5px;color:var(--ink-3);margin-left:auto}
+.pad{padding:16px}
+.grid2{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(410px,1fr));align-items:start}
+.grid3{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}
+
+/* ---------- controls ---------- */
+.group{border-bottom:1px solid var(--rule)}
+.group > summary{list-style:none;cursor:pointer;padding:11px 16px;display:flex;align-items:center;gap:8px;font-size:11.5px;font-weight:600;letter-spacing:.075em;text-transform:uppercase;color:var(--ink-2);user-select:none}
+.group > summary::-webkit-details-marker{display:none}
+.group > summary:hover{background:var(--inset)}
+.chev{width:8px;height:8px;border-right:1.5px solid var(--ink-3);border-bottom:1.5px solid var(--ink-3);transform:rotate(-45deg);transition:transform .16s;margin-left:auto}
+.group[open] > .chev,.group[open] > summary .chev{transform:rotate(45deg)}
+.groupbody{padding:2px 16px 15px;display:grid;gap:11px}
+.f{display:grid;grid-template-columns:1fr auto;gap:3px 8px;align-items:center}
+.f > label{font-size:12px;color:var(--ink-2);grid-column:1}
+.f .num{grid-column:2;display:flex;align-items:center;gap:4px}
+.f input[type=number]{width:66px;padding:3px 6px;text-align:right;border:1px solid var(--rule-2);border-radius:4px;background:var(--surface);font-family:var(--mono);font-size:12px;font-variant-numeric:tabular-nums}
+.f input[type=number]:focus{border-color:var(--accent);outline:none;box-shadow:0 0 0 2px var(--accent-wash)}
+.f .unit{font-size:10.5px;color:var(--ink-3);width:34px;font-family:var(--mono)}
+.f input[type=range]{grid-column:1/-1;width:100%;height:16px;-webkit-appearance:none;appearance:none;background:none;margin:0}
+input[type=range]::-webkit-slider-runnable-track{height:3px;background:var(--rule);border-radius:2px}
+input[type=range]::-moz-range-track{height:3px;background:var(--rule);border-radius:2px}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:13px;height:13px;border-radius:50%;background:var(--surface);border:2px solid var(--accent);margin-top:-5px;cursor:pointer}
+input[type=range]::-moz-range-thumb{width:11px;height:11px;border-radius:50%;background:var(--surface);border:2px solid var(--accent);cursor:pointer}
+.f select{grid-column:2;width:132px;padding:3px 5px;border:1px solid var(--rule-2);border-radius:4px;background:var(--surface);font-size:11.5px}
+.f.wide select{grid-column:1/-1;width:100%}
+.subhead{font-size:10.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-3);font-weight:600;margin-top:5px;padding-bottom:3px;border-bottom:1px solid var(--rule)}
+.note{font-size:11px;color:var(--ink-3);line-height:1.45}
+
+.btn{border:1px solid var(--rule-2);background:var(--surface);border-radius:5px;padding:6px 12px;font-size:12px;font-weight:500;cursor:pointer;color:var(--ink-2)}
+.btn:hover{background:var(--inset);color:var(--ink)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.primary:hover{background:var(--accent-deep);color:#fff}
+.btn:disabled{opacity:.45;cursor:default}
+.btn.sm{padding:3px 9px;font-size:11.5px}
+
+/* ---------- verdict / chips ---------- */
+.chip{display:inline-flex;align-items:center;gap:6px;padding:4px 11px 4px 9px;border-radius:20px;font-size:12px;font-weight:500;border:1px solid}
+.chip .dot{width:7px;height:7px;border-radius:50%;flex:none}
+.chip.ok{background:var(--good-wash);border-color:#bfe3bf;color:var(--good-ink)} .chip.ok .dot{background:var(--good)}
+.chip.tight{background:var(--warn-wash);border-color:#ecd6a4;color:var(--warn-ink)} .chip.tight .dot{background:var(--warn)}
+.chip.over{background:var(--crit-wash);border-color:#eec2c2;color:var(--crit-ink)} .chip.over .dot{background:var(--crit)}
+.chip.mono{font-family:var(--mono);background:var(--inset);border-color:var(--rule);color:var(--ink-2)}
+.chip.mono .dot{background:var(--ink-3)}
+
+/* ---------- stat tiles ---------- */
+.tiles{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(190px,1fr))}
+.tile{background:var(--surface);border:1px solid var(--rule);border-radius:var(--r);padding:13px 15px 14px;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:2px}
+.tile .k{font-size:10.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-3);font-weight:600}
+.tile .v{font-size:27px;font-weight:600;letter-spacing:-.02em;line-height:1.12}
+.tile .v small{font-size:14px;font-weight:500;color:var(--ink-2);letter-spacing:0}
+.tile .m{font-size:11.5px;color:var(--ink-3)}
+.tile.state-ok .v{color:var(--good-ink)} .tile.state-tight .v{color:var(--warn-ink)} .tile.state-over .v{color:var(--crit-ink)}
+
+/* ---------- tables ---------- */
+table{border-collapse:collapse;width:100%;font-size:12px}
+th{text-align:right;font-weight:600;font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-3);padding:0 10px 7px;border-bottom:1px solid var(--rule);white-space:nowrap}
+th:first-child,td:first-child{text-align:left;padding-left:0}
+th:last-child,td:last-child{padding-right:0}
+td{text-align:right;padding:6px 10px;border-bottom:1px solid var(--grid);font-variant-numeric:tabular-nums;font-family:var(--mono);font-size:11.5px}
+td.lbl{font-family:var(--sans);font-size:12px;color:var(--ink)}
+tr:last-child td{border-bottom:0}
+tbody tr:hover{background:var(--inset)}
+.tbl-wrap{overflow-x:auto}
+
+/* ---------- torque bars ---------- */
+.tbar{display:grid;grid-template-columns:78px 1fr 118px;gap:12px;align-items:center;padding:9px 0;border-bottom:1px solid var(--grid)}
+.tbar:last-child{border-bottom:0}
+.tbar .jn{font-size:12.5px;font-weight:500}
+.tbar .jn em{display:block;font-style:normal;font-size:10.5px;color:var(--ink-3);font-family:var(--mono)}
+.track{position:relative;height:22px;background:var(--inset);border-radius:3px;border:1px solid var(--rule)}
+.fill{position:absolute;left:0;top:0;bottom:0;border-radius:2px 0 0 2px;transition:width .25s ease}
+.fill.ok{background:var(--good)} .fill.tight{background:var(--warn)} .fill.over{background:var(--crit)}
+.limit{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--ink);opacity:.62}
+.limit::after{content:attr(data-l);position:absolute;top:-13px;left:50%;transform:translateX(-50%);font-size:9px;font-family:var(--mono);color:var(--ink-2);white-space:nowrap}
+.tbar .val{text-align:right;font-family:var(--mono);font-size:12px;font-variant-numeric:tabular-nums}
+.tbar .val em{font-style:normal;color:var(--ink-3);font-size:10.5px;display:block}
+
+/* ---------- viz ---------- */
+canvas{display:block;width:100%}
+.viz{position:relative}
+.legend{display:flex;flex-wrap:wrap;gap:6px 15px;padding:9px 16px 0;font-size:11px;color:var(--ink-2)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.sw{width:11px;height:11px;border-radius:2px;flex:none;border:1px solid rgba(15,34,48,.12)}
+.sw.line{height:2px;border-radius:1px;border:0}
+.tip{position:absolute;pointer-events:none;background:var(--ink);color:#fff;font-size:11px;padding:6px 9px;border-radius:5px;font-family:var(--mono);line-height:1.5;opacity:0;transition:opacity .1s;z-index:5;white-space:pre;box-shadow:0 4px 14px rgba(15,34,48,.28)}
+.tip.on{opacity:1}
+.viewctl{position:absolute;right:11px;top:11px;display:flex;gap:5px}
+.iconbtn{width:26px;height:26px;border-radius:5px;border:1px solid var(--rule);background:rgba(255,255,255,.9);cursor:pointer;color:var(--ink-2);font-size:12px;display:grid;place-items:center;padding:0}
+.iconbtn:hover{background:var(--inset);color:var(--ink)}
+
+/* ---------- equations ---------- */
+.eq{font-family:var(--serif);font-size:15px;line-height:1.8;padding:11px 14px;background:var(--inset);border-left:2px solid var(--accent);border-radius:0 5px 5px 0;overflow-x:auto}
+.v{font-style:italic}
+.eq sub{font-size:.68em;font-style:normal;font-family:var(--sans)}
+.eq sup{font-size:.68em}
+.eqblock{display:grid;gap:9px;margin:0 0 20px}
+.eqblock h4{font-size:12.5px}
+.eqblock p{margin:0;font-size:12.5px;color:var(--ink-2);max-width:68ch}
+.deflist{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;font-size:12px;color:var(--ink-2);margin-top:2px}
+.deflist dt{font-family:var(--serif);font-style:italic;text-align:right;color:var(--ink)}
+.deflist dd{margin:0}
+.assume{font-size:12px;color:var(--ink-2);padding-left:17px;margin:0}
+.assume li{margin-bottom:5px;max-width:70ch}
+
+/* ---------- recommendations ---------- */
+.rec{display:flex;gap:11px;padding:12px 0;border-bottom:1px solid var(--grid);align-items:flex-start}
+.rec:last-child{border-bottom:0}
+.rec .ico{width:19px;height:19px;border-radius:50%;flex:none;display:grid;place-items:center;font-size:11px;font-weight:700;margin-top:1px;color:#fff}
+.rec.crit .ico{background:var(--crit)} .rec.warn .ico{background:var(--warn);color:#5a3a00} .rec.info .ico{background:var(--accent)}
+.rec h4{font-size:12.5px;margin-bottom:2px}
+.rec p{margin:0;font-size:12px;color:var(--ink-2);max-width:78ch}
+.rec b{font-family:var(--mono);font-weight:500;font-size:11.5px;background:var(--inset);padding:1px 4px;border-radius:3px;border:1px solid var(--rule)}
+
+/* ---------- progress ---------- */
+.prog{height:4px;background:var(--rule);border-radius:2px;overflow:hidden;flex:1}
+.prog i{display:block;height:100%;background:var(--accent);width:0;transition:width .1s}
+.runrow{display:flex;align-items:center;gap:12px}
+
+/* ---------- misc ---------- */
+.kv{display:grid;grid-template-columns:auto 1fr;gap:3px 14px;font-size:12px}
+.kv dt{color:var(--ink-3)} .kv dd{margin:0;font-family:var(--mono);font-size:11.5px;text-align:right}
+.split{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.bind{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-family:var(--mono);background:var(--crit-wash);color:var(--crit-ink);border:1px solid #eec2c2;padding:2px 8px;border-radius:4px}
+.bind.soft{background:var(--warn-wash);color:var(--warn-ink);border-color:#ecd6a4}
+details.insp{border:1px solid var(--rule);border-radius:6px;margin-bottom:9px;background:var(--surface)}
+details.insp > summary{cursor:pointer;padding:9px 13px;font-size:12.5px;font-weight:500;list-style:none;display:flex;align-items:center;gap:8px}
+details.insp > summary::-webkit-details-marker{display:none}
+details.insp > summary:hover{background:var(--inset)}
+details.insp[open] > summary{border-bottom:1px solid var(--rule)}
+details.insp .body{padding:13px}
+.tag{font-family:var(--mono);font-size:10.5px;color:var(--ink-3);background:var(--inset);border:1px solid var(--rule);padding:1px 6px;border-radius:3px;margin-left:auto}
+@media (max-width:980px){
+  .app{grid-template-columns:1fr}
+  .rail{position:static;height:auto;border-right:0;border-bottom:1px solid var(--rule)}
+  .railbody{max-height:none}
+  .content{padding:18px 15px 70px}
+  .topbar{padding:0 15px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+
+<div class="app">
+  <!-- ============ CONTROL RAIL ============ -->
+  <aside class="rail">
+    <div class="railhead">
+      <svg class="mark" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+        <path d="M4 28h9" stroke="#0f2230" stroke-width="2" stroke-linecap="round"/>
+        <path d="M8.5 28V19" stroke="#0f2230" stroke-width="2" stroke-linecap="round"/>
+        <path d="M8.5 19 19 13.5" stroke="#2a78d6" stroke-width="2" stroke-linecap="round"/>
+        <path d="M19 13.5 27 18" stroke="#2a78d6" stroke-width="2" stroke-linecap="round"/>
+        <circle cx="8.5" cy="19" r="2.6" fill="#fff" stroke="#0f2230" stroke-width="1.6"/>
+        <circle cx="19" cy="13.5" r="2.6" fill="#fff" stroke="#0f2230" stroke-width="1.6"/>
+        <circle cx="27" cy="18" r="2.2" fill="#2a78d6"/>
+        <path d="M4 6.5h24" stroke="#c7d3db" stroke-width="1" stroke-dasharray="2 3"/>
+      </svg>
+      <div>
+        <div class="brandname">4&#8209;DOF Arm Design Bench</div>
+        <div class="brandsub">Static &amp; torque budget</div>
+      </div>
+    </div>
+
+    <div class="railbody" id="rail"></div>
+
+    <div class="railfoot">
+      <button class="btn sm" id="btnReset">Reset defaults</button>
+      <button class="btn sm" id="btnCopy">Copy report</button>
+    </div>
+  </aside>
+
+  <!-- ============ MAIN ============ -->
+  <div class="main">
+    <div class="topbar">
+      <nav class="tabs" role="tablist" aria-label="Views">
+        <button class="tab" role="tab" data-tab="analysis" aria-selected="true">Analysis</button>
+        <button class="tab" role="tab" data-tab="optimize" aria-selected="false">Optimizer</button>
+        <button class="tab" role="tab" data-tab="sweep" aria-selected="false">Parameter sweep</button>
+        <button class="tab" role="tab" data-tab="equations" aria-selected="false">Equations</button>
+        <button class="tab" role="tab" data-tab="inspector" aria-selected="false">Inspector</button>
+      </nav>
+      <div id="verdict"></div>
+    </div>
+
+    <div class="content">
+      <!-- ---------- ANALYSIS ---------- -->
+      <section class="panel" role="tabpanel" aria-label="Analysis" id="panel-analysis">
+        <div class="tiles" id="tiles"></div>
+
+        <div class="grid2">
+          <div class="card">
+            <header>
+              <h3>Side elevation</h3>
+              <span class="sub" id="poseLabel"></span>
+            </header>
+            <div class="viz"><svg id="side" viewBox="0 0 720 392" style="width:100%;height:auto;display:block"></svg></div>
+          </div>
+
+          <div class="card">
+            <header>
+              <h3>3D preview</h3>
+              <span class="sub">drag to orbit &middot; scroll to zoom</span>
+            </header>
+            <div class="viz">
+              <canvas id="three" height="430"></canvas>
+              <div class="viewctl">
+                <button class="iconbtn" id="v3dIso" title="Isometric view">◪</button>
+                <button class="iconbtn" id="v3dTop" title="Top view">◎</button>
+                <button class="iconbtn" id="v3dFront" title="Front view">▭</button>
+              </div>
+            </div>
+            <div class="legend">
+              <span><i class="sw" style="background:#7d919e"></i>Structure</span>
+              <span><i class="sw" style="background:#2a78d6"></i>Servo</span>
+              <span><i class="sw" style="background:#eb6834"></i>Payload</span>
+              <span><i class="sw" style="background:#0f2230"></i>Centre of mass</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <header>
+            <h3>Joint torque budget</h3>
+            <span class="sub" id="torqueSub"></span>
+          </header>
+          <div class="pad" id="torqueBars"></div>
+          <div class="pad" style="border-top:1px solid var(--rule);padding-top:0">
+            <details class="insp"><summary>Joint table <span class="tag">table view</span></summary>
+              <div class="body tbl-wrap" id="jointTable"></div>
+            </details>
+          </div>
+        </div>
+
+        <div class="grid2">
+          <div class="card">
+            <header>
+              <h3>Reach envelope</h3>
+              <span class="sub">side plane, swept through joint limits</span>
+            </header>
+            <div class="viz"><canvas id="env" height="360"></canvas></div>
+            <div class="legend">
+              <span><i class="sw" style="background:#e8eef6"></i>Geometrically reachable</span>
+              <span><i class="sw" style="background:#a8c9ef"></i>Torque-feasible with payload</span>
+              <span><i class="sw line" style="background:#0f2230"></i>Current pose</span>
+            </div>
+            <div class="pad" style="padding-top:10px" id="envStats"></div>
+          </div>
+
+          <div class="card">
+            <header>
+              <h3>Payload vs. maximum reach</h3>
+              <span class="sub">limit curve at current geometry ratios</span>
+            </header>
+            <div class="viz"><svg id="prChart" viewBox="0 0 560 320" style="width:100%;height:auto;display:block"></svg><div class="tip" id="prTip"></div></div>
+            <div class="legend">
+              <span><i class="sw line" style="background:#2a78d6"></i>Max feasible reach</span>
+              <span><i class="sw line" style="background:#0f2230;opacity:.45"></i>Current design</span>
+            </div>
+            <div class="pad" style="padding-top:8px">
+              <details class="insp"><summary>Curve data <span class="tag">table view</span></summary>
+                <div class="body tbl-wrap" id="prTable"></div>
+              </details>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid2">
+          <div class="card">
+            <header><h3>Mass budget</h3><span class="sub" id="massSub"></span></header>
+            <div class="pad" id="massBreak"></div>
+          </div>
+          <div class="card">
+            <header><h3>Design review</h3><span class="sub" id="recCount"></span></header>
+            <div class="pad" id="recs"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ---------- OPTIMIZER ---------- -->
+      <section class="panel" role="tabpanel" aria-label="Optimize" id="panel-optimize" hidden>
+        <div class="card">
+          <header><h3>Optimisation run</h3><span class="sub" id="optSub">grid search with iterative box refinement</span></header>
+          <div class="pad" id="optControls"></div>
+        </div>
+        <div id="optResult"></div>
+      </section>
+
+      <!-- ---------- SWEEP ---------- -->
+      <section class="panel" role="tabpanel" aria-label="Sweep" id="panel-sweep" hidden>
+        <div class="card">
+          <header><h3>Parameter sweep</h3><span class="sub" id="sweepSub"></span></header>
+          <div class="pad" id="sweepControls"></div>
+        </div>
+        <div id="sweepResult"></div>
+      </section>
+
+      <!-- ---------- EQUATIONS ---------- -->
+      <section class="panel" role="tabpanel" aria-label="Equations" id="panel-equations" hidden>
+        <div id="eqBody"></div>
+      </section>
+
+      <!-- ---------- INSPECTOR ---------- -->
+      <section class="panel" role="tabpanel" aria-label="Inspector" id="panel-inspector" hidden>
+        <div id="inspBody"></div>
+      </section>
+    </div>
+  </div>
+</div>
+
+<script>
+"use strict";
+/* =====================================================================
+   4-DOF ARM DESIGN BENCH
+   Sign & unit conventions
+     - User-facing: mm, g, kg-cm, degrees, MPa.
+     - Internal:    SI (m, kg, N, N-m, Pa).  Conversions at the boundary.
+     - Plane coords (r, z): r = horizontal distance from the base yaw axis,
+       z = height above the base plate.  The arm works in a vertical plane
+       that the base joint rotates about the z axis.
+   ===================================================================== */
+
+const G = 9.80665;                 // m/s^2
+const NM_PER_KGCM = G / 100;       // 1 kg-cm = 0.0980665 N-m
+const KGCM_PER_NM = 100 / G;       // 1 N-m   = 10.19716 kg-cm
+const D2R = Math.PI / 180;
+
+/* ---------- material library ---------- */
+const MATERIALS = {
+  pla:    {name:"PLA",             rho:1240, E:3500,  sy:50,  printed:true},
+  petg:   {name:"PETG",            rho:1270, E:2100,  sy:50,  printed:true},
+  abs:    {name:"ABS",             rho:1040, E:2200,  sy:40,  printed:true},
+  asa:    {name:"ASA",             rho:1070, E:2000,  sy:44,  printed:true},
+  pa12:   {name:"Nylon PA12",      rho:1010, E:1700,  sy:45,  printed:true},
+  pc:     {name:"Polycarbonate",   rho:1200, E:2300,  sy:62,  printed:true},
+  petgcf: {name:"PETG-CF",         rho:1300, E:6000,  sy:60,  printed:true},
+  pacf:   {name:"PA-CF",           rho:1150, E:7000,  sy:80,  printed:true},
+  al6061: {name:"Aluminium 6061-T6",rho:2700,E:68900, sy:276, printed:false},
+};
+
+/* ---------- servo library (stall torque at nominal voltage) ---------- */
+const SERVOS = {
+  d2000st:{name:"D2000ST", tau:21,   mass:60},
+  mg995:  {name:"MG995",   tau:11,   mass:55},
+  mg996r: {name:"MG996R",  tau:11,   mass:55},
+  ds3218: {name:"DS3218",  tau:20,   mass:60},
+  ds3225: {name:"DS3225",  tau:25,   mass:60},
+  mg90s:  {name:"MG90S",   tau:2.2,  mass:13.4},
+  sg90:   {name:"SG90",    tau:1.8,  mass:9},
+  custom: {name:"Custom",  tau:null, mass:null},
+};
+
+/* ---------- default design ---------- */
+const DEFAULTS = {
+  // servos
+  srvBase:"d2000st", tauBase:21,  mBase:60,
+  srvSh:"mg995",     tauSh:11,    mSh:55,
+  srvEl:"mg995",     tauEl:11,    mEl:55,
+  srvWr:"mg995",     tauWr:11,    mWr:55,
+  derate:0.50, sfMin:1.25, alpha:3.0, tauFric:0.5, dynOn:1,
+  // geometry (mm / deg)
+  h0:90, L1:100, L2:85, L3:55,
+  q1:0, q2:0, q3:0, worst:1,
+  limShMin:-20, limShMax:135, limElMin:-140, limElMax:10, limWrMin:-100, limWrMax:100,
+  // structure
+  section:"rect",
+  w1:20, hh1:28, w2:18, hh2:24, w3:15, hh3:18,
+  wall:2.0, infill:20, material:"pla", knock:0.60, hwAllow:15,
+  // loads (g / mm)
+  payload:50, mEE:60, mPlate:800, footR:90, bolted:0,
+  // limits
+  defMax:1.0, sfTip:2.0, lMin:40, lMax:320,
+};
+
+/* =====================================================================
+   SECTION PROPERTIES
+   A_eff = A_outline - (1 - p) * A_core      [infill fills the core]
+   I_eff = I_outline - (1 - p) * I_core      [exact, same decomposition]
+   ===================================================================== */
+function sectionProps(type, w_mm, h_mm, t_mm, infillFrac){
+  const w = w_mm, h = h_mm, t = t_mm;
+  let A_out, A_core, I_out, I_core, c, label;
+  if (type === "round"){
+    const d = h, di = Math.max(0, d - 2*t);
+    A_out = Math.PI*d*d/4;      A_core = Math.PI*di*di/4;
+    I_out = Math.PI*Math.pow(d,4)/64; I_core = Math.PI*Math.pow(di,4)/64;
+    c = d/2;  label = "Ø" + fmt(d,1);
+  } else if (type === "ibeam"){
+    // flanges + web all of thickness t; the notches are open air, not infill
+    const bi = Math.max(0, w - t), hi = Math.max(0, h - 2*t);
+    A_out = w*h - bi*hi;        A_core = 0;
+    I_out = (w*Math.pow(h,3) - bi*Math.pow(hi,3))/12;  I_core = 0;
+    c = h/2;  label = fmt(w,0)+"×"+fmt(h,0)+" I";
+  } else { // rectangular tube
+    const wi = Math.max(0, w - 2*t), hi = Math.max(0, h - 2*t);
+    A_out = w*h;                A_core = wi*hi;
+    I_out = w*Math.pow(h,3)/12; I_core = wi*Math.pow(hi,3)/12;
+    c = h/2;  label = fmt(w,0)+"×"+fmt(h,0);
+  }
+  const p = (type === "ibeam") ? 1 : infillFrac;
+  const A_eff = A_out - (1-p)*A_core;
+  const I_eff = Math.max(I_out - (1-p)*I_core, 1e-9);
+  return {
+    A_out, A_core, A_wall:A_out-A_core, I_out, I_core, A_eff, I_eff, c, label,
+    A_eff_m2: A_eff*1e-6, I_eff_m4: I_eff*1e-12, c_m: c*1e-3,
+  };
+}
+
+/* =====================================================================
+   CORE SOLVER  -  pure function of the parameter set
+   ===================================================================== */
+function solve(P, opt){
+  opt = opt || {};
+  const mat = MATERIALS[P.material];
+  const infill = P.infill/100;
+  const useWorst = (opt.worst !== undefined) ? opt.worst : !!P.worst;
+  const payload_g = (opt.payload !== undefined) ? opt.payload : P.payload;
+  const L = [ (opt.L1!==undefined?opt.L1:P.L1), (opt.L2!==undefined?opt.L2:P.L2), (opt.L3!==undefined?opt.L3:P.L3) ];
+
+  /* ---- 1. cross sections & link masses ---- */
+  const dims = [[P.w1,P.hh1],[P.w2,P.hh2],[P.w3,P.hh3]];
+  const hwF = 1 + P.hwAllow/100;
+  const links = dims.map((d,i)=>{
+    const s = sectionProps(P.section, d[0], d[1], P.wall, infill);
+    const len_m = L[i]/1000;
+    const m_struct = mat.rho * s.A_eff_m2 * len_m;   // kg
+    return {i, w:d[0], h:d[1], len:L[i], len_m, sec:s,
+            m_struct, m: m_struct*hwF, EI: (mat.E*1e6)*s.I_eff_m4};
+  });
+  // vertical column: shares link-1 section, height h0
+  const colSec = sectionProps(P.section, P.w1, P.hh1, P.wall, infill);
+  const m_col = mat.rho * colSec.A_eff_m2 * (P.h0/1000) * hwF;
+
+  /* ---- 2. pose & node positions (m) ---- */
+  const q = useWorst ? [0,0,0] : [P.q1, P.q2, P.q3];
+  const a1 = q[0]*D2R, a2 = (q[0]+q[1])*D2R, a3 = (q[0]+q[1]+q[2])*D2R;
+  const ang = [a1,a2,a3];
+  const N = [];                                   // N[0]=shoulder … N[3]=TCP
+  N.push({r:0, z:P.h0/1000});
+  for (let i=0;i<3;i++){
+    N.push({ r: N[i].r + links[i].len_m*Math.cos(ang[i]),
+             z: N[i].z + links[i].len_m*Math.sin(ang[i]) });
+  }
+
+  /* ---- 3. mass elements ---- */
+  const el = [];
+  const add = (id,name,m,r,z,cat)=>el.push({id,name,m,r,z,cat});
+  add("plate","Base plate",       P.mPlate/1000, 0, 0, "base");
+  add("srvB", "Base servo",       P.mBase/1000,  0, 0.30*P.h0/1000, "servo");
+  add("col",  "Column",           m_col,         0, 0.50*P.h0/1000, "structure");
+  add("srvS", "Shoulder servo",   P.mSh/1000,  N[0].r, N[0].z, "servo");
+  add("lnk1", "Link 1 (upper arm)",links[0].m, (N[0].r+N[1].r)/2, (N[0].z+N[1].z)/2, "structure");
+  add("srvE", "Elbow servo",      P.mEl/1000,  N[1].r, N[1].z, "servo");
+  add("lnk2", "Link 2 (forearm)", links[1].m,  (N[1].r+N[2].r)/2, (N[1].z+N[2].z)/2, "structure");
+  add("srvW", "Wrist servo",      P.mWr/1000,  N[2].r, N[2].z, "servo");
+  add("lnk3", "Link 3 (wrist)",   links[2].m,  (N[2].r+N[3].r)/2, (N[2].z+N[3].z)/2, "structure");
+  add("ee",   "End effector",     P.mEE/1000,  N[3].r, N[3].z, "ee");
+  add("pay",  "Payload",          payload_g/1000, N[3].r, N[3].z, "payload");
+
+  const distalOf = { sh:["lnk1","srvE","lnk2","srvW","lnk3","ee","pay"],
+                     el:["lnk2","srvW","lnk3","ee","pay"],
+                     wr:["lnk3","ee","pay"] };
+  const nodeOf   = { sh:N[0], el:N[1], wr:N[2] };
+  const byId = {}; el.forEach(e=>byId[e.id]=e);
+
+  /* ---- 4. pitch-joint torques ---- */
+  const alpha = P.dynOn ? P.alpha : 0;
+  const jointKeys = ["sh","el","wr"];
+  const stallKgcm = {sh:P.tauSh, el:P.tauEl, wr:P.tauWr, base:P.tauBase};
+  const jointName = {sh:"Shoulder", el:"Elbow", wr:"Wrist", base:"Base (yaw)"};
+  const joints = {};
+  jointKeys.forEach(k=>{
+    const nd = nodeOf[k];
+    let Mstat = 0, Iaxis = 0;
+    const terms = [];
+    distalOf[k].forEach(id=>{
+      const e = byId[id];
+      const dr = e.r - nd.r, dz = e.z - nd.z;
+      const mom = e.m * G * dr;                        // N-m (signed)
+      const inr = e.m * (dr*dr + dz*dz);               // kg-m^2
+      Mstat += mom; Iaxis += inr;
+      terms.push({id, name:e.name, m:e.m, dr, dz, w:e.m*G, mom, inr});
+    });
+    const tStat = Math.abs(Mstat);
+    const tDyn  = Iaxis * alpha;
+    const tReq  = tStat + tDyn;
+    const tAllow = stallKgcm[k]*NM_PER_KGCM*P.derate;
+    joints[k] = {key:k, name:jointName[k], node:nd, terms,
+      Mstat, tStat, Iaxis, tDyn, tReq, tAllow,
+      tStall: stallKgcm[k]*NM_PER_KGCM,
+      tDesign: tAllow/P.sfMin,
+      util: tAllow>0 ? tReq/tAllow*100 : Infinity,
+      sf:   tReq>0 ? tAllow/tReq : Infinity };
+  });
+
+  /* ---- 5. base yaw joint: inertia + bearing friction (gravity gives no
+            moment about a vertical axis) ---- */
+  let Ibase = 0; const baseTerms = [];
+  el.forEach(e=>{ const inr = e.m*e.r*e.r; Ibase += inr;
+                  baseTerms.push({id:e.id, name:e.name, m:e.m, dr:e.r, dz:0, w:e.m*G, mom:0, inr}); });
+  const tFric = P.tauFric*NM_PER_KGCM;
+  {
+    const tDyn = Ibase*alpha, tReq = tDyn + tFric;
+    const tAllow = P.tauBase*NM_PER_KGCM*P.derate;
+    joints.base = {key:"base", name:jointName.base, node:{r:0,z:0}, terms:baseTerms,
+      Mstat:0, tStat:0, Iaxis:Ibase, tDyn, tFric, tReq, tAllow,
+      tStall:P.tauBase*NM_PER_KGCM, tDesign:tAllow/P.sfMin,
+      util: tAllow>0 ? tReq/tAllow*100 : Infinity,
+      sf:   tReq>0 ? tAllow/tReq : Infinity};
+  }
+
+  /* ---- 6. link root bending stress ---- */
+  const sy_allow = mat.sy*1e6 * (mat.printed ? P.knock : 1);
+  const rootKey = ["sh","el","wr"];
+  links.forEach((lk,i)=>{
+    const M = joints[rootKey[i]].tReq;                // N-m at the link root
+    lk.M_root = M;
+    lk.sigma  = M * lk.sec.c_m / lk.sec.I_eff_m4;     // Pa
+    lk.sigmaMPa = lk.sigma/1e6;
+    lk.sfMat  = lk.sigma>0 ? sy_allow/lk.sigma : Infinity;
+  });
+  // column: carries the full overturning moment of everything above the plate
+  let M_col = 0;
+  el.forEach(e=>{ if (e.id!=="plate") M_col += e.m*G*e.r; });
+  const colStress = Math.abs(M_col)*colSec.c*1e-3/(colSec.I_eff*1e-12);
+  const column = {sec:colSec, m:m_col, M_root:Math.abs(M_col),
+                  sigmaMPa:colStress/1e6, sfMat: colStress>0 ? sy_allow/colStress : Infinity};
+
+  /* ---- 7. tip deflection: Euler-Bernoulli cantilever chain ---- */
+  let dR = 0, dZ = 0; const defl = [];
+  for (let i=0;i<3;i++){
+    const lk = links[i], Li = lk.len_m, a = ang[i];
+    const nHat = {r:-Math.sin(a), z:Math.cos(a)};
+    let Wdist = 0;                                     // weight beyond far end
+    distalOf[rootKey[i]].forEach(id=>{ if (id !== "lnk"+(i+1)) Wdist += byId[id].m*G; });
+    const Fn = -Wdist*Math.cos(a);                     // transverse end force
+    // bending moment handed to the far end = static moment about node i+1
+    let Mend = 0;
+    if (i<2){ const nd2 = N[i+1];
+      distalOf[rootKey[i]].forEach(id=>{ if (id!=="lnk"+(i+1)) Mend += byId[id].m*G*(byId[id].r-nd2.r); }); }
+    const Mt = -Mend;                                  // transverse-plane end moment
+    const Wo = -lk.m*G*Math.cos(a);                    // own weight, transverse
+    const EI = lk.EI;
+    const th = (Fn*Li*Li/2 + Mt*Li + Wo*Li*Li/6)/EI;   // slope at far end (rad)
+    const dl = (Fn*Li*Li*Li/3 + Mt*Li*Li/2 + Wo*Li*Li*Li/8)/EI; // local deflection
+    const drTip = N[3].r - N[i+1].r, dzTip = N[3].z - N[i+1].z;
+    const cr = nHat.r*dl + th*(-dzTip), cz = nHat.z*dl + th*(drTip);
+    dR += cr; dZ += cz;
+    defl.push({i, EI, Fn, Mt, Wo, th, dl, cr, cz, contrib:Math.hypot(cr,cz)});
+  }
+  const deflection = {r:dR, z:dZ, mag:Math.hypot(dR,dZ), mm:Math.hypot(dR,dZ)*1000, parts:defl};
+
+  /* ---- 8. mass & centre of mass ---- */
+  let mTot=0, mr=0, mz=0, mArm=0, mrArm=0, mzArm=0;
+  el.forEach(e=>{ mTot+=e.m; mr+=e.m*e.r; mz+=e.m*e.z;
+    if (e.id!=="plate"){ mArm+=e.m; mrArm+=e.m*e.r; mzArm+=e.m*e.z; } });
+  const com     = {r:mr/mTot, z:mz/mTot, m:mTot};
+  const comArm  = {r:mrArm/mArm, z:mzArm/mArm, m:mArm};
+
+  /* ---- 9. tipping stability about the base-plate edge ---- */
+  const aSup = P.footR/1000, rCom = Math.abs(com.r);
+  const tipping = {support:aSup, rCom, bolted:!!P.bolted,
+                   sf: P.bolted ? Infinity : (rCom>1e-9 ? aSup/rCom : Infinity),
+                   Mover: mTot*G*rCom, Mrest: mTot*G*aSup};
+
+  /* ---- 10. feasibility & binding constraints ---- */
+  const reach = Math.abs(N[3].r), reachSigned = N[3].r, reachMax = (L[0]+L[1]+L[2])/1000;
+  const violations = [], binding = [];
+  const check = (id,label,value,limit,mode,fmtv)=>{
+    const ok = mode==="max" ? value<=limit : value>=limit;
+    const ratio = mode==="max" ? value/limit : limit/value;
+    if (!ok) violations.push({id,label,value,limit,ratio,fmt:fmtv});
+    else if (ratio>0.95) binding.push({id,label,value,limit,ratio,fmt:fmtv});
+    return ok;
+  };
+  ["sh","el","wr","base"].forEach(k=>{
+    check("sf_"+k, joints[k].name+" safety factor", joints[k].sf, P.sfMin, "min",
+          v=>fmt(v,2)+"×");
+  });
+  links.forEach((lk,i)=> check("mat_"+i, "Link "+(i+1)+" bending stress", lk.sigmaMPa,
+          sy_allow/1e6, "max", v=>fmt(v,2)+" MPa"));
+  check("defl","Tip deflection", deflection.mm, P.defMax, "max", v=>fmt(v,3)+" mm");
+  if (!P.bolted) check("tip","Tipping safety factor", tipping.sf, P.sfTip, "min", v=>fmt(v,2)+"×");
+
+  const peak = ["sh","el","wr","base"].reduce((a,k)=> joints[k].util>joints[a].util?k:a, "sh");
+  const feasible = violations.length===0;
+
+  return {P, opt, mat, links, column, N, ang, el, byId, joints, deflection,
+          com, comArm, mTot, mArm, tipping, reach, reachSigned, reachMax, sy_allow,
+          violations, binding, feasible, peak, useWorst, payload_g,
+          jointOrder:["sh","el","wr","base"]};
+}
+
+function fmt(x, d){
+  if (!isFinite(x)) return "∞";
+  d = d===undefined?2:d;
+  return x.toFixed(d).replace(/\.?0+$/, m=> m.indexOf(".")===0 ? "" : m);
+}
+function fx(x,d){ return isFinite(x) ? x.toFixed(d===undefined?2:d) : "∞"; }
+</script>
+
+<script>
+"use strict";
+/* =====================================================================
+   STATE + CONTROL PANEL
+   ===================================================================== */
+let P = Object.assign({}, DEFAULTS);
+let R = null;                       // latest solve() result
+const $ = s => document.querySelector(s);
+const $$ = s => Array.from(document.querySelectorAll(s));
+const el = (t, cls, html) => { const n = document.createElement(t);
+  if (cls) n.className = cls; if (html!==undefined) n.innerHTML = html; return n; };
+
+const SECTIONS = {rect:"Rectangular tube", round:"Round tube", ibeam:"I-beam"};
+
+const CONTROLS = [
+ {title:"Servos & margins", open:false, items:[
+   {t:"head", text:"Base — yaw axis"},
+   {t:"sel", key:"srvBase", label:"Model", opts:"servo"},
+   {t:"num", key:"tauBase", label:"Stall torque", unit:"kg·cm", min:0.5, max:60, step:0.1, slider:true},
+   {t:"num", key:"mBase",  label:"Servo mass", unit:"g", min:5, max:300, step:1},
+   {t:"head", text:"Shoulder"},
+   {t:"sel", key:"srvSh", label:"Model", opts:"servo"},
+   {t:"num", key:"tauSh", label:"Stall torque", unit:"kg·cm", min:0.5, max:60, step:0.1, slider:true},
+   {t:"num", key:"mSh",  label:"Servo mass", unit:"g", min:5, max:300, step:1},
+   {t:"head", text:"Elbow"},
+   {t:"sel", key:"srvEl", label:"Model", opts:"servo"},
+   {t:"num", key:"tauEl", label:"Stall torque", unit:"kg·cm", min:0.5, max:60, step:0.1, slider:true},
+   {t:"num", key:"mEl",  label:"Servo mass", unit:"g", min:5, max:300, step:1},
+   {t:"head", text:"Wrist"},
+   {t:"sel", key:"srvWr", label:"Model", opts:"servo"},
+   {t:"num", key:"tauWr", label:"Stall torque", unit:"kg·cm", min:0.5, max:60, step:0.1, slider:true},
+   {t:"num", key:"mWr",  label:"Servo mass", unit:"g", min:5, max:300, step:1},
+   {t:"head", text:"Derating & margin"},
+   {t:"num", key:"derate", label:"Usable fraction of stall", unit:"–", min:0.15, max:1, step:0.01, slider:true},
+   {t:"num", key:"sfMin",  label:"Target safety factor", unit:"×", min:1, max:4, step:0.05, slider:true},
+   {t:"note", text:"Hobby servos cannot hold stall torque continuously. The usable fraction covers duty cycle, heat, voltage sag and gear wear; 0.4–0.6 is typical."},
+   {t:"check", key:"dynOn", label:"Include inertial term I·α"},
+   {t:"num", key:"alpha", label:"Joint accel α", unit:"rad/s²", min:0, max:25, step:0.5, slider:true},
+   {t:"num", key:"tauFric", label:"Base bearing drag", unit:"kg·cm", min:0, max:5, step:0.05},
+ ]},
+ {title:"Geometry", open:true, items:[
+   {t:"num", key:"h0", label:"Column height", unit:"mm", min:20, max:300, step:1, slider:true},
+   {t:"num", key:"L1", label:"L₁ shoulder → elbow", unit:"mm", min:20, max:400, step:1, slider:true},
+   {t:"num", key:"L2", label:"L₂ elbow → wrist", unit:"mm", min:20, max:400, step:1, slider:true},
+   {t:"num", key:"L3", label:"L₃ wrist → TCP", unit:"mm", min:10, max:400, step:1, slider:true},
+   {t:"head", text:"Pose"},
+   {t:"check", key:"worst", label:"Worst case — fully extended, horizontal"},
+   {t:"num", key:"q1", label:"θ₁ shoulder", unit:"°", min:-30, max:150, step:1, slider:true, dep:"pose"},
+   {t:"num", key:"q2", label:"θ₂ elbow", unit:"°", min:-150, max:30, step:1, slider:true, dep:"pose"},
+   {t:"num", key:"q3", label:"θ₃ wrist", unit:"°", min:-110, max:110, step:1, slider:true, dep:"pose"},
+ ]},
+ {title:"Structure & material", open:false, items:[
+   {t:"sel", key:"material", label:"Material", opts:"material", wide:true},
+   {t:"sel", key:"section", label:"Cross section", opts:"section", wide:true},
+   {t:"num", key:"wall",   label:"Wall thickness", unit:"mm", min:0.4, max:8, step:0.1, slider:true},
+   {t:"num", key:"infill", label:"Infill", unit:"%", min:0, max:100, step:1, slider:true},
+   {t:"head", text:"Outer dimensions"},
+   {t:"num", key:"w1", label:"Link 1 width", unit:"mm", min:6, max:80, step:0.5},
+   {t:"num", key:"hh1", label:"Link 1 depth", unit:"mm", min:6, max:80, step:0.5},
+   {t:"num", key:"w2", label:"Link 2 width", unit:"mm", min:6, max:80, step:0.5},
+   {t:"num", key:"hh2", label:"Link 2 depth", unit:"mm", min:6, max:80, step:0.5},
+   {t:"num", key:"w3", label:"Link 3 width", unit:"mm", min:6, max:80, step:0.5},
+   {t:"num", key:"hh3", label:"Link 3 depth", unit:"mm", min:6, max:80, step:0.5},
+   {t:"note", text:"Depth is measured in the bending plane — it is the dimension that drives stiffness. Round sections use the depth as the outside diameter."},
+   {t:"head", text:"Build allowances"},
+   {t:"num", key:"knock", label:"Layer-adhesion knockdown", unit:"–", min:0.2, max:1, step:0.05, slider:true},
+   {t:"num", key:"hwAllow", label:"Fasteners & brackets", unit:"%", min:0, max:60, step:1, slider:true},
+ ]},
+ {title:"Loads", open:true, items:[
+   {t:"num", key:"payload", label:"Payload at TCP", unit:"g", min:0, max:2000, step:5, slider:true},
+   {t:"num", key:"mEE",     label:"End effector mass", unit:"g", min:0, max:800, step:5, slider:true},
+   {t:"num", key:"mPlate",  label:"Base plate mass", unit:"g", min:0, max:6000, step:10},
+   {t:"num", key:"footR",   label:"Base support radius", unit:"mm", min:20, max:400, step:1},
+   {t:"check", key:"bolted", label:"Base bolted to bench"},
+ ]},
+ {title:"Design limits", open:false, items:[
+   {t:"num", key:"defMax", label:"Max tip deflection", unit:"mm", min:0.05, max:20, step:0.05, slider:true},
+   {t:"num", key:"sfTip",  label:"Min tipping factor", unit:"×", min:1, max:5, step:0.1},
+   {t:"head", text:"Optimiser search bounds"},
+   {t:"num", key:"lMin", label:"Min link length", unit:"mm", min:10, max:200, step:5},
+   {t:"num", key:"lMax", label:"Max link length", unit:"mm", min:60, max:600, step:5},
+   {t:"head", text:"Joint travel (reach envelope)"},
+   {t:"num", key:"limShMin", label:"θ₁ min", unit:"°", min:-90, max:90, step:5},
+   {t:"num", key:"limShMax", label:"θ₁ max", unit:"°", min:0, max:180, step:5},
+   {t:"num", key:"limElMin", label:"θ₂ min", unit:"°", min:-180, max:0, step:5},
+   {t:"num", key:"limElMax", label:"θ₂ max", unit:"°", min:-90, max:90, step:5},
+   {t:"num", key:"limWrMin", label:"θ₃ min", unit:"°", min:-180, max:0, step:5},
+   {t:"num", key:"limWrMax", label:"θ₃ max", unit:"°", min:0, max:180, step:5},
+ ]},
+];
+
+function optionsFor(kind){
+  if (kind==="servo")    return Object.keys(SERVOS).map(k=>[k, SERVOS[k].name + (SERVOS[k].tau? "  "+SERVOS[k].tau+" kg·cm":"")]);
+  if (kind==="material") return Object.keys(MATERIALS).map(k=>[k, MATERIALS[k].name]);
+  if (kind==="section")  return Object.keys(SECTIONS).map(k=>[k, SECTIONS[k]]);
+  return [];
+}
+
+function buildRail(){
+  const rail = $("#rail"); rail.innerHTML = "";
+  CONTROLS.forEach(g=>{
+    const d = el("details","group"); if (g.open) d.open = true;
+    const s = el("summary"); s.append(g.title); s.append(el("i","chev")); d.append(s);
+    const body = el("div","groupbody");
+    g.items.forEach(it=>body.append(buildControl(it)));
+    d.append(body); rail.append(d);
+  });
+  syncRail();
+}
+
+function buildControl(it){
+  if (it.t==="head")  return el("div","subhead", it.text);
+  if (it.t==="note")  return el("p","note", it.text);
+  const f = el("div","f"+(it.wide?" wide":""));
+  f.dataset.key = it.key; if (it.dep) f.dataset.dep = it.dep;
+  if (it.t==="check"){
+    const id = "c_"+it.key;
+    f.innerHTML = '<label for="'+id+'">'+it.label+'</label>';
+    const box = el("div","num");
+    const cb = el("input"); cb.type="checkbox"; cb.id=id; cb.checked = !!P[it.key];
+    cb.style.cssText = "width:15px;height:15px;accent-color:var(--accent);margin:0;cursor:pointer";
+    cb.addEventListener("change", ()=>{ P[it.key] = cb.checked?1:0; onChange(it.key); });
+    box.append(cb); f.append(box); return f;
+  }
+  if (it.t==="sel"){
+    const id = "s_"+it.key;
+    f.innerHTML = '<label for="'+id+'">'+it.label+'</label>';
+    const sel = el("select"); sel.id = id;
+    optionsFor(it.opts).forEach(([v,t])=>{ const o=el("option"); o.value=v; o.textContent=t; sel.append(o); });
+    sel.value = P[it.key];
+    sel.addEventListener("change", ()=>{ P[it.key]=sel.value; onSelect(it.key, sel.value); });
+    f.append(sel); return f;
+  }
+  const id = "n_"+it.key;
+  f.innerHTML = '<label for="'+id+'">'+it.label+'</label>';
+  const box = el("div","num");
+  const inp = el("input"); inp.type="number"; inp.id=id;
+  inp.min=it.min; inp.max=it.max; inp.step=it.step; inp.value = P[it.key];
+  box.append(inp); box.append(el("span","unit", it.unit));
+  f.append(box);
+  let rng = null;
+  if (it.slider){
+    rng = el("input"); rng.type="range"; rng.min=it.min; rng.max=it.max; rng.step=it.step;
+    rng.value = P[it.key]; rng.setAttribute("aria-label", it.label); f.append(rng);
+    rng.addEventListener("input", ()=>{ P[it.key]=+rng.value; inp.value=rng.value; onChange(it.key); });
+  }
+  inp.addEventListener("input", ()=>{
+    const v = parseFloat(inp.value); if (!isFinite(v)) return;
+    P[it.key] = Math.min(it.max, Math.max(it.min, v));
+    if (rng) rng.value = P[it.key];
+    onChange(it.key);
+  });
+  return f;
+}
+
+function syncRail(){
+  CONTROLS.forEach(g=>g.items.forEach(it=>{
+    if (!it.key) return;
+    const f = document.querySelector('.f[data-key="'+it.key+'"]'); if (!f) return;
+    const n = f.querySelector("input[type=number]"), r = f.querySelector("input[type=range]"),
+          s = f.querySelector("select"), c = f.querySelector("input[type=checkbox]");
+    if (n && document.activeElement!==n) n.value = round4(P[it.key]);
+    if (r && document.activeElement!==r) r.value = P[it.key];
+    if (s) s.value = P[it.key];
+    if (c) c.checked = !!P[it.key];
+    if (it.dep==="pose") f.style.opacity = P.worst ? .38 : 1,
+                         f.querySelectorAll("input").forEach(x=>x.disabled = !!P.worst);
+  }));
+  // round sections have one outer dimension only
+  const isRound = P.section==="round";
+  ["w1","w2","w3"].forEach(k=>{
+    const f = document.querySelector('.f[data-key="'+k+'"]'); if (!f) return;
+    f.style.display = isRound ? "none" : "";
+  });
+  ["hh1","hh2","hh3"].forEach((k,i)=>{
+    const f = document.querySelector('.f[data-key="'+k+'"]'); if (!f) return;
+    f.querySelector("label").textContent = isRound ? ("Link "+(i+1)+" diameter") : ("Link "+(i+1)+" depth");
+  });
+  const fi = document.querySelector('.f[data-key="infill"]');
+  if (fi) fi.style.opacity = P.section==="ibeam" ? .38 : 1;
+}
+function round4(x){ return Math.round(x*1e4)/1e4; }
+
+function onSelect(key, val){
+  if (key.indexOf("srv")===0 && val!=="custom"){
+    const s = SERVOS[val], j = key.slice(3);           // Base | Sh | El | Wr
+    P["tau"+j] = s.tau; P["m"+j] = s.mass;
+  }
+  onChange(key);
+}
+/* if a torque/mass is edited by hand, the preset becomes Custom */
+function onChange(key){
+  const m = key.match(/^(tau|m)(Base|Sh|El|Wr)$/);
+  if (m){ const pk = "srv"+m[2], s = SERVOS[P[pk]];
+    if (s && s.tau!==null && (P["tau"+m[2]]!==s.tau || P["m"+m[2]]!==s.mass)) P[pk] = "custom"; }
+  scheduleRender();
+}
+
+let raf = 0;
+function scheduleRender(){ if (raf) return; raf = requestAnimationFrame(()=>{ raf=0; render(); }); }
+
+/* =====================================================================
+   STATE CLASSIFICATION
+   ===================================================================== */
+function jointState(j){ return j.util>100 ? "over" : (j.sf < P.sfMin ? "tight" : "ok"); }
+const STATE_WORD = {ok:"Within margin", tight:"Below target margin", over:"Over allowable"};
+function designState(res){
+  const hardFail = res.violations.some(v=>v.id.indexOf("sf_")!==0);
+  const overAllow = res.jointOrder.some(k=>res.joints[k].util>100);
+  if (overAllow || hardFail) return "over";
+  if (!res.feasible) return "tight";
+  return "ok";
+}
+</script>
+
+<script>
+"use strict";
+/* =====================================================================
+   SOLVER HELPERS  -  bisection searches used by tiles, curves & advice
+   ===================================================================== */
+function feasibleAt(o){ return solve(P, Object.assign({worst:true}, o)).violations.length===0; }
+
+let _payCache = null, _renderSeq = 0;
+/** largest payload (g) the current geometry can carry within all limits */
+function maxFeasiblePayload(o){
+  if (!o && _payCache && _payCache.seq === _renderSeq) return _payCache.v;
+  const v = _maxFeasiblePayload(o);
+  if (!o) _payCache = {seq:_renderSeq, v};
+  return v;
+}
+function _maxFeasiblePayload(o){
+  o = o||{};
+  if (!feasibleAt(Object.assign({payload:0}, o))) return 0;
+  let lo = 0, hi = 50;
+  while (hi < 20000 && feasibleAt(Object.assign({}, o, {payload:hi}))) hi *= 2;
+  if (hi >= 20000) return 20000;
+  for (let i=0;i<34;i++){ const mid=(lo+hi)/2;
+    if (feasibleAt(Object.assign({}, o, {payload:mid}))) lo=mid; else hi=mid; }
+  return lo;
+}
+
+/** largest reach (mm) with the link-length ratio held fixed, at a given payload */
+function maxFeasibleReach(payload){
+  const base = P.L1+P.L2+P.L3;
+  const rat = [P.L1/base, P.L2/base, P.L3/base];
+  const at = k => feasibleAt({payload, L1:rat[0]*k, L2:rat[1]*k, L3:rat[2]*k});
+  let lo = 15, hi = 1200;
+  if (!at(lo)) return 0;
+  for (let i=0;i<32;i++){ const mid=(lo+hi)/2; if (at(mid)) lo=mid; else hi=mid; }
+  return lo;
+}
+
+/** stall torque (kg·cm) a joint would need to hit the target safety factor */
+function requiredStall(res, key){
+  const j = res.joints[key];
+  return j.tReq * P.sfMin / P.derate * KGCM_PER_NM;
+}
+
+/* =====================================================================
+   MAIN RENDER
+   ===================================================================== */
+function render(){
+  _renderSeq++;
+  R = solve(P);
+  syncRail();
+  renderVerdict(R);
+  renderTiles(R);
+  renderTorque(R);
+  renderJointTable(R);
+  renderMass(R);
+  renderRecs(R);
+  drawSide(R);
+  draw3D(R);
+  drawEnvelope(R);
+  drawPayloadReach(R);
+  if (activeTab==="inspector") renderInspector(R);
+  if (activeTab==="optimize")  refreshOptStatic();
+}
+
+function renderVerdict(res){
+  const st = designState(res);
+  const j = res.joints[res.peak];
+  const cls = {ok:"ok", tight:"tight", over:"over"}[st];
+  const word = {ok:"Within all limits", tight:"Below target margin", over:"Over limit"}[st];
+  $("#verdict").innerHTML =
+    '<span class="chip '+cls+'"><i class="dot"></i>'+word+'</span> ' +
+    '<span class="chip mono"><i class="dot"></i>'+j.name+' '+fx(j.util,0)+'%</span>';
+  $("#poseLabel").textContent = res.useWorst
+    ? "worst case — fully extended, horizontal"
+    : "θ = "+fx(P.q1,0)+"° / "+fx(P.q2,0)+"° / "+fx(P.q3,0)+"°";
+}
+
+function renderTiles(res){
+  const st = designState(res);
+  const j = res.joints[res.peak];
+  const maxPay = maxFeasiblePayload();
+  const deflOK = res.deflection.mm <= P.defMax;
+  const tiles = [
+    {k:"Reach", v:fx(res.reach*1000,0), u:"mm", m:"L₁+L₂+L₃ = "+fx(res.reachMax*1000,0)+" mm", s:""},
+    {k:"Peak servo load", v:fx(j.util,0), u:"%", m:j.name+" · SF "+fx(j.sf,2)+"×", s:jointState(j)},
+    {k:"Payload capacity", v:fx(maxPay,0), u:"g", m:"at target SF "+fx(P.sfMin,2)+"× · now "+fx(res.payload_g,0)+" g",
+     s: res.payload_g<=maxPay ? "ok":"over"},
+    {k:"Total mass", v:fx(res.mTot*1000,0), u:"g", m:"moving mass "+fx(res.mArm*1000,0)+" g", s:""},
+    {k:"Tip deflection", v:fx(res.deflection.mm,2), u:"mm", m:"limit "+fx(P.defMax,2)+" mm", s: deflOK?"ok":"over"},
+  ];
+  $("#tiles").innerHTML = tiles.map(t=>
+    '<div class="tile'+(t.s?" state-"+t.s:"")+'">'+
+      '<div class="k">'+t.k+'</div>'+
+      '<div class="v">'+t.v+' <small>'+t.u+'</small></div>'+
+      '<div class="m">'+t.m+'</div></div>').join("");
+}
+
+function renderTorque(res){
+  const host = $("#torqueBars"); host.innerHTML = "";
+  $("#torqueSub").textContent = "required vs. usable torque · derate "+fx(P.derate,2)+
+      " · target SF "+fx(P.sfMin,2)+"×"+(P.dynOn?" · α "+fx(P.alpha,1)+" rad/s²":" · static only");
+  res.jointOrder.forEach((k,ri)=>{
+    const j = res.joints[k], st = jointState(j);
+    const pct = Math.min(j.util, 100);
+    const over = j.util>100;
+    const target = 100/P.sfMin;
+    const row = el("div","tbar");
+    row.innerHTML =
+      '<div class="jn">'+j.name+'<em>'+fx(j.tStall*KGCM_PER_NM,1)+' kg·cm</em></div>'+
+      '<div class="track">'+
+        '<div class="fill '+st+'" style="width:'+pct.toFixed(2)+'%"></div>'+
+        (over?'<div style="position:absolute;right:3px;top:3px;bottom:3px;padding:0 5px;border-radius:2px;background:#fff;color:var(--crit-ink);font:500 10px var(--mono);display:grid;place-items:center">+'+fx(j.util-100,0)+'%</div>':'')+
+        '<div class="limit" data-l="'+(ri===0?"target SF":"")+'" style="left:'+target.toFixed(2)+'%"></div>'+
+      '</div>'+
+      '<div class="val">'+fx(j.tReq*KGCM_PER_NM,2)+' <span style="color:var(--ink-3)">/ '+fx(j.tAllow*KGCM_PER_NM,2)+'</span>'+
+        '<em>kg·cm · SF '+fx(j.sf,2)+'×</em></div>';
+    host.append(row);
+  });
+  host.append(el("p","note",
+    "Bar length is the usable torque (stall × derate). The tick marks the torque that still meets the target safety factor. "+
+    "The base axis is vertical, so gravity applies no moment to it — its load is inertia plus bearing drag."));
+}
+
+function renderJointTable(res){
+  const rows = res.jointOrder.map(k=>{
+    const j = res.joints[k];
+    return '<tr><td class="lbl">'+j.name+'</td>'+
+      '<td>'+fx(j.tStat*KGCM_PER_NM,3)+'</td>'+
+      '<td>'+fx(j.tDyn*KGCM_PER_NM,3)+'</td>'+
+      '<td>'+fx(j.tReq*KGCM_PER_NM,3)+'</td>'+
+      '<td>'+fx(j.tStall*KGCM_PER_NM,1)+'</td>'+
+      '<td>'+fx(j.tAllow*KGCM_PER_NM,2)+'</td>'+
+      '<td>'+fx(j.util,1)+'</td>'+
+      '<td>'+fx(j.sf,2)+'</td>'+
+      '<td>'+j.Iaxis.toExponential(2)+'</td></tr>';
+  }).join("");
+  $("#jointTable").innerHTML =
+   '<table><thead><tr><th>Joint</th><th>τ static</th><th>τ inertial</th><th>τ required</th>'+
+   '<th>τ stall</th><th>τ usable</th><th>Util %</th><th>SF</th><th>I (kg·m²)</th></tr></thead>'+
+   '<tbody>'+rows+'</tbody></table>'+
+   '<p class="note" style="margin-top:9px">Torques in kg·cm. τ usable = τ stall × '+fx(P.derate,2)+'.</p>';
+}
+
+const MASS_CATS = [
+  {cat:"structure", name:"Structure",    c:"var(--s1)"},
+  {cat:"servo",     name:"Servos",       c:"var(--s2)"},
+  {cat:"ee",        name:"End effector", c:"var(--s3)"},
+  {cat:"payload",   name:"Payload",      c:"var(--s4)"},
+  {cat:"base",      name:"Base plate",   c:"#aebcc5"},
+];
+function renderMass(res){
+  const tot = res.mTot;
+  const sums = MASS_CATS.map(c=>({...c, m: res.el.filter(e=>e.cat===c.cat).reduce((a,e)=>a+e.m,0)}))
+                        .filter(c=>c.m>0);
+  $("#massSub").textContent = fx(tot*1000,0)+" g total · "+MATERIALS[P.material].name+" @ "+fx(P.infill,0)+"% infill";
+  const bar = sums.map(c=>'<div title="'+c.name+'" style="width:'+(c.m/tot*100)+'%;background:'+c.c+'"></div>').join("");
+  const rows = res.el.slice().sort((a,b)=>b.m-a.m).map(e=>
+    '<tr><td class="lbl">'+e.name+'</td><td>'+fx(e.m*1000,1)+'</td><td>'+fx(e.m/tot*100,1)+'</td>'+
+    '<td>'+fx(e.r*1000,1)+'</td><td>'+fx(e.z*1000,1)+'</td></tr>').join("");
+  $("#massBreak").innerHTML =
+    '<div style="display:flex;height:26px;gap:2px;border-radius:4px;overflow:hidden;margin-bottom:11px">'+bar+'</div>'+
+    '<p class="note" style="margin:-4px 0 10px">Base plate mass is fixed — no joint carries it. Everything else is moving mass.</p>'+
+    '<div class="legend" style="padding:0 0 12px">'+sums.map(c=>
+      '<span><i class="sw" style="background:'+c.c+'"></i>'+c.name+' <b style="font-weight:500;font-family:var(--mono);font-size:11px">'+fx(c.m*1000,0)+' g</b></span>').join("")+'</div>'+
+    '<div class="kv" style="padding-bottom:12px;border-top:1px solid var(--grid);padding-top:11px">'+
+      '<dt>Centre of mass (whole machine)</dt><dd>r '+fx(res.com.r*1000,1)+' · z '+fx(res.com.z*1000,1)+' mm</dd>'+
+      '<dt>Centre of mass (moving arm)</dt><dd>r '+fx(res.comArm.r*1000,1)+' · z '+fx(res.comArm.z*1000,1)+' mm</dd>'+
+      '<dt>Tipping factor</dt><dd>'+(P.bolted?"bolted — n/a":fx(res.tipping.sf,2)+"× (need "+fx(P.sfTip,1)+"×)")+'</dd>'+
+      '<dt>Overhang of the CoM</dt><dd>'+fx(res.tipping.rCom*1000,1)+' of '+fx(P.footR,0)+' mm support</dd>'+
+    '</div>'+
+    '<details class="insp" style="margin:0"><summary>Mass elements <span class="tag">table view</span></summary>'+
+    '<div class="body tbl-wrap"><table><thead><tr><th>Element</th><th>Mass (g)</th><th>Share %</th>'+
+    '<th>r (mm)</th><th>z (mm)</th></tr></thead><tbody>'+rows+'</tbody></table></div></details>';
+}
+
+/* =====================================================================
+   TABS
+   ===================================================================== */
+let activeTab = "analysis";
+function setTab(name){
+  activeTab = name;
+  $$(".tab").forEach(t=>t.setAttribute("aria-selected", String(t.dataset.tab===name)));
+  $$(".panel").forEach(p=>p.hidden = (p.id !== "panel-"+name));
+  if (name==="inspector") renderInspector(R);
+  if (name==="equations") renderEquations();
+  if (name==="optimize")  refreshOptStatic();
+  if (name==="analysis")  { draw3D(R); drawEnvelope(R); }
+}
+</script>
+
+<script>
+"use strict";
+/* =====================================================================
+   2D SIDE ELEVATION  -  drawn as a dimensioned engineering elevation
+   ===================================================================== */
+const SVGNS = "http://www.w3.org/2000/svg";
+function drawSide(res){
+  const svg = $("#side"), W = 720, H = 392;
+  const N = res.N, ang = res.ang;
+  // world bounds (mm)
+  const rs = [0, P.footR, -P.footR].concat(N.map(n=>n.r*1000));
+  const zs = [0, 0].concat(N.map(n=>n.z*1000));
+  let r0 = Math.min.apply(null, rs)-30, r1 = Math.max.apply(null, rs)+70;
+  let z0 = Math.min.apply(null, zs)-60, z1 = Math.max.apply(null, zs)+55;
+  if (z1-z0 < 160){ z1 += 80; }
+  const pad = 26;
+  const s = Math.min((W-2*pad)/(r1-r0), (H-2*pad)/(z1-z0));
+  const ox = pad + (W-2*pad - (r1-r0)*s)/2 - r0*s;
+  const oy = H - pad - (H-2*pad - (z1-z0)*s)/2 + z0*s;
+  const X = r => ox + r*s, Y = z => oy - z*s;
+  const N2 = N.map(n=>({x:X(n.r*1000), y:Y(n.z*1000)}));
+  let g = '<defs><marker id="ar" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto">'+
+          '<path d="M0,1 L7,4 L0,7 z" fill="var(--ink-3)"/></marker></defs>';
+
+  /* grid */
+  let step = 10; while ((r1-r0)/step > 26) step *= (step===10?2.5:2);
+  g += '<g stroke="var(--grid)" stroke-width="1">';
+  for (let r=Math.ceil(r0/step)*step; r<=r1; r+=step) g += '<line x1="'+X(r).toFixed(1)+'" y1="'+pad+'" x2="'+X(r).toFixed(1)+'" y2="'+(H-pad)+'"/>';
+  for (let z=Math.ceil(z0/step)*step; z<=z1; z+=step) g += '<line x1="'+pad+'" y1="'+Y(z).toFixed(1)+'" x2="'+(W-pad)+'" y2="'+Y(z).toFixed(1)+'"/>';
+  g += '</g>';
+
+  /* bench surface + hatch */
+  const gy = Y(0);
+  g += '<line x1="'+pad+'" y1="'+gy.toFixed(1)+'" x2="'+(W-pad)+'" y2="'+gy.toFixed(1)+'" stroke="var(--ink)" stroke-width="1.4"/>';
+  g += '<g stroke="var(--rule-2)" stroke-width="1">';
+  for (let x=pad; x<W-pad; x+=9) g += '<line x1="'+x+'" y1="'+(gy+1)+'" x2="'+(x-7)+'" y2="'+(gy+8)+'"/>';
+  g += '</g>';
+
+  /* base plate + column */
+  const bpH = 9;
+  g += '<rect x="'+X(-P.footR).toFixed(1)+'" y="'+(gy-bpH*s/2.2).toFixed(1)+'" width="'+(2*P.footR*s).toFixed(1)+
+       '" height="'+(bpH*s/2.2).toFixed(1)+'" fill="#c7d3db" stroke="var(--ink-2)" stroke-width="1"/>';
+  const cw = (P.section==="round"?P.hh1:P.w1);
+  g += '<rect x="'+X(-cw/2).toFixed(1)+'" y="'+Y(P.h0).toFixed(1)+'" width="'+(cw*s).toFixed(1)+
+       '" height="'+(P.h0*s).toFixed(1)+'" fill="#eef2f5" stroke="var(--ink-2)" stroke-width="1.2"/>';
+  /* base yaw axis */
+  g += '<line x1="'+X(0).toFixed(1)+'" y1="'+(Y(P.h0)-22).toFixed(1)+'" x2="'+X(0).toFixed(1)+'" y2="'+(gy+16).toFixed(1)+
+       '" stroke="var(--accent)" stroke-width="1" stroke-dasharray="7 3 2 3" opacity=".85"/>';
+
+  /* links as true-depth bands */
+  const depths = [P.hh1, P.hh2, P.hh3];
+  for (let i=0;i<3;i++){
+    const a = ang[i], nx = -Math.sin(a), ny = -Math.cos(a); // screen normal (y down)
+    const hw = depths[i]/2*s;
+    const p1 = N2[i], p2 = N2[i+1];
+    const pts = [[p1.x+nx*hw,p1.y+ny*hw],[p2.x+nx*hw,p2.y+ny*hw],[p2.x-nx*hw,p2.y-ny*hw],[p1.x-nx*hw,p1.y-ny*hw]];
+    g += '<polygon points="'+pts.map(p=>p[0].toFixed(1)+","+p[1].toFixed(1)).join(" ")+
+         '" fill="#e9eff3" stroke="var(--ink-2)" stroke-width="1.2" stroke-linejoin="round"/>';
+    g += '<line x1="'+p1.x.toFixed(1)+'" y1="'+p1.y.toFixed(1)+'" x2="'+p2.x.toFixed(1)+'" y2="'+p2.y.toFixed(1)+
+         '" stroke="var(--ink-3)" stroke-width=".8" stroke-dasharray="6 3 1.5 3"/>';
+  }
+
+  /* deflected centreline, exaggerated */
+  const exg = Math.min(40, Math.max(6, 1.2/Math.max(res.deflection.mm,1e-3)));
+  const dx = res.deflection.r*1000*exg*s, dz = -res.deflection.z*1000*exg*s;
+  if (res.deflection.mm > 1e-4){
+    g += '<path d="M'+N2[0].x.toFixed(1)+','+N2[0].y.toFixed(1)+' Q'+
+         ((N2[0].x+N2[3].x)/2+dx*0.28).toFixed(1)+','+((N2[0].y+N2[3].y)/2+dz*0.28).toFixed(1)+' '+
+         (N2[3].x+dx).toFixed(1)+','+(N2[3].y+dz).toFixed(1)+
+         '" fill="none" stroke="var(--s2)" stroke-width="1.4" stroke-dasharray="4 3"/>';
+    const lx = N2[3].x+dx, ly = Math.min(gy-14, N2[3].y+dz+42);
+    g += '<line x1="'+lx.toFixed(1)+'" y1="'+(N2[3].y+dz+6).toFixed(1)+'" x2="'+lx.toFixed(1)+'" y2="'+(ly-9).toFixed(1)+
+         '" stroke="var(--s2)" stroke-width=".8" opacity=".7"/>';
+    g += lbl(lx, ly, "δ "+fx(res.deflection.mm,2)+" mm ×"+fx(exg,0), "var(--s2)", "middle");
+  }
+
+  /* servos */
+  const srv = [[N2[0], P.mSh, "S"], [N2[1], P.mEl, "E"], [N2[2], P.mWr, "W"]];
+  srv.forEach(([p])=>{
+    const w = 40*s*0.55, h = 20*s*0.55;
+    g += '<rect x="'+(p.x-w/2).toFixed(1)+'" y="'+(p.y-h/2).toFixed(1)+'" width="'+w.toFixed(1)+'" height="'+h.toFixed(1)+
+         '" rx="2" fill="#d9e7f8" stroke="var(--accent-deep)" stroke-width="1"/>';
+  });
+  /* joints */
+  N2.slice(0,3).forEach(p=>{
+    g += '<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="5.5" fill="#fff" stroke="var(--ink)" stroke-width="1.6"/>'+
+         '<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="1.6" fill="var(--ink)"/>';
+  });
+  /* end effector + payload */
+  const t = N2[3], av = ang[2];
+  g += '<g stroke="var(--ink-2)" stroke-width="2" stroke-linecap="round" fill="none">'+
+       '<path d="M'+t.x.toFixed(1)+','+t.y.toFixed(1)+' l'+(-Math.sin(av)*9).toFixed(1)+','+(-Math.cos(av)*9).toFixed(1)+
+       ' l'+(Math.cos(av)*11).toFixed(1)+','+(-Math.sin(av)*11).toFixed(1)+'"/>'+
+       '<path d="M'+t.x.toFixed(1)+','+t.y.toFixed(1)+' l'+(Math.sin(av)*9).toFixed(1)+','+(Math.cos(av)*9).toFixed(1)+
+       ' l'+(Math.cos(av)*11).toFixed(1)+','+(-Math.sin(av)*11).toFixed(1)+'"/></g>';
+  if (res.payload_g>0){
+    const pr = Math.max(5, Math.min(17, Math.cbrt(res.payload_g)*2.4));
+    g += '<circle cx="'+(t.x+Math.cos(av)*(pr+4)).toFixed(1)+'" cy="'+(t.y-Math.sin(av)*(pr+4)).toFixed(1)+
+         '" r="'+pr.toFixed(1)+'" fill="#fbe3d7" stroke="var(--s2)" stroke-width="1.5"/>';
+    g += lbl(t.x+Math.cos(av)*(pr+4), t.y-Math.sin(av)*(pr+4)+pr+14, fx(res.payload_g,0)+" g", "var(--s2)", "middle");
+  }
+
+  /* centre of mass */
+  const cx = X(res.com.r*1000), cy = Y(res.com.z*1000);
+  g += '<g><circle cx="'+cx.toFixed(1)+'" cy="'+cy.toFixed(1)+'" r="7" fill="#fff" stroke="var(--ink)" stroke-width="1.2"/>'+
+       '<path d="M'+(cx-7).toFixed(1)+','+cy.toFixed(1)+' a7,7 0 0,1 7,-7 l0,7 z" fill="var(--ink)"/>'+
+       '<path d="M'+cx.toFixed(1)+','+cy.toFixed(1)+' a7,7 0 0,1 7,7 l-7,0 z" fill="var(--ink)"/></g>';
+  g += '<line x1="'+cx.toFixed(1)+'" y1="'+(cy+8).toFixed(1)+'" x2="'+cx.toFixed(1)+'" y2="'+(gy).toFixed(1)+
+       '" stroke="var(--ink)" stroke-width=".8" stroke-dasharray="3 3" opacity=".55"/>';
+  g += lbl(cx, cy-13, "CoM", "var(--ink)", "middle");
+
+  /* dimensions */
+  for (let i=0;i<3;i++){
+    g += dim(N2[i], N2[i+1], 20+depths[i]/2*s, "L"+(i+1)+" = "+fx([P.L1,P.L2,P.L3][i],0));
+  }
+  g += dimH(X(0), X(res.reachSigned*1000), Math.min(H-pad+6, gy+34), "reach "+fx(res.reach*1000,0)+" mm");
+  g += dimV(Math.max(pad+9, X(-cw/2)-20), Y(0), Y(P.h0), "h₀ "+fx(P.h0,0));
+
+  /* scale bar */
+  g += '<g transform="translate('+(W-pad-step*s-4)+','+(pad+4)+')">'+
+       '<line x1="0" y1="0" x2="'+(step*s).toFixed(1)+'" y2="0" stroke="var(--ink-3)" stroke-width="1"/>'+
+       '<line x1="0" y1="-3" x2="0" y2="3" stroke="var(--ink-3)" stroke-width="1"/>'+
+       '<line x1="'+(step*s).toFixed(1)+'" y1="-3" x2="'+(step*s).toFixed(1)+'" y2="3" stroke="var(--ink-3)" stroke-width="1"/>'+
+       '<text x="'+(step*s/2).toFixed(1)+'" y="-6" text-anchor="middle" font-size="9.5" font-family="var(--mono)" fill="var(--ink-3)">'+step+' mm</text></g>';
+
+  svg.innerHTML = g;
+
+  function lbl(x,y,txt,fill,anchor){
+    return '<text x="'+x.toFixed(1)+'" y="'+y.toFixed(1)+'" text-anchor="'+anchor+'" font-size="10" font-family="var(--mono)" fill="'+fill+'">'+txt+'</text>';
+  }
+  function dim(p1,p2,off,txt){
+    const dxx=p2.x-p1.x, dyy=p2.y-p1.y, L=Math.hypot(dxx,dyy)||1;
+    let nx=-dyy/L, ny=dxx/L; if (ny<0){ nx=-nx; ny=-ny; }        // always offset downward
+    const a1={x:p1.x+nx*off,y:p1.y+ny*off}, a2={x:p2.x+nx*off,y:p2.y+ny*off};
+    let deg = Math.atan2(a2.y-a1.y, a2.x-a1.x)*180/Math.PI;
+    if (deg>90) deg-=180; if (deg<-90) deg+=180;
+    const mx=(a1.x+a2.x)/2, my=(a1.y+a2.y)/2;
+    return '<g stroke="var(--ink-3)" stroke-width=".8" fill="none">'+
+      '<line x1="'+p1.x.toFixed(1)+'" y1="'+p1.y.toFixed(1)+'" x2="'+(a1.x+nx*4).toFixed(1)+'" y2="'+(a1.y+ny*4).toFixed(1)+'"/>'+
+      '<line x1="'+p2.x.toFixed(1)+'" y1="'+p2.y.toFixed(1)+'" x2="'+(a2.x+nx*4).toFixed(1)+'" y2="'+(a2.y+ny*4).toFixed(1)+'"/>'+
+      '<line x1="'+a1.x.toFixed(1)+'" y1="'+a1.y.toFixed(1)+'" x2="'+a2.x.toFixed(1)+'" y2="'+a2.y.toFixed(1)+'" marker-start="url(#ar)" marker-end="url(#ar)"/>'+
+      '</g><text x="'+mx.toFixed(1)+'" y="'+(my-4).toFixed(1)+'" transform="rotate('+deg.toFixed(1)+' '+mx.toFixed(1)+' '+my.toFixed(1)+')" '+
+      'text-anchor="middle" font-size="10" font-family="var(--mono)" fill="var(--ink-2)">'+txt+'</text>';
+  }
+  function dimH(x1,x2,y,txt){
+    return '<g stroke="var(--ink-3)" stroke-width=".8">'+
+      '<line x1="'+x1.toFixed(1)+'" y1="'+(y-7).toFixed(1)+'" x2="'+x1.toFixed(1)+'" y2="'+(y+4).toFixed(1)+'"/>'+
+      '<line x1="'+x2.toFixed(1)+'" y1="'+(y-7).toFixed(1)+'" x2="'+x2.toFixed(1)+'" y2="'+(y+4).toFixed(1)+'"/>'+
+      '<line x1="'+x1.toFixed(1)+'" y1="'+y.toFixed(1)+'" x2="'+x2.toFixed(1)+'" y2="'+y.toFixed(1)+'" marker-start="url(#ar)" marker-end="url(#ar)"/></g>'+
+      '<text x="'+((x1+x2)/2).toFixed(1)+'" y="'+(y-5).toFixed(1)+'" text-anchor="middle" font-size="10" font-family="var(--mono)" fill="var(--ink-2)">'+txt+'</text>';
+  }
+  function dimV(x,y1,y2,txt){
+    return '<g stroke="var(--ink-3)" stroke-width=".8">'+
+      '<line x1="'+(x-4).toFixed(1)+'" y1="'+y1.toFixed(1)+'" x2="'+(x+7).toFixed(1)+'" y2="'+y1.toFixed(1)+'"/>'+
+      '<line x1="'+(x-4).toFixed(1)+'" y1="'+y2.toFixed(1)+'" x2="'+(x+7).toFixed(1)+'" y2="'+y2.toFixed(1)+'"/>'+
+      '<line x1="'+x.toFixed(1)+'" y1="'+y1.toFixed(1)+'" x2="'+x.toFixed(1)+'" y2="'+y2.toFixed(1)+'" marker-start="url(#ar)" marker-end="url(#ar)"/></g>'+
+      '<text x="'+(x-5).toFixed(1)+'" y="'+((y1+y2)/2).toFixed(1)+'" transform="rotate(-90 '+(x-5).toFixed(1)+' '+((y1+y2)/2).toFixed(1)+')" '+
+      'text-anchor="middle" font-size="10" font-family="var(--mono)" fill="var(--ink-2)">'+txt+'</text>';
+  }
+}
+</script>
+
+<script>
+"use strict";
+/* =====================================================================
+   3D PREVIEW  -  orthographic painter's-algorithm renderer (no library)
+   world axes: x forward, y left, z up.  Base yaw rotates about z.
+   ===================================================================== */
+const cam = {az: -38*D2R, el: 22*D2R, zoom: 1, yaw: 25*D2R};
+function draw3D(res){
+  if (!res) return;
+  const cv = $("#three"), dpr = Math.min(devicePixelRatio||1, 2);
+  /* match the side elevation's aspect so the two cards line up */
+  const cssW = cv.clientWidth || 620;
+  const cssH = Math.max(290, Math.min(470, Math.round(cssW*392/720)));
+  cv.style.height = cssH+"px";
+  cv.width = cssW*dpr; cv.height = cssH*dpr;
+  const g = cv.getContext("2d"); g.setTransform(dpr,0,0,dpr,0,0);
+  g.clearRect(0,0,cssW,cssH);
+  g.fillStyle = "#fbfcfd"; g.fillRect(0,0,cssW,cssH);
+
+  const N = res.N, ang = res.ang, ps = cam.yaw;
+  const Rmax = res.reachMax*1000;
+  const ca=Math.cos(cam.az), sa=Math.sin(cam.az), ce=Math.cos(cam.el), se=Math.sin(cam.el);
+  const right = [-sa, ca, 0];
+  const up    = [-ca*se, -sa*se, ce];
+  const eye   = [ca*ce, sa*ce, se];
+  const dot = (a,b)=>a[0]*b[0]+a[1]*b[1]+a[2]*b[2];
+
+  /* fit the scene to the canvas: project the extremes at unit scale first */
+  const fit = [];
+  for (let a=0;a<360;a+=30) fit.push([Rmax*Math.cos(a*D2R), Rmax*Math.sin(a*D2R), 0]);
+  const yawv = [Math.cos(cam.yaw), Math.sin(cam.yaw), 0];
+  res.N.forEach(n=>fit.push([yawv[0]*n.r*1000, yawv[1]*n.r*1000, n.z*1000 + 30]));
+  fit.push([0,0,0]);
+  let ux0=1e9,ux1=-1e9,uy0=1e9,uy1=-1e9;
+  fit.forEach(p=>{ const a=dot(p,right), b=dot(p,up);
+    if(a<ux0)ux0=a; if(a>ux1)ux1=a; if(b<uy0)uy0=b; if(b>uy1)uy1=b; });
+  const padPx = 26;
+  const s = Math.min((cssW-2*padPx)/Math.max(ux1-ux0,1), (cssH-2*padPx-16)/Math.max(uy1-uy0,1)) * cam.zoom;
+  const cx = cssW/2 - (ux0+ux1)/2*s, cy = (cssH-16)/2 + (uy0+uy1)/2*s;
+  const proj = p => [cx + dot(p,right)*s, cy - dot(p,up)*s];
+  const depth = p => dot(p,eye);
+  const LIGHT = (()=>{ const v=[0.35,0.45,0.82], n=Math.hypot(v[0],v[1],v[2]); return v.map(x=>x/n); })();
+
+  /* -- ground grid + working circle -- */
+  const gstep = 50, gext = Math.ceil(Rmax/gstep+1)*gstep;
+  g.lineWidth = 1;
+  for (let i=-gext;i<=gext;i+=gstep){
+    g.strokeStyle = (i===0) ? "#c7d3db" : "#e8eef2";
+    line3(g,[i,-gext,0],[i,gext,0]); line3(g,[-gext,i,0],[gext,i,0]);
+  }
+  g.strokeStyle = "#cde2fb"; g.lineWidth = 1.6; g.setLineDash([6,4]);
+  g.beginPath();
+  for (let a=0;a<=360;a+=4){ const t=a*D2R, p=proj([Rmax*Math.cos(t), Rmax*Math.sin(t), 0]);
+    a?g.lineTo(p[0],p[1]):g.moveTo(p[0],p[1]); }
+  g.stroke(); g.setLineDash([]);
+
+  /* -- solids -- */
+  const quads = [];
+  const uYaw = [Math.cos(ps), Math.sin(ps), 0];          // in-plane horizontal
+  const wOut = [-Math.sin(ps), Math.cos(ps), 0];         // out-of-plane
+  const pt = (r,z)=>[uYaw[0]*r, uYaw[1]*r, z];
+
+  addCyl(quads, [0,0,0], P.footR, 10, "#c7d3db");
+  const colW = (P.section==="round"?P.hh1:P.w1);
+  addBox(quads, [0,0,P.h0/2], [0,0,1], uYaw, wOut, P.h0, colW, colW, "#dbe3e9");
+
+  const dims = [[P.w1,P.hh1],[P.w2,P.hh2],[P.w3,P.hh3]];
+  for (let i=0;i<3;i++){
+    const a = ang[i];
+    const u = [uYaw[0]*Math.cos(a), uYaw[1]*Math.cos(a), Math.sin(a)];
+    const v = [-uYaw[0]*Math.sin(a), -uYaw[1]*Math.sin(a), Math.cos(a)];
+    const A = pt(N[i].r*1000, N[i].z*1000), B = pt(N[i+1].r*1000, N[i+1].z*1000);
+    const mid = [(A[0]+B[0])/2,(A[1]+B[1])/2,(A[2]+B[2])/2];
+    const wd = (P.section==="round"?dims[i][1]:dims[i][0]);
+    addBox(quads, mid, u, v, wOut, [P.L1,P.L2,P.L3][i], dims[i][1], wd, "#9aabb6");
+  }
+  [[0,P.mSh],[1,P.mEl],[2,P.mWr]].forEach(([i])=>{
+    const a = ang[Math.min(i,2)];
+    const u = [uYaw[0]*Math.cos(a), uYaw[1]*Math.cos(a), Math.sin(a)];
+    const v = [-uYaw[0]*Math.sin(a), -uYaw[1]*Math.sin(a), Math.cos(a)];
+    addBox(quads, pt(N[i].r*1000, N[i].z*1000), u, v, wOut, 40, 20, 21, "#2a78d6");
+  });
+  { const a = ang[2];
+    const u = [uYaw[0]*Math.cos(a), uYaw[1]*Math.cos(a), Math.sin(a)];
+    const v = [-uYaw[0]*Math.sin(a), -uYaw[1]*Math.sin(a), Math.cos(a)];
+    const T = pt(N[3].r*1000, N[3].z*1000);
+    [-1,1].forEach(sgn=>{
+      const c = [T[0]+v[0]*sgn*10+u[0]*9, T[1]+v[1]*sgn*10+u[1]*9, T[2]+v[2]*sgn*10+u[2]*9];
+      addBox(quads, c, u, v, wOut, 22, 4, 12, "#4b6070");
+    });
+    if (res.payload_g>0){
+      const pr = Math.max(6, Math.cbrt(res.payload_g)*3.2);
+      const c = [T[0]+u[0]*(18+pr), T[1]+u[1]*(18+pr), T[2]+u[2]*(18+pr)];
+      addBox(quads, c, u, v, wOut, pr*1.7, pr*1.7, pr*1.7, "#eb6834");
+    }
+  }
+
+  quads.sort((a,b)=>a.d-b.d);
+  quads.forEach(q=>{
+    const sh = 0.58 + 0.42*Math.max(0, dot(q.n, LIGHT));
+    g.fillStyle = shade(q.c, sh);
+    g.strokeStyle = shade(q.c, sh*0.66); g.lineWidth = 0.7;
+    g.beginPath();
+    q.p.forEach((v,i)=>{ const pp = proj(v); i?g.lineTo(pp[0],pp[1]):g.moveTo(pp[0],pp[1]); });
+    g.closePath(); g.fill(); g.stroke();
+  });
+
+  /* -- centre of mass marker -- */
+  const cP = proj(pt(res.com.r*1000, res.com.z*1000));
+  const gP = proj(pt(res.com.r*1000, 0));
+  g.strokeStyle = "rgba(15,34,48,.45)"; g.setLineDash([3,3]); g.lineWidth = 1;
+  g.beginPath(); g.moveTo(cP[0],cP[1]); g.lineTo(gP[0],gP[1]); g.stroke(); g.setLineDash([]);
+  comMark(g, cP[0], cP[1], 8);
+  g.fillStyle = "#0f2230"; g.font = "500 10px var(--mono), monospace"; g.textAlign = "center";
+  g.fillText("CoM", cP[0], cP[1]-13);
+
+  /* -- footer readout -- */
+  g.textAlign = "left"; g.fillStyle = "#7d919e"; g.font = "10.5px var(--mono), monospace";
+  g.fillText("yaw ψ "+fx(ps/D2R,0)+"°   reach "+fx(res.reach*1000,0)+" mm   mass "+fx(res.mTot*1000,0)+" g", 12, cssH-12);
+
+  function line3(gg,a,b){ const p1=proj(a),p2=proj(b);
+    gg.beginPath(); gg.moveTo(p1[0],p1[1]); gg.lineTo(p2[0],p2[1]); gg.stroke(); }
+  function addBox(list, c, u, v, w, lu, lv, lw, col){
+    const hu=lu/2, hv=lv/2, hw=lw/2;
+    const V=[];
+    for (const su of [-1,1]) for (const sv of [-1,1]) for (const sw of [-1,1])
+      V.push([c[0]+u[0]*su*hu+v[0]*sv*hv+w[0]*sw*hw,
+              c[1]+u[1]*su*hu+v[1]*sv*hv+w[1]*sw*hw,
+              c[2]+u[2]*su*hu+v[2]*sv*hv+w[2]*sw*hw]);
+    // index order: (su,sv,sw) -> su*4+sv*2+sw with -1->0
+    const I=(a,b,cc)=>((a?4:0)+(b?2:0)+(cc?1:0));
+    const faces=[
+      [[I(1,0,0),I(1,1,0),I(1,1,1),I(1,0,1)], u],
+      [[I(0,0,0),I(0,0,1),I(0,1,1),I(0,1,0)], [-u[0],-u[1],-u[2]]],
+      [[I(0,1,0),I(0,1,1),I(1,1,1),I(1,1,0)], v],
+      [[I(0,0,0),I(1,0,0),I(1,0,1),I(0,0,1)], [-v[0],-v[1],-v[2]]],
+      [[I(0,0,1),I(1,0,1),I(1,1,1),I(0,1,1)], w],
+      [[I(0,0,0),I(0,1,0),I(1,1,0),I(1,0,0)], [-w[0],-w[1],-w[2]]],
+    ];
+    faces.forEach(([idx,n])=>{
+      const p = idx.map(i=>V[i]);
+      const d = p.reduce((a,q)=>a+depth(q),0)/4;
+      if (dot(n, eye) <= 0) return;                   // back-face cull
+      list.push({p, n, c:col, d});
+    });
+  }
+  function addCyl(list, c, r, h, col){
+    const K = 26, top=[], bot=[];
+    for (let i=0;i<K;i++){ const t=i/K*2*Math.PI;
+      top.push([c[0]+r*Math.cos(t), c[1]+r*Math.sin(t), c[2]+h]);
+      bot.push([c[0]+r*Math.cos(t), c[1]+r*Math.sin(t), c[2]]); }
+    for (let i=0;i<K;i++){ const j=(i+1)%K;
+      const n=[Math.cos((i+0.5)/K*2*Math.PI), Math.sin((i+0.5)/K*2*Math.PI), 0];
+      if (dot(n,eye)>0){ const p=[bot[i],bot[j],top[j],top[i]];
+        list.push({p,n,c:col,d:p.reduce((a,q)=>a+depth(q),0)/4}); } }
+    list.push({p:top, n:[0,0,1], c:col, d:top.reduce((a,q)=>a+depth(q),0)/K});
+  }
+  function comMark(gg,x,y,r){
+    gg.save(); gg.translate(x,y);
+    gg.fillStyle="#fff"; gg.strokeStyle="#0f2230"; gg.lineWidth=1.2;
+    gg.beginPath(); gg.arc(0,0,r,0,2*Math.PI); gg.fill(); gg.stroke();
+    gg.fillStyle="#0f2230";
+    gg.beginPath(); gg.moveTo(0,0); gg.arc(0,0,r,Math.PI,1.5*Math.PI); gg.closePath(); gg.fill();
+    gg.beginPath(); gg.moveTo(0,0); gg.arc(0,0,r,0,0.5*Math.PI); gg.closePath(); gg.fill();
+    gg.restore();
+  }
+}
+function shade(hex, f){
+  const n = parseInt(hex.slice(1),16);
+  const r = Math.min(255,Math.round((n>>16)*f)), gg = Math.min(255,Math.round(((n>>8)&255)*f)), b = Math.min(255,Math.round((n&255)*f));
+  return "rgb("+r+","+gg+","+b+")";
+}
+(function bind3D(){
+  const cv = $("#three"); let drag = null;
+  cv.addEventListener("pointerdown", e=>{ drag={x:e.clientX,y:e.clientY,az:cam.az,el:cam.el}; cv.setPointerCapture(e.pointerId); });
+  cv.addEventListener("pointermove", e=>{ if(!drag) return;
+    cam.az = drag.az - (e.clientX-drag.x)*0.008;
+    cam.el = Math.max(-0.2, Math.min(1.4, drag.el + (e.clientY-drag.y)*0.006));
+    draw3D(R); });
+  cv.addEventListener("pointerup", ()=>drag=null);
+  cv.addEventListener("pointercancel", ()=>drag=null);
+  cv.addEventListener("wheel", e=>{ e.preventDefault();
+    cam.zoom = Math.max(0.4, Math.min(3, cam.zoom*(e.deltaY>0?0.92:1.08))); draw3D(R); }, {passive:false});
+  cv.style.cursor = "grab";
+  $("#v3dIso").onclick   = ()=>{ cam.az=-38*D2R; cam.el=22*D2R; cam.zoom=1; draw3D(R); };
+  $("#v3dTop").onclick   = ()=>{ cam.az=-90*D2R; cam.el=88*D2R; cam.zoom=1; draw3D(R); };
+  $("#v3dFront").onclick = ()=>{ cam.az=-90*D2R; cam.el=2*D2R;  cam.zoom=1; draw3D(R); };
+})();
+</script>
+
+<script>
+"use strict";
+/* =====================================================================
+   REACH ENVELOPE
+   Sweeps the three pitch joints through their travel limits and marks
+   every reachable TCP cell as geometrically reachable and, separately,
+   as torque-feasible at the current payload.
+   ===================================================================== */
+function envKernel(res){
+  const L1 = P.L1/1000, L2 = P.L2/1000, L3 = P.L3/1000, h0 = P.h0/1000;
+  const m1 = res.links[0].m, m2 = res.links[1].m, m3 = res.links[2].m;
+  const me = P.mEl/1000, mw = P.mWr/1000, mt = (P.mEE + res.payload_g)/1000;
+  const mFixed = P.mPlate/1000 + P.mBase/1000 + res.column.m + P.mSh/1000;
+  const al = P.dynOn ? P.alpha : 0;
+  const limS = res.joints.sh.tDesign, limE = res.joints.el.tDesign,
+        limW = res.joints.wr.tDesign, limB = res.joints.base.tDesign;
+  const tFric = P.tauFric*NM_PER_KGCM;
+  return function(a1,a2,a3){
+    const c1=Math.cos(a1), s1=Math.sin(a1), c2=Math.cos(a2), s2=Math.sin(a2), c3=Math.cos(a3), s3=Math.sin(a3);
+    const r1=L1*c1,        z1=h0+L1*s1;
+    const r2=r1+L2*c2,     z2=z1+L2*s2;
+    const r3=r2+L3*c3,     z3=z2+L3*s3;
+    const mr2=(r1+r2)/2, mz2=(z1+z2)/2, mr3=(r2+r3)/2, mz3=(z2+z3)/2, mr1=r1/2, mz1=(h0+z1)/2;
+    // wrist
+    const Mw = G*( m3*(mr3-r2) + mt*(r3-r2) );
+    const Iw = m3*((mr3-r2)**2+(mz3-z2)**2) + mt*(L3*L3);
+    const tw = Math.abs(Mw) + Iw*al;
+    if (tw > limW) return [r3, z3, 0];
+    // elbow
+    const Me = G*( m2*(mr2-r1) + mw*(r2-r1) + m3*(mr3-r1) + mt*(r3-r1) );
+    const Ie = m2*((mr2-r1)**2+(mz2-z1)**2) + mw*(L2*L2)
+             + m3*((mr3-r1)**2+(mz3-z1)**2) + mt*((r3-r1)**2+(z3-z1)**2);
+    const te = Math.abs(Me) + Ie*al;
+    if (te > limE) return [r3, z3, 0];
+    // shoulder
+    const Ms = G*( m1*mr1 + me*r1 + m2*mr2 + mw*r2 + m3*mr3 + mt*r3 );
+    const Is = m1*(mr1*mr1+(mz1-h0)**2) + me*(L1*L1)
+             + m2*(mr2*mr2+(mz2-h0)**2) + mw*(r2*r2+(z2-h0)**2)
+             + m3*(mr3*mr3+(mz3-h0)**2) + mt*(r3*r3+(z3-h0)**2);
+    const ts = Math.abs(Ms) + Is*al;
+    if (ts > limS) return [r3, z3, 0];
+    // base yaw
+    const Ib = m1*mr1*mr1 + me*r1*r1 + m2*mr2*mr2 + mw*r2*r2 + m3*mr3*mr3 + mt*r3*r3;
+    if (Ib*al + tFric > limB) return [r3, z3, 0];
+    return [r3, z3, 1];
+  };
+}
+
+function drawEnvelope(res){
+  if (!res) return;
+  const cv = $("#env"), dpr = Math.min(devicePixelRatio||1, 2);
+  const cssW = cv.clientWidth || 620, cssH = 360;
+  cv.width = cssW*dpr; cv.height = cssH*dpr;
+  const g = cv.getContext("2d"); g.setTransform(dpr,0,0,dpr,0,0);
+  g.fillStyle = "#fbfcfd"; g.fillRect(0,0,cssW,cssH);
+
+  const Rm = res.reachMax*1000;
+  const r0 = -Rm*0.55, r1 = Rm*1.08, z0 = Math.min(-15, (P.h0-Rm)*1.05), z1 = P.h0 + Rm*1.08;
+  const padL = 42, padR = 12, padT = 12, padB = 26;
+  const pw = cssW-padL-padR, ph = cssH-padT-padB;
+  const s = Math.min(pw/(r1-r0), ph/(z1-z0));
+  const ox = padL + (pw-(r1-r0)*s)/2 - r0*s, oy = padT + (ph-(z1-z0)*s)/2 + (z1)*s;
+  const X = r=>ox+r*s, Y = z=>oy-z*s;
+
+  const CELL = 4, gw = Math.ceil(pw/CELL), gh = Math.ceil(ph/CELL);
+  const grid = new Uint8Array(gw*gh);
+  const K = envKernel(res);
+  const n1=68, n2=68, n3=13;
+  const A1=[P.limShMin*D2R,P.limShMax*D2R], A2=[P.limElMin*D2R,P.limElMax*D2R], A3=[P.limWrMin*D2R,P.limWrMax*D2R];
+  let maxR=-1e9, maxZ=-1e9;
+  for (let i=0;i<n1;i++){
+    const a1 = A1[0] + (A1[1]-A1[0])*i/(n1-1);
+    for (let j=0;j<n2;j++){
+      const a2 = a1 + (A2[0] + (A2[1]-A2[0])*j/(n2-1));
+      for (let k=0;k<n3;k++){
+        const a3 = a2 + (A3[0] + (A3[1]-A3[0])*k/(n3-1));
+        const out = K(a1,a2,a3);
+        const px = Math.floor((X(out[0]*1000)-padL)/CELL), py = Math.floor((Y(out[1]*1000)-padT)/CELL);
+        if (px<0||py<0||px>=gw||py>=gh) continue;
+        const idx = py*gw+px;
+        const nv = out[2] ? 2 : 1;
+        if (nv > grid[idx]) grid[idx] = nv;
+        if (out[2]){ if (out[0]>maxR) maxR=out[0]; if (out[1]>maxZ) maxZ=out[1]; }
+      }
+    }
+  }
+
+  let cGeo=0, cFea=0;
+  for (let i=0;i<grid.length;i++){ if (grid[i]){ cGeo++; if (grid[i]===2) cFea++; } }
+
+  const off = document.createElement("canvas"); off.width=gw; off.height=gh;
+  const octx = off.getContext("2d"), img = octx.createImageData(gw,gh);
+  const COL = {1:[232,238,246,255], 2:[168,201,239,255]};
+  for (let i=0;i<grid.length;i++){ const c = COL[grid[i]]; if (!c) continue;
+    img.data[i*4]=c[0]; img.data[i*4+1]=c[1]; img.data[i*4+2]=c[2]; img.data[i*4+3]=c[3]; }
+  octx.putImageData(img,0,0);
+  g.imageSmoothingEnabled = false;
+  g.drawImage(off, padL, padT, gw*CELL, gh*CELL);
+
+  /* axes */
+  g.strokeStyle="#e1e7ec"; g.lineWidth=1; g.font="10px var(--sans), sans-serif"; g.fillStyle="#7d919e";
+  let stp = 50; while ((r1-r0)/stp > 11) stp += 50;
+  g.textAlign="center";
+  for (let r=Math.ceil(r0/stp)*stp; r<=r1; r+=stp){
+    g.beginPath(); g.moveTo(X(r),padT); g.lineTo(X(r),padT+ph); g.stroke();
+    g.fillText(r+"", X(r), cssH-9);
+  }
+  g.textAlign="right";
+  for (let z=Math.ceil(z0/stp)*stp; z<=z1; z+=stp){
+    g.beginPath(); g.moveTo(padL,Y(z)); g.lineTo(padL+pw,Y(z)); g.stroke();
+    g.fillText(z+"", padL-6, Y(z)+3.5);
+  }
+  g.strokeStyle="#c7d3db"; g.lineWidth=1.2;
+  g.beginPath(); g.moveTo(padL,Y(0)); g.lineTo(padL+pw,Y(0)); g.stroke();
+  g.setLineDash([6,3]); g.strokeStyle="#c7d3db";
+  g.beginPath(); g.moveTo(X(0),padT); g.lineTo(X(0),padT+ph); g.stroke(); g.setLineDash([]);
+  g.fillStyle="#4b6070"; g.textAlign="center";
+  g.fillText("r — distance from base axis (mm)", padL+pw/2, cssH-1); g.save();
+  g.translate(13, padT+ph/2); g.rotate(-Math.PI/2); g.textAlign="center"; g.fillText("z — height (mm)",0,0); g.restore();
+
+  /* current pose overlay */
+  g.strokeStyle="#0f2230"; g.lineWidth=2.2; g.lineJoin="round"; g.lineCap="round";
+  g.beginPath(); g.moveTo(X(0), Y(0)); g.lineTo(X(0), Y(P.h0));
+  res.N.forEach(n=>g.lineTo(X(n.r*1000), Y(n.z*1000))); g.stroke();
+  res.N.forEach((n,i)=>{ g.fillStyle = i===3?"#eb6834":"#fff";
+    g.beginPath(); g.arc(X(n.r*1000), Y(n.z*1000), i===3?4:3.4, 0, 7); g.fill();
+    g.strokeStyle="#0f2230"; g.lineWidth=1.4; g.stroke(); });
+
+  const cellArea = (CELL/s)*(CELL/s);
+  $("#envStats").innerHTML =
+    '<div class="kv">'+
+    '<dt>Torque-feasible workspace</dt><dd>'+fx(cFea*cellArea/100,0)+' cm²  ('+fx(cGeo?cFea/cGeo*100:0,0)+'% of geometric)</dd>'+
+    '<dt>Geometric workspace</dt><dd>'+fx(cGeo*cellArea/100,0)+' cm²</dd>'+
+    '<dt>Furthest feasible reach</dt><dd>'+(maxR>-1e8?fx(maxR*1000,0)+' mm':'—')+'</dd>'+
+    '<dt>Highest feasible point</dt><dd>'+(maxZ>-1e8?fx(maxZ*1000,0)+' mm':'—')+'</dd>'+
+    '<dt>Poses evaluated</dt><dd>'+(n1*n2*n3).toLocaleString()+'</dd></div>';
+}
+</script>
+
+<script>
+"use strict";
+/* =====================================================================
+   PAYLOAD vs MAXIMUM REACH  -  the limit curve
+   ===================================================================== */
+let prData = [];
+function drawPayloadReach(res){
+  const svg = $("#prChart"), W=560, H=320, padL=52, padR=16, padT=14, padB=38;
+  const pw=W-padL-padR, ph=H-padT-padB;
+  const payMax = Math.max(res.payload_g*2.2, 120, maxFeasiblePayload()*1.6);
+  const nPts = 26;
+  prData = [];
+  for (let i=0;i<=nPts;i++){
+    const pay = payMax*i/nPts;
+    prData.push({pay, reach: maxFeasibleReach(pay)});
+  }
+  const rMax = Math.max.apply(null, prData.map(d=>d.reach).concat([res.reach*1000]))*1.1 || 100;
+  const X = p => padL + p/payMax*pw;
+  const Y = r => padT + ph - r/rMax*ph;
+  let g = "";
+  /* grid */
+  const xs = niceTicks(0, payMax, 6), ys = niceTicks(0, rMax, 5);
+  g += '<g stroke="#e8eef2" stroke-width="1">';
+  ys.forEach(v=>g += '<line x1="'+padL+'" y1="'+Y(v).toFixed(1)+'" x2="'+(W-padR)+'" y2="'+Y(v).toFixed(1)+'"/>');
+  g += '</g>';
+  /* area + line */
+  const pts = prData.map(d=>X(d.pay).toFixed(1)+","+Y(d.reach).toFixed(1));
+  g += '<path d="M'+padL+','+(padT+ph)+' L'+pts.join(" L")+' L'+(X(payMax)).toFixed(1)+','+(padT+ph)+' Z" fill="#2a78d6" opacity=".09"/>';
+  g += '<polyline points="'+pts.join(" ")+'" fill="none" stroke="#2a78d6" stroke-width="2" stroke-linejoin="round"/>';
+  /* current design crosshair */
+  const cxp = X(Math.min(res.payload_g,payMax)), cyp = Y(Math.min(res.reach*1000,rMax));
+  g += '<g stroke="#0f2230" stroke-width="1" stroke-dasharray="3 3" opacity=".45">'+
+       '<line x1="'+cxp.toFixed(1)+'" y1="'+(padT+ph)+'" x2="'+cxp.toFixed(1)+'" y2="'+cyp.toFixed(1)+'"/>'+
+       '<line x1="'+padL+'" y1="'+cyp.toFixed(1)+'" x2="'+cxp.toFixed(1)+'" y2="'+cyp.toFixed(1)+'"/></g>';
+  const okNow = res.feasible;
+  g += '<circle cx="'+cxp.toFixed(1)+'" cy="'+cyp.toFixed(1)+'" r="5" fill="'+(okNow?"#0ca30c":"#d03b3b")+'" stroke="#fff" stroke-width="2"/>';
+  g += '<text x="'+(cxp+10).toFixed(1)+'" y="'+(cyp-8).toFixed(1)+'" font-size="10.5" font-family="var(--mono)" fill="#0f2230">'+
+       'current · '+fx(res.reach*1000,0)+' mm @ '+fx(res.payload_g,0)+' g</text>';
+  /* axes */
+  g += '<line x1="'+padL+'" y1="'+(padT+ph)+'" x2="'+(W-padR)+'" y2="'+(padT+ph)+'" stroke="#c7d3db" stroke-width="1"/>';
+  g += '<g font-size="10" font-family="var(--sans)" fill="#7d919e">';
+  xs.forEach(v=>g += '<text x="'+X(v).toFixed(1)+'" y="'+(padT+ph+15)+'" text-anchor="middle">'+fx(v,0)+'</text>');
+  ys.forEach(v=>g += '<text x="'+(padL-7)+'" y="'+(Y(v)+3.5).toFixed(1)+'" text-anchor="end">'+fx(v,0)+'</text>');
+  g += '<text x="'+(padL+pw/2)+'" y="'+(H-6)+'" text-anchor="middle" fill="#4b6070">Payload at TCP (g)</text>';
+  g += '<text transform="rotate(-90 12 '+(padT+ph/2)+')" x="12" y="'+(padT+ph/2)+'" text-anchor="middle" fill="#4b6070">Max feasible reach (mm)</text></g>';
+  /* hover targets */
+  g += '<g id="prHit">'+prData.map((d,i)=>
+      '<rect x="'+(X(d.pay)-pw/nPts/2).toFixed(1)+'" y="'+padT+'" width="'+(pw/nPts).toFixed(1)+'" height="'+ph+
+      '" fill="transparent" data-i="'+i+'"/>').join("")+'</g>';
+  svg.innerHTML = g;
+
+  const tip = $("#prTip");
+  svg.querySelectorAll("#prHit rect").forEach(rc=>{
+    rc.addEventListener("pointerenter", ()=>{
+      const d = prData[+rc.dataset.i];
+      tip.textContent = fx(d.pay,0)+" g payload\n"+fx(d.reach,0)+" mm max reach";
+      tip.classList.add("on");
+      const bb = svg.getBoundingClientRect(), sc = bb.width/W;
+      tip.style.left = Math.min(bb.width-140, X(d.pay)*sc+10)+"px";
+      tip.style.top  = (Y(d.reach)*sc+8)+"px";
+    });
+    rc.addEventListener("pointerleave", ()=>tip.classList.remove("on"));
+  });
+
+  $("#prTable").innerHTML = '<table><thead><tr><th>Payload (g)</th><th>Max reach (mm)</th>'+
+    '<th>Δ vs. no load</th></tr></thead><tbody>'+
+    prData.filter((d,i)=>i%2===0).map(d=>'<tr><td class="lbl">'+fx(d.pay,0)+'</td><td>'+fx(d.reach,0)+
+    '</td><td>'+fx(d.reach-prData[0].reach,0)+'</td></tr>').join("")+'</tbody></table>';
+}
+function niceTicks(a,b,n){
+  const raw=(b-a)/n, mag=Math.pow(10,Math.floor(Math.log10(raw))), norm=raw/mag;
+  const step=(norm<=1?1:norm<=2?2:norm<=5?5:10)*mag;
+  const out=[]; for(let v=Math.ceil(a/step)*step; v<=b+1e-9; v+=step) out.push(v);
+  return out;
+}
+
+/* =====================================================================
+   DESIGN REVIEW  -  quantified, solved recommendations
+   ===================================================================== */
+function renderRecs(res){
+  const recs = [];
+  const kgcm = t => fx(t*KGCM_PER_NM,2);
+
+  /* -- torque violations, per joint -- */
+  res.jointOrder.forEach(k=>{
+    const j = res.joints[k];
+    if (j.sf >= P.sfMin) return;
+    const need = requiredStall(res, k);
+    const over = j.util>100;
+    const bits = [];
+    bits.push('needs <b>'+fx(need,1)+' kg·cm</b> stall (fitted: '+fx(j.tStall*KGCM_PER_NM,1)+')');
+    const better = Object.keys(SERVOS).filter(s=>SERVOS[s].tau && SERVOS[s].tau>=need)
+                    .sort((a,b)=>SERVOS[a].tau-SERVOS[b].tau)[0];
+    if (better) bits.push('a <b>'+SERVOS[better].name+'</b> ('+SERVOS[better].tau+' kg·cm) clears it');
+    else bits.push('no servo in the library reaches it — split the load or add a counterbalance');
+    recs.push({lvl: over?"crit":"warn",
+      title: j.name+" is "+(over?"over its usable torque":"below the target margin"),
+      body: "Required "+kgcm(j.tReq)+" kg·cm against "+kgcm(j.tAllow)+" usable (SF "+fx(j.sf,2)+
+            "×, target "+fx(P.sfMin,2)+"×). It "+bits.join("; ")+"."});
+  });
+
+  /* -- payload headroom -- */
+  const maxPay = maxFeasiblePayload();
+  if (res.payload_g > maxPay){
+    recs.push({lvl:"crit", title:"Payload exceeds capacity at this geometry",
+      body:"This arm carries <b>"+fx(maxPay,0)+" g</b> at the target safety factor. Drop the payload by <b>"+
+           fx(res.payload_g-maxPay,0)+" g</b>, or shorten the arm."});
+  }
+
+  /* -- length sensitivity: which link buys the most reach back -- */
+  const base = res.joints[res.peak].tReq;
+  const sens = [1,2,3].map(i=>{
+    const key = "L"+i, d = 5;
+    const alt = solve(P, {worst:true, [key]: P[key]+d});
+    return {i, key, d: (alt.joints[res.peak].tReq - base)/d*KGCM_PER_NM};   // kg·cm per mm
+  });
+  if (!res.feasible){
+    const cheapest = sens.slice().sort((a,b)=>a.d-b.d)[0];
+    const gap = (res.joints[res.peak].tReq - res.joints[res.peak].tDesign)*KGCM_PER_NM;
+    const worst = sens.slice().sort((a,b)=>b.d-a.d)[0];
+    if (gap>0 && worst.d>1e-6){
+      recs.push({lvl:"warn", title:"Shortening L"+worst.i+" is the most efficient fix",
+        body:"At the "+res.joints[res.peak].name.toLowerCase()+", L"+worst.i+" costs <b>"+fx(worst.d,4)+
+             " kg·cm/mm</b> versus <b>"+fx(cheapest.d,4)+"</b> for L"+cheapest.i+
+             ". Removing <b>"+fx(gap/worst.d,0)+" mm</b> from L"+worst.i+" closes the "+fx(gap,2)+
+             " kg·cm gap; moving that length into L"+cheapest.i+" gives most of the reach back."});
+    }
+  }
+
+  /* -- structural efficiency -- */
+  const minMatSF = Math.min.apply(null, res.links.map(l=>l.sfMat).concat([res.column.sfMat]));
+  if (minMatSF > 8 && res.violations.some(v=>v.id.indexOf("sf_")===0)){
+    const lightest = res.links.map((l,i)=>({i, s:l.sfMat})).sort((a,b)=>b.s-a.s)[0];
+    const trial = solve(Object.assign({}, P, {infill: Math.max(0, P.infill-10)}));
+    const saved = (res.joints[res.peak].tReq - trial.joints[res.peak].tReq)*KGCM_PER_NM;
+    recs.push({lvl:"info", title:"The links are far stronger than they need to be",
+      body:"Lowest material safety factor is <b>"+fx(minMatSF,0)+"×</b> — this design is torque-limited, not strength-limited. "+
+           "Dropping infill 10 points to <b>"+fx(Math.max(0,P.infill-10),0)+"%</b> saves "+fx(saved,3)+
+           " kg·cm at the "+res.joints[res.peak].name.toLowerCase()+"; thinner walls or a shallower section buy more."});
+  }
+  const heavy = res.el.filter(e=>e.cat==="structure").reduce((a,e)=>a+e.m,0);
+  if (heavy/res.mArm > 0.45){
+    recs.push({lvl:"info", title:"Structure dominates the moving mass",
+      body:"Printed structure is <b>"+fx(heavy/res.mArm*100,0)+"%</b> of the moving mass. A stiffer, lighter material "+
+           "(PA-CF: "+MATERIALS.pacf.E+" MPa at "+MATERIALS.pacf.rho+" kg/m³) or a deeper hollow section trades mass for stiffness far better than infill does."});
+  }
+
+  /* -- deflection & stress -- */
+  res.violations.filter(v=>v.id.indexOf("mat_")===0).forEach(v=>{
+    const i = +v.id.split("_")[1];
+    recs.push({lvl:"crit", title:"Link "+(i+1)+" yields in bending",
+      body:"Root stress <b>"+fx(v.value,1)+" MPa</b> against an allowable of <b>"+fx(v.limit,1)+
+           " MPa</b> ("+MATERIALS[P.material].name+" × "+fx(P.knock,2)+" knockdown). Section depth is the strongest lever — "+
+           "stress falls with depth squared."});
+  });
+  if (res.deflection.mm > P.defMax){
+    const need = Math.cbrt(res.deflection.mm/P.defMax);
+    recs.push({lvl:"warn", title:"Tip deflection over limit",
+      body:"<b>"+fx(res.deflection.mm,2)+" mm</b> against a <b>"+fx(P.defMax,2)+" mm</b> limit. Deflection scales with 1/EI: "+
+           "increase section depth by about <b>"+fx((need-1)*100,0)+"%</b>, or move to a stiffer material."});
+  }
+  if (!P.bolted && res.tipping.sf < P.sfTip){
+    const addMass = res.com.r*res.mTot/(P.footR/1000) - res.mTot;
+    recs.push({lvl:"warn", title:"The machine can tip forward",
+      body:"Centre of mass sits <b>"+fx(res.tipping.rCom*1000,0)+" mm</b> from the axis against a <b>"+fx(P.footR,0)+
+           " mm</b> support radius (factor "+fx(res.tipping.sf,2)+"×, target "+fx(P.sfTip,1)+"×). Widen the base to <b>"+
+           fx(res.tipping.rCom*1000*P.sfTip,0)+" mm</b>, add ballast, or bolt it down."});
+  }
+
+  /* -- base joint note -- */
+  if (res.joints.base.util < 25){
+    recs.push({lvl:"info", title:"The base servo is oversized for this arm",
+      body:"Gravity applies no moment about a vertical axis, so the base only sees inertia ("+
+           kgcm(res.joints.base.tDyn)+" kg·cm at α = "+fx(P.alpha,1)+" rad/s²) plus "+fx(P.tauFric,2)+
+           " kg·cm of bearing drag — <b>"+fx(res.joints.base.util,0)+"%</b> of its usable torque. "+
+           "Its real job is holding position against side loads and keeping backlash low."});
+  }
+  if (res.feasible && recs.length===0){
+    recs.push({lvl:"info", title:"All constraints satisfied",
+      body:"Closest constraint: "+(res.binding[0] ? res.binding[0].label+" at "+res.binding[0].fmt(res.binding[0].value) :
+           res.joints[res.peak].name+" at "+fx(res.joints[res.peak].util,0)+"% of usable torque")+
+           ". Run the optimiser to see how much reach is still on the table."});
+  }
+
+  $("#recCount").textContent = recs.length + (recs.length===1?" item":" items");
+  $("#recs").innerHTML = recs.map(r=>
+    '<div class="rec '+r.lvl+'"><div class="ico">'+(r.lvl==="crit"?"!":r.lvl==="warn"?"!":"i")+'</div>'+
+    '<div><h4>'+r.title+'</h4><p>'+r.body+'</p></div></div>').join("");
+}
+</script>
+
+<script>
+"use strict";
+/* =====================================================================
+   OPTIMISER
+   Objective A: maximise reach L1+L2+L3 at a fixed payload.
+   Objective B: maximise payload at a fixed target reach.
+   Method: bounded grid search, then three rounds of box refinement
+   around the incumbent. All candidates are scored with the same solve()
+   the analysis view uses, so the optimum is consistent by construction.
+   ===================================================================== */
+const OPT = {mode:"reach", payload:null, target:null, res:3, running:false, best:null, top:[], evals:0};
+
+function refreshOptStatic(){
+  if (OPT.payload===null) OPT.payload = P.payload;
+  if (OPT.target===null)  OPT.target  = Math.round((P.L1+P.L2+P.L3));
+  const c = $("#optControls");
+  if (c.dataset.built) { $("#optPay").value = OPT.payload; $("#optTgt").value = OPT.target; syncOptMode(); return; }
+  c.dataset.built = "1";
+  c.innerHTML =
+   '<div style="display:grid;gap:13px;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));align-items:end">'+
+     '<div><div class="k" style="font-size:10.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-3);font-weight:600;margin-bottom:5px">Objective</div>'+
+       '<select id="optMode" style="width:100%;padding:5px;border:1px solid var(--rule-2);border-radius:4px;background:#fff">'+
+       '<option value="reach">Maximise reach at fixed payload</option>'+
+       '<option value="payload">Maximise payload at fixed reach</option></select></div>'+
+     '<div id="optPayWrap"><div class="k" style="font-size:10.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-3);font-weight:600;margin-bottom:5px">Payload</div>'+
+       '<div class="num"><input type="number" id="optPay" min="0" max="5000" step="5" style="flex:1;min-width:0;padding:5px;text-align:right;border:1px solid var(--rule-2);border-radius:4px;font-family:var(--mono)"><span class="unit">g</span></div></div>'+
+     '<div id="optTgtWrap"><div class="k" style="font-size:10.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-3);font-weight:600;margin-bottom:5px">Target reach</div>'+
+       '<div class="num"><input type="number" id="optTgt" min="30" max="1200" step="5" style="flex:1;min-width:0;padding:5px;text-align:right;border:1px solid var(--rule-2);border-radius:4px;font-family:var(--mono)"><span class="unit">mm</span></div></div>'+
+     '<div><div class="k" style="font-size:10.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-3);font-weight:600;margin-bottom:5px">Grid resolution</div>'+
+       '<select id="optRes" style="width:100%;padding:5px;border:1px solid var(--rule-2);border-radius:4px;background:#fff">'+
+       '<option value="1">Coarse — 14³ + refinement</option><option value="3" selected>Standard — 20³ + refinement</option>'+
+       '<option value="5">Fine — 28³ + refinement</option></select></div>'+
+     '<div class="runrow"><button class="btn primary" id="optRun">Run optimisation</button></div>'+
+   '</div>'+
+   '<div class="runrow" style="margin-top:13px"><div class="prog"><i id="optProg"></i></div><span class="note" id="optStatus" style="min-width:210px;text-align:right">Search bounds '+fx(P.lMin,0)+'–'+fx(P.lMax,0)+' mm per link.</span></div>';
+  $("#optPay").value = OPT.payload; $("#optTgt").value = OPT.target;
+  $("#optMode").onchange = e=>{ OPT.mode = e.target.value; syncOptMode(); };
+  $("#optRes").onchange  = e=>{ OPT.res = +e.target.value; };
+  $("#optPay").oninput   = e=>{ OPT.payload = +e.target.value; };
+  $("#optTgt").oninput   = e=>{ OPT.target  = +e.target.value; };
+  $("#optRun").onclick   = runOptimiser;
+  syncOptMode();
+}
+function syncOptMode(){
+  const m = OPT.mode;
+  $("#optTgtWrap").style.display = m==="payload" ? "" : "none";
+  $("#optPayWrap").style.display = m==="reach" ? "" : "none";
+  $("#optMode").value = m;
+}
+
+function evalDesign(L1,L2,L3,payload){
+  OPT.evals++;
+  return solve(P, {worst:true, L1, L2, L3, payload});
+}
+function feasibleDesign(L1,L2,L3,payload){ return evalDesign(L1,L2,L3,payload).violations.length===0; }
+
+/** largest payload a specific geometry carries, by bisection */
+function payloadCapacity(L1,L2,L3){
+  if (!feasibleDesign(L1,L2,L3,0)) return -1;
+  let lo=0, hi=40;
+  while (hi<12000 && feasibleDesign(L1,L2,L3,hi)) hi*=2;
+  if (hi>=12000) return 12000;
+  for (let i=0;i<22;i++){ const m=(lo+hi)/2; if (feasibleDesign(L1,L2,L3,m)) lo=m; else hi=m; }
+  return lo;
+}
+
+function runOptimiser(){
+  if (OPT.running) return;
+  OPT.running = true; OPT.evals = 0; OPT.best = null; OPT.top = [];
+  $("#optRun").disabled = true;
+  const t0 = performance.now();
+  const lo = P.lMin, hi = P.lMax;
+  const nCoarse = [0,14,0,20,0,28][OPT.res] || 20;
+  const stages = [];
+
+  if (OPT.mode==="reach"){
+    stages.push({lo:[lo,lo,lo], hi:[hi,hi,hi], n:nCoarse});
+    for (let r=0;r<3;r++) stages.push({refine:true, n:11});
+  } else {
+    stages.push({split:true, n: nCoarse*2});
+  }
+
+  let stage = 0, cursor = 0, box = null;
+  const push = (cand)=>{
+    OPT.top.push(cand);
+    if (OPT.top.length>4000) OPT.top = OPT.top.sort((a,b)=>b.score-a.score).slice(0,1200);
+    if (!OPT.best || cand.score>OPT.best.score) OPT.best = cand;
+  };
+
+  function step(){
+    const st = stages[stage];
+    if (st.refine && cursor===0){
+      if (!OPT.best){ stage++; cursor=0; return schedule(); }
+      const b = OPT.best, span = (hi-lo)/Math.pow(2.6, stage);
+      box = {lo:[b.L1,b.L2,b.L3].map(v=>Math.max(lo, v-span)),
+             hi:[b.L1,b.L2,b.L3].map(v=>Math.min(hi, v+span))};
+    }
+    const B = st.refine ? box : {lo:st.lo, hi:st.hi};
+    const n = st.n;
+    const total = st.split ? n*n : n*n*n;
+    const budget = 900;
+    let done = 0;
+    while (cursor < total && done < budget){
+      if (st.split){
+        const i = Math.floor(cursor/n), j = cursor%n;
+        const T = OPT.target;
+        const L1 = lo + (Math.min(hi,T-2*lo)-lo)*i/(n-1);
+        const L2 = lo + (Math.min(hi,T-lo-L1)-lo)*j/(n-1);
+        const L3 = T - L1 - L2;
+        if (L3>=lo && L3<=hi && L1>=lo && L1<=hi && L2>=lo && L2<=hi){
+          const cap = payloadCapacity(L1,L2,L3);
+          if (cap>0){ const r = evalDesign(L1,L2,L3,cap);
+            push({L1,L2,L3, reach:(L1+L2+L3), payload:cap, score:cap,
+                  peak:r.peak, util:r.joints[r.peak].util}); }
+        }
+      } else {
+        const n2=n*n, i=Math.floor(cursor/n2), j=Math.floor((cursor%n2)/n), k=cursor%n;
+        const L1 = B.lo[0] + (B.hi[0]-B.lo[0])*(n>1?i/(n-1):0);
+        const L2 = B.lo[1] + (B.hi[1]-B.lo[1])*(n>1?j/(n-1):0);
+        const L3 = B.lo[2] + (B.hi[2]-B.lo[2])*(n>1?k/(n-1):0);
+        const r = evalDesign(L1,L2,L3,OPT.payload);
+        if (r.violations.length===0){
+          push({L1,L2,L3, reach:(L1+L2+L3), payload:OPT.payload, score:(L1+L2+L3),
+                peak:r.peak, util:r.joints[r.peak].util});
+        }
+      }
+      cursor++; done++;
+    }
+    const frac = (stage + cursor/total)/stages.length;
+    $("#optProg").style.width = (frac*100).toFixed(1)+"%";
+    $("#optStatus").textContent = OPT.evals.toLocaleString()+" designs evaluated";
+    if (cursor>=total){ stage++; cursor=0; }
+    if (stage>=stages.length) return finish();
+    schedule();
+  }
+  function schedule(){ setTimeout(step, 0); }
+  function finish(){
+    OPT.running = false; $("#optRun").disabled = false;
+    $("#optProg").style.width = "100%";
+    const ms = performance.now()-t0;
+    $("#optStatus").textContent = OPT.evals.toLocaleString()+" designs in "+fx(ms,0)+" ms";
+    renderOptResult(ms);
+  }
+  step();
+}
+
+function constraintRows(res){
+  const rows = [];
+  res.jointOrder.forEach(k=>{ const j=res.joints[k];
+    rows.push({name:j.name+" torque", ratio: (j.tReq/j.tDesign)*100,
+      detail: fx(j.tReq*KGCM_PER_NM,2)+" / "+fx(j.tDesign*KGCM_PER_NM,2)+" kg·cm"}); });
+  res.links.forEach((l,i)=> rows.push({name:"Link "+(i+1)+" stress",
+    ratio: l.sigmaMPa/(res.sy_allow/1e6)*100, detail: fx(l.sigmaMPa,2)+" / "+fx(res.sy_allow/1e6,1)+" MPa"}));
+  rows.push({name:"Tip deflection", ratio: res.deflection.mm/P.defMax*100,
+    detail: fx(res.deflection.mm,3)+" / "+fx(P.defMax,2)+" mm"});
+  if (!P.bolted) rows.push({name:"Tipping", ratio: P.sfTip/res.tipping.sf*100,
+    detail: fx(res.tipping.sf,2)+"× / "+fx(P.sfTip,1)+"× needed"});
+  return rows.sort((a,b)=>b.ratio-a.ratio);
+}
+function constraintBarsHTML(res){
+  const rows = constraintRows(res);
+  const max = Math.max(110, rows[0].ratio*1.05);
+  return '<div style="display:grid;gap:0">'+rows.map(r=>{
+    const st = r.ratio>100?"over":(r.ratio>95?"tight":"ok");
+    return '<div class="tbar" style="grid-template-columns:135px 1fr 150px">'+
+      '<div class="jn">'+r.name+'</div>'+
+      '<div class="track"><div class="fill '+st+'" style="width:'+Math.min(100,r.ratio/max*100).toFixed(1)+'%"></div>'+
+      '<div class="limit" data-l="limit" style="left:'+(100/max*100).toFixed(1)+'%"></div></div>'+
+      '<div class="val">'+fx(r.ratio,0)+'%<em>'+r.detail+'</em></div></div>';
+  }).join("")+'</div>';
+}
+
+function renderOptResult(ms){
+  const host = $("#optResult");
+  if (!OPT.best){
+    host.innerHTML = '<div class="card"><div class="pad"><div class="rec crit"><div class="ico">!</div><div>'+
+      '<h4>No feasible design inside the search bounds</h4><p>Every combination of link lengths between '+
+      fx(P.lMin,0)+' and '+fx(P.lMax,0)+' mm violates at least one constraint at '+
+      (OPT.mode==="reach"? fx(OPT.payload,0)+" g payload" : fx(OPT.target,0)+" mm reach")+
+      '. Widen the bounds, fit a stronger shoulder servo, lighten the links, or reduce the payload.</p></div></div></div></div>';
+    return;
+  }
+  const b = OPT.best;
+  const res = solve(P, {worst:true, L1:b.L1, L2:b.L2, L3:b.L3, payload:b.payload});
+  const cur = solve(P, {worst:true});
+  const rows = constraintRows(res);
+  const bind = rows.filter(r=>r.ratio>95);
+  const seen = new Set();
+  const top = OPT.top.slice().sort((a,b2)=>b2.score-a.score).filter(c=>{
+    const key = Math.round(c.L1/12)+"|"+Math.round(c.L2/12)+"|"+Math.round(c.L3/12);
+    if (seen.has(key)) return false; seen.add(key); return true;
+  }).slice(0,10);
+  const gain = OPT.mode==="reach" ? (b.reach - (P.L1+P.L2+P.L3)) : (b.payload - P.payload);
+  const tol = Math.max(1, (P.lMax-P.lMin)*0.01);
+  const atBound = [["L₁",b.L1],["L₂",b.L2],["L₃",b.L3]].filter(([,v])=>
+      v <= P.lMin+tol || v >= P.lMax-tol).map(([n,v])=>n+" ("+fx(v,0)+" mm)");
+  const boundNote = atBound.length
+    ? '<p class="note" style="margin-top:9px">'+atBound.join(" and ")+' stopped on the search bound, not on a constraint — '+
+      'that part of the answer is set by the '+fx(P.lMin,0)+'–'+fx(P.lMax,0)+' mm limits you gave the optimiser, so widen them if you want the physics to decide. '+
+      'Length migrates toward the link with the lightest cross-section: the payload’s moment arm at the shoulder is the total reach whichever link carries it, '+
+      'so only the links’ own mass distribution differs.</p>'
+    : '';
+
+  host.innerHTML =
+   '<div class="tiles">'+
+     tile("Optimal reach", fx(b.reach,0), "mm", (OPT.mode==="reach"? (gain>=0?"+":"")+fx(gain,0)+" mm vs. current design" : "target"), gain>=0?"ok":"")+
+     tile("Payload", fx(b.payload,0), "g", OPT.mode==="payload" ? (gain>=0?"+":"")+fx(gain,0)+" g vs. current" : "fixed for this run", "")+
+     tile("Limiting joint", res.joints[res.peak].name.replace(" (yaw)",""), "",
+       fx(res.joints[res.peak].util,0)+"% of usable torque · SF "+fx(res.joints[res.peak].sf,2)+"×", "")+
+     tile("Link split", fx(b.L1,0)+" / "+fx(b.L2,0)+" / "+fx(b.L3,0), "", "L₁ / L₂ / L₃ in mm", "")+
+     tile("Designs evaluated", OPT.evals.toLocaleString(), "", fx(ms,0)+" ms · "+OPT.top.length.toLocaleString()+" feasible kept", "")+
+   '</div>'+
+   '<div class="card"><header><h3>Active constraints at the optimum</h3>'+
+     '<span class="sub">bar is the constraint’s utilisation of its own limit</span></header>'+
+     '<div class="pad">'+constraintBarsHTML(res)+
+     '<p class="note" style="margin-top:11px">'+
+       (bind.length ? 'Binding: '+bind.map(r=>'<span class="bind'+(r.ratio<=100?" soft":"")+'">'+r.name+' '+fx(r.ratio,0)+'%</span>').join(" ")+
+        ' &mdash; these are what stop the arm reaching further. Everything else has slack.'
+        : 'Nothing is binding: the optimum sits on the search bounds, not on a physical limit. Raise the maximum link length to go further.')+
+     '</p>'+boundNote+'</div></div>'+
+   '<div class="grid2">'+
+     '<div class="card"><header><h3>Best feasible designs</h3><span class="sub">click a row to load it</span></header>'+
+       '<div class="pad tbl-wrap"><table><thead><tr><th>#</th><th>L₁</th><th>L₂</th><th>L₃</th><th>Reach</th>'+
+       '<th>Payload</th><th>Peak util</th><th>Limiting</th></tr></thead><tbody id="optTop">'+
+       top.map((c,i)=>'<tr data-i="'+i+'" style="cursor:pointer"><td class="lbl">'+(i+1)+'</td><td>'+fx(c.L1,0)+'</td><td>'+fx(c.L2,0)+
+       '</td><td>'+fx(c.L3,0)+'</td><td><b>'+fx(c.reach,0)+'</b></td><td>'+fx(c.payload,0)+'</td><td>'+fx(c.util,0)+'%</td>'+
+       '<td>'+({sh:"Shoulder",el:"Elbow",wr:"Wrist",base:"Base"})[c.peak]+'</td></tr>').join("")+
+       '</tbody></table></div></div>'+
+     '<div class="card"><header><h3>Optimum vs. current</h3></header><div class="pad">'+
+       '<div class="tbl-wrap"><table><thead><tr><th>Quantity</th><th>Current</th><th>Optimum</th><th>Δ</th></tr></thead><tbody>'+
+       cmp("Reach (mm)", (P.L1+P.L2+P.L3), b.reach, 0)+
+       cmp("L₁ (mm)", P.L1, b.L1, 0)+ cmp("L₂ (mm)", P.L2, b.L2, 0)+ cmp("L₃ (mm)", P.L3, b.L3, 0)+
+       cmp("Payload (g)", P.payload, b.payload, 0)+
+       cmp("Shoulder util (%)", cur.joints.sh.util, res.joints.sh.util, 0)+
+       cmp("Elbow util (%)", cur.joints.el.util, res.joints.el.util, 0)+
+       cmp("Wrist util (%)", cur.joints.wr.util, res.joints.wr.util, 0)+
+       cmp("Moving mass (g)", cur.mArm*1000, res.mArm*1000, 0)+
+       cmp("Tip deflection (mm)", cur.deflection.mm, res.deflection.mm, 3)+
+       '</tbody></table></div>'+
+       '<div style="margin-top:14px;display:flex;gap:9px"><button class="btn primary" id="optApply">Load optimum into the design</button></div>'+
+     '</div></div>'+
+   '</div>';
+
+  $("#optApply").onclick = ()=>{
+    P.L1 = Math.round(b.L1*10)/10; P.L2 = Math.round(b.L2*10)/10; P.L3 = Math.round(b.L3*10)/10;
+    if (OPT.mode==="payload") P.payload = Math.round(b.payload);
+    render(); setTab("analysis"); window.scrollTo({top:0, behavior:"smooth"});
+  };
+  $$("#optTop tr").forEach(tr=>tr.onclick = ()=>{
+    const c = top[+tr.dataset.i];
+    P.L1=Math.round(c.L1*10)/10; P.L2=Math.round(c.L2*10)/10; P.L3=Math.round(c.L3*10)/10;
+    if (OPT.mode==="payload") P.payload = Math.round(c.payload);
+    render(); setTab("analysis"); window.scrollTo({top:0, behavior:"smooth"});
+  });
+
+  function cmp(name, a, bb, d){
+    const dd = bb-a;
+    return '<tr><td class="lbl">'+name+'</td><td>'+fx(a,d)+'</td><td>'+fx(bb,d)+'</td><td style="color:'+
+      (Math.abs(dd)<1e-9?"var(--ink-3)":(dd>0?"var(--good-ink)":"var(--crit-ink)"))+'">'+
+      (dd>0?"+":"")+fx(dd,d)+'</td></tr>';
+  }
+  function tile(k,v,u,m,s){
+    return '<div class="tile'+(s?" state-"+s:"")+'"><div class="k">'+k+'</div><div class="v">'+v+
+      (u?' <small>'+u+'</small>':'')+'</div><div class="m">'+m+'</div></div>';
+  }
+}
+</script>
+
+<script>
+"use strict";
+/* =====================================================================
+   PARAMETER SWEEP
+   Enumerates a 4D grid of (L1, L2, L3, payload), scores every point with
+   the full model, and keeps the results in typed arrays so a hundred
+   thousand designs can be plotted and probed interactively.
+   ===================================================================== */
+const SW = {
+  cfg:{l1a:40,l1b:260,l1n:12, l2a:40,l2b:220,l2n:12, l3a:20,l3b:140,l3n:10, pa:0,pb:300,pn:10},
+  n:0, cap:400000, running:false, cancel:false,
+  L1:null,L2:null,L3:null,PY:null,RE:null,UT:null,MS:null,FE:null,LIM:null,
+};
+const LIMNAMES = ["Shoulder torque","Elbow torque","Wrist torque","Base (yaw) torque",
+                  "Link 1 stress","Link 2 stress","Link 3 stress","Tip deflection","Tipping"];
+
+function sweepCombos(c){ return c.l1n*c.l2n*c.l3n*c.pn; }
+
+function buildSweepControls(){
+  const host = $("#sweepControls");
+  if (host.dataset.built) { updateSweepCount(); return; }
+  host.dataset.built = "1";
+  const row = (key,label,unit)=>
+    '<div style="display:grid;gap:5px">'+
+    '<div style="font-size:10.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-3);font-weight:600">'+label+'</div>'+
+    '<div style="display:flex;gap:6px;align-items:center">'+
+      inp(key+"a","from")+inp(key+"b","to")+
+      '<span style="font-size:10.5px;color:var(--ink-3);font-family:var(--mono)">'+unit+'</span>'+
+      '<span style="font-size:10.5px;color:var(--ink-3);margin-left:auto">steps</span>'+inp(key+"n","")+
+    '</div></div>';
+  const inp = (k,ph)=>'<input type="number" id="sw_'+k+'" value="'+SW.cfg[k]+'" placeholder="'+ph+
+    '" style="width:60px;padding:4px 6px;text-align:right;border:1px solid var(--rule-2);border-radius:4px;font-family:var(--mono);font-size:12px">';
+  host.innerHTML =
+    '<div style="display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(258px,1fr))">'+
+      row("l1","L₁ shoulder → elbow","mm")+row("l2","L₂ elbow → wrist","mm")+
+      row("l3","L₃ wrist → TCP","mm")+row("p","Payload","g")+
+    '</div>'+
+    '<div class="runrow" style="margin-top:16px">'+
+      '<button class="btn primary" id="swRun">Run sweep</button>'+
+      '<button class="btn" id="swCancel" disabled>Cancel</button>'+
+      '<div class="prog"><i id="swProg"></i></div>'+
+      '<span class="note" id="swStatus" style="min-width:220px;text-align:right"></span>'+
+    '</div>'+
+    '<p class="note" style="margin-top:9px">Every combination is scored with the same model as the analysis view: '+
+    'link masses recomputed from length, torques at all four joints, bending stress, tip deflection and tipping. '+
+    'Everything except link length and payload is held at the current design.</p>';
+  Object.keys(SW.cfg).forEach(k=>{
+    const e = $("#sw_"+k); if (!e) return;
+    e.oninput = ()=>{ SW.cfg[k] = Math.max(1, +e.value||0); updateSweepCount(); };
+  });
+  $("#swRun").onclick = runSweep;
+  $("#swCancel").onclick = ()=>{ SW.cancel = true; };
+  updateSweepCount();
+}
+function updateSweepCount(){
+  const n = sweepCombos(SW.cfg);
+  $("#sweepSub").textContent = n.toLocaleString()+" combinations";
+  const st = $("#swStatus");
+  if (st && !SW.running) st.innerHTML = n>SW.cap
+    ? '<span style="color:var(--crit-ink)">over the '+SW.cap.toLocaleString()+' cap</span>'
+    : n.toLocaleString()+" designs queued";
+  const btn = $("#swRun"); if (btn) btn.disabled = n>SW.cap;
+}
+
+function runSweep(){
+  if (SW.running) return;
+  const c = SW.cfg, N = sweepCombos(c);
+  if (N > SW.cap) return;
+  SW.running = true; SW.cancel = false; SW.n = N;
+  $("#swRun").disabled = true; $("#swCancel").disabled = false;
+  ["L1","L2","L3","PY","RE","UT","MS"].forEach(k=>SW[k] = new Float32Array(N));
+  SW.FE = new Uint8Array(N); SW.LIM = new Uint8Array(N);
+  const t0 = performance.now();
+  let i = 0, nFeas = 0;
+  const ax = (a,b,n,k)=> n<=1 ? a : a+(b-a)*k/(n-1);
+
+  function chunk(){
+    const t1 = performance.now();
+    while (i < N && performance.now()-t1 < 26){
+      const pi = i % c.pn, k3 = Math.floor(i/c.pn)%c.l3n,
+            k2 = Math.floor(i/(c.pn*c.l3n))%c.l2n, k1 = Math.floor(i/(c.pn*c.l3n*c.l2n));
+      const L1 = ax(c.l1a,c.l1b,c.l1n,k1), L2 = ax(c.l2a,c.l2b,c.l2n,k2),
+            L3 = ax(c.l3a,c.l3b,c.l3n,k3), py = ax(c.pa,c.pb,c.pn,pi);
+      const r = solve(P, {worst:true, L1, L2, L3, payload:py});
+      const rows = constraintRows(r);
+      SW.L1[i]=L1; SW.L2[i]=L2; SW.L3[i]=L3; SW.PY[i]=py;
+      SW.RE[i]=L1+L2+L3; SW.MS[i]=r.mArm*1000;
+      SW.UT[i]=rows[0].ratio;                       // % of the tightest constraint's limit
+      const li = LIMNAMES.indexOf(rows[0].name);
+      SW.LIM[i] = li>=0 ? li : LIMNAMES.length-1;
+      SW.FE[i]= r.violations.length===0 ? 1 : 0;
+      if (SW.FE[i]) nFeas++;
+      i++;
+    }
+    const f = i/N;
+    $("#swProg").style.width = (f*100).toFixed(1)+"%";
+    $("#swStatus").textContent = i.toLocaleString()+" / "+N.toLocaleString()+" · "+nFeas.toLocaleString()+" feasible";
+    if (SW.cancel){ SW.n = i; return finish(true); }
+    if (i < N) return setTimeout(chunk, 0);
+    finish(false);
+  }
+  function finish(cancelled){
+    SW.running = false; $("#swRun").disabled = false; $("#swCancel").disabled = true;
+    const ms = performance.now()-t0;
+    $("#swStatus").textContent = SW.n.toLocaleString()+(cancelled?" (stopped)":"")+" in "+fx(ms,0)+" ms · "+
+       fx(SW.n/ms*1000,0)+"/s";
+    renderSweep(ms);
+  }
+  chunk();
+}
+
+/* ---------- generic scatter with nearest-point probing ---------- */
+function scatter(cv, o){
+  const dpr = Math.min(devicePixelRatio||1, 2);
+  const cssW = cv.clientWidth || 560, cssH = o.height || 340;
+  cv.width = cssW*dpr; cv.height = cssH*dpr;
+  const g = cv.getContext("2d"); g.setTransform(dpr,0,0,dpr,0,0);
+  g.fillStyle="#fbfcfd"; g.fillRect(0,0,cssW,cssH);
+  const padL=54, padR=14, padT=14, padB=36, pw=cssW-padL-padR, ph=cssH-padT-padB;
+  const X = v => padL + (v-o.xa)/(o.xb-o.xa)*pw;
+  const Y = v => padT + ph - (v-o.ya)/(o.yb-o.ya)*ph;
+
+  const xs = niceTicks(o.xa,o.xb,6), ys = niceTicks(o.ya,o.yb,5);
+  g.strokeStyle="#e8eef2"; g.lineWidth=1;
+  ys.forEach(v=>{ g.beginPath(); g.moveTo(padL,Y(v)); g.lineTo(padL+pw,Y(v)); g.stroke(); });
+  xs.forEach(v=>{ g.beginPath(); g.moveTo(X(v),padT); g.lineTo(X(v),padT+ph); g.stroke(); });
+
+  const idx = o.index;
+  // infeasible first, receding
+  g.fillStyle = "#d5dde3";
+  for (let k=0;k<idx.length;k++){ const i=idx[k]; if (SW.FE[i]) continue;
+    g.beginPath(); g.arc(X(o.x(i)), Y(o.y(i)), 1.5, 0, 7); g.fill(); }
+  // feasible, sequential blue by margin used
+  const RAMP = ["#cde2fb","#9ec5f4","#6da7ec","#3987e5","#256abf","#184f95"];
+  for (let k=0;k<idx.length;k++){ const i=idx[k]; if (!SW.FE[i]) continue;
+    const t = Math.max(0, Math.min(0.999, SW.UT[i]/100));
+    g.fillStyle = RAMP[Math.floor(t*RAMP.length)];
+    g.beginPath(); g.arc(X(o.x(i)), Y(o.y(i)), 2.4, 0, 7); g.fill(); }
+
+  // pareto frontier
+  let front = null;
+  if (o.pareto){
+    const fe = idx.filter(i=>SW.FE[i]).sort((a,b)=>o.x(b)-o.x(a));
+    front = []; let best = -Infinity;
+    fe.forEach(i=>{ if (o.y(i) > best){ best = o.y(i); front.push(i); } });
+    front.reverse();
+    if (front.length>1){
+      g.strokeStyle="#0f2230"; g.lineWidth=2; g.lineJoin="round";
+      g.beginPath();
+      front.forEach((i,k)=>{ const px=X(o.x(i)), py=Y(o.y(i));
+        if (!k) g.moveTo(px,py); else { g.lineTo(px, Y(o.y(front[k-1]))); g.lineTo(px,py); } });
+      g.stroke();
+      g.fillStyle="#0f2230";
+      front.forEach(i=>{ g.beginPath(); g.arc(X(o.x(i)),Y(o.y(i)),2.8,0,7); g.fill(); });
+    }
+  }
+  // current design marker
+  if (o.cx!==undefined){
+    g.strokeStyle="#eb6834"; g.lineWidth=2;
+    g.beginPath(); g.arc(X(o.cx), Y(o.cy), 6, 0, 7); g.stroke();
+    g.beginPath(); g.moveTo(X(o.cx)-9,Y(o.cy)); g.lineTo(X(o.cx)+9,Y(o.cy));
+    g.moveTo(X(o.cx),Y(o.cy)-9); g.lineTo(X(o.cx),Y(o.cy)+9); g.stroke();
+  }
+  // axes
+  g.strokeStyle="#c7d3db"; g.lineWidth=1;
+  g.beginPath(); g.moveTo(padL,padT+ph); g.lineTo(padL+pw,padT+ph); g.stroke();
+  g.fillStyle="#7d919e"; g.font="10px var(--sans), sans-serif"; g.textAlign="center";
+  xs.forEach(v=>g.fillText(fx(v,0), X(v), cssH-11));
+  g.textAlign="right"; ys.forEach(v=>g.fillText(fx(v,0), padL-6, Y(v)+3.5));
+  g.textAlign="center"; g.fillStyle="#4b6070";
+  g.fillText(o.xlab, padL+pw/2, cssH-1);
+  g.save(); g.translate(13, padT+ph/2); g.rotate(-Math.PI/2); g.fillText(o.ylab,0,0); g.restore();
+
+  cv._probe = {X,Y,o,padL,padT,pw,ph,front};
+  return front;
+}
+
+function bindProbe(cv, tipEl){
+  if (cv._bound) return; cv._bound = true;
+  cv.addEventListener("pointermove", e=>{
+    const pr = cv._probe; if (!pr) return;
+    const b = cv.getBoundingClientRect(), mx = e.clientX-b.left, my = e.clientY-b.top;
+    let best=-1, bd=1e9;
+    const idx = pr.o.index;
+    for (let k=0;k<idx.length;k++){ const i=idx[k];
+      const d = (pr.X(pr.o.x(i))-mx)**2 + (pr.Y(pr.o.y(i))-my)**2;
+      if (d<bd){ bd=d; best=i; } }
+    if (best<0 || bd>900){ tipEl.classList.remove("on"); cv._sel=-1; return; }
+    cv._sel = best;
+    tipEl.textContent =
+      "L "+fx(SW.L1[best],0)+" / "+fx(SW.L2[best],0)+" / "+fx(SW.L3[best],0)+" mm\n"+
+      "reach   "+fx(SW.RE[best],0)+" mm\n"+
+      "payload "+fx(SW.PY[best],0)+" g\n"+
+      "margin  "+fx(SW.UT[best],0)+"% of limit\n"+
+      (SW.FE[best] ? "feasible" : "blocked by "+LIMNAMES[SW.LIM[best]]);
+    tipEl.classList.add("on");
+    tipEl.style.left = Math.min(b.width-165, mx+13)+"px";
+    tipEl.style.top  = Math.min(b.height-90, my+13)+"px";
+  });
+  cv.addEventListener("pointerleave", ()=>tipEl.classList.remove("on"));
+  cv.addEventListener("click", ()=>{
+    const i = cv._sel; if (i===undefined || i<0) return;
+    P.L1=Math.round(SW.L1[i]*10)/10; P.L2=Math.round(SW.L2[i]*10)/10;
+    P.L3=Math.round(SW.L3[i]*10)/10; P.payload=Math.round(SW.PY[i]);
+    render(); setTab("analysis"); window.scrollTo({top:0,behavior:"smooth"});
+  });
+  cv.style.cursor = "crosshair";
+}
+
+function renderSweep(ms){
+  const n = SW.n;
+  const all = []; for (let i=0;i<n;i++) all.push(i);
+  const feas = all.filter(i=>SW.FE[i]);
+  // subsample for drawing if very large
+  const stride = Math.max(1, Math.floor(n/45000));
+  const drawIdx = stride>1 ? all.filter((v,k)=>k%stride===0 || SW.FE[v]) : all;
+
+  let bestReach=null, bestPay=null, bestScore=null;
+  feas.forEach(i=>{
+    if (!bestReach || SW.RE[i]>SW.RE[bestReach] || (SW.RE[i]===SW.RE[bestReach] && SW.PY[i]>SW.PY[bestReach])) bestReach=i;
+    if (!bestPay   || SW.PY[i]>SW.PY[bestPay]   || (SW.PY[i]===SW.PY[bestPay]   && SW.RE[i]>SW.RE[bestPay]))   bestPay=i;
+    const sc = SW.RE[i]*SW.PY[i];
+    if (!bestScore || sc > SW.RE[bestScore]*SW.PY[bestScore]) bestScore=i;
+  });
+
+  const limCount = {};
+  all.forEach(i=>{ if (SW.FE[i]) return; const k=LIMNAMES[SW.LIM[i]]; limCount[k]=(limCount[k]||0)+1; });
+  const limRows = Object.keys(limCount).map(k=>({k, v:limCount[k]})).sort((a,b)=>b.v-a.v);
+  const limMax = limRows.length ? limRows[0].v : 1;
+
+  const curReach = P.L1+P.L2+P.L3;
+  const T = (k,v,u,m,s)=>'<div class="tile'+(s?" state-"+s:"")+'"><div class="k">'+k+'</div><div class="v">'+v+
+      (u?' <small>'+u+'</small>':'')+'</div><div class="m">'+m+'</div></div>';
+
+  $("#sweepResult").innerHTML =
+    '<div class="tiles">'+
+      T("Designs simulated", n.toLocaleString(), "", fx(ms,0)+" ms · "+fx(n/ms*1000,0)+"/s", "")+
+      T("Feasible", fx(feas.length/n*100,1), "%", feas.length.toLocaleString()+" of "+n.toLocaleString(), feas.length?"ok":"over")+
+      T("Longest feasible reach", bestReach!==null?fx(SW.RE[bestReach],0):"—", "mm",
+        bestReach!==null? "at "+fx(SW.PY[bestReach],0)+" g payload":"none in range", "")+
+      T("Heaviest feasible payload", bestPay!==null?fx(SW.PY[bestPay],0):"—", "g",
+        bestPay!==null? "at "+fx(SW.RE[bestPay],0)+" mm reach":"none in range", "")+
+      T("Best all-round design", bestScore!==null?fx(SW.RE[bestScore],0):"—", "mm",
+        bestScore!==null? fx(SW.PY[bestScore],0)+" g · L "+fx(SW.L1[bestScore],0)+"/"+fx(SW.L2[bestScore],0)+"/"+
+        fx(SW.L3[bestScore],0)+" mm · best reach×payload":"none feasible", "")+
+    '</div>'+
+    '<div class="card"><header><h3>Reach vs. payload trade-off</h3>'+
+      '<span class="sub">every simulated design · click a point to load it</span></header>'+
+      '<div class="viz"><canvas id="swMain" height="400"></canvas><div class="tip" id="swTip1"></div></div>'+
+      '<div class="legend" style="padding:10px 16px 0">'+
+        '<span><i class="sw" style="background:#d5dde3"></i>Infeasible</span>'+
+        '<span style="gap:3px"><i class="sw" style="background:#cde2fb"></i><i class="sw" style="background:#9ec5f4"></i>'+
+        '<i class="sw" style="background:#6da7ec"></i><i class="sw" style="background:#3987e5"></i>'+
+        '<i class="sw" style="background:#256abf"></i><i class="sw" style="background:#184f95"></i>'+
+        '&nbsp;Margin used — light 0% → dark 100% of the tightest limit</span>'+
+        '<span><i class="sw line" style="background:#0f2230"></i>Pareto frontier</span>'+
+        '<span><i class="sw" style="background:none;border:2px solid #eb6834;border-radius:50%"></i>Current design</span>'+
+      '</div>'+
+      '<div class="pad"><p class="note">The frontier is the set of designs that no other design beats on both reach and payload at once. '+
+      'Anything below it is dominated — a different link split gives the same payload with more reach.</p>'+
+      '<details class="insp" style="margin-top:9px"><summary>Frontier designs <span class="tag">table view</span></summary>'+
+      '<div class="body tbl-wrap" id="swFrontTable"></div></details></div></div>'+
+    '<div class="grid2">'+
+      '<div class="card"><header><h3>Cost of reach</h3><span class="sub">margin consumed as the arm grows</span></header>'+
+        '<div class="viz"><canvas id="swUtil" height="330"></canvas><div class="tip" id="swTip2"></div></div>'+
+        '<div class="pad"><p class="note">Each point is one design. The lower edge of the cloud is the most efficient link split at that reach — '+
+        'the vertical spread at any reach is what the optimiser is searching through.</p></div></div>'+
+      '<div class="card"><header><h3>What blocks the infeasible designs</h3>'+
+        '<span class="sub">'+(n-feas.length).toLocaleString()+' rejected</span></header>'+
+        '<div class="pad">'+ (limRows.length? limRows.map(r=>
+          '<div class="tbar" style="grid-template-columns:132px 1fr 96px;padding:7px 0">'+
+          '<div class="jn">'+r.k+'</div><div class="track" style="height:18px">'+
+          '<div class="fill" style="width:'+(r.v/limMax*100).toFixed(1)+'%;background:var(--s1)"></div></div>'+
+          '<div class="val">'+fx(r.v/(n-feas.length)*100,1)+'%<em>'+r.v.toLocaleString()+'</em></div></div>').join("")
+          : '<p class="note">Every simulated design is feasible — widen the sweep ranges to find the limits.</p>')+
+        '<p class="note" style="margin-top:11px">Counted by the single tightest constraint on each rejected design. '+
+        'A joint that dominates this list is the one to upgrade.</p></div></div>'+
+    '</div>'+
+    '<div class="card"><header><h3>Top designs by reach</h3><span class="sub">feasible only · click to load</span></header>'+
+      '<div class="pad tbl-wrap" id="swTopTable"></div></div>';
+
+  const front = scatter($("#swMain"), {
+    height:400, index:drawIdx, pareto:true,
+    x:i=>SW.RE[i], y:i=>SW.PY[i],
+    xa:0, xb:(SW.cfg.l1b+SW.cfg.l2b+SW.cfg.l3b)*1.02,
+    ya:0, yb:Math.max(SW.cfg.pb,1)*1.05,
+    xlab:"Reach L₁+L₂+L₃ (mm)", ylab:"Payload (g)",
+    cx:curReach, cy:P.payload });
+  bindProbe($("#swMain"), $("#swTip1"));
+
+  scatter($("#swUtil"), {
+    height:330, index:drawIdx,
+    x:i=>SW.RE[i], y:i=>Math.min(SW.UT[i],200),
+    xa:0, xb:(SW.cfg.l1b+SW.cfg.l2b+SW.cfg.l3b)*1.02, ya:0, yb:200,
+    xlab:"Reach (mm)", ylab:"Tightest constraint (% of limit)",
+    cx:curReach, cy:Math.min(constraintRows(R)[0].ratio,200) });
+  bindProbe($("#swUtil"), $("#swTip2"));
+
+  $("#swFrontTable").innerHTML = front && front.length
+    ? '<table><thead><tr><th>Reach</th><th>Payload</th><th>L₁</th><th>L₂</th><th>L₃</th><th>Moving mass</th><th>Margin used</th></tr></thead><tbody>'+
+      front.slice().reverse().map(i=>'<tr><td class="lbl">'+fx(SW.RE[i],0)+' mm</td><td>'+fx(SW.PY[i],0)+
+      '</td><td>'+fx(SW.L1[i],0)+'</td><td>'+fx(SW.L2[i],0)+'</td><td>'+fx(SW.L3[i],0)+'</td><td>'+fx(SW.MS[i],0)+
+      '</td><td>'+fx(SW.UT[i],0)+'%</td></tr>').join("")+'</tbody></table>'
+    : '<p class="note">No feasible designs in this sweep.</p>';
+
+  const top = feas.slice().sort((a,b)=> SW.RE[b]-SW.RE[a] || SW.PY[b]-SW.PY[a]).slice(0,12);
+  $("#swTopTable").innerHTML = top.length
+    ? '<table><thead><tr><th>#</th><th>L₁</th><th>L₂</th><th>L₃</th><th>Reach</th><th>Payload</th>'+
+      '<th>Moving mass</th><th>Margin used</th><th>Tightest</th></tr></thead><tbody>'+
+      top.map((i,k)=>'<tr data-i="'+i+'" style="cursor:pointer"><td class="lbl">'+(k+1)+'</td><td>'+fx(SW.L1[i],0)+
+      '</td><td>'+fx(SW.L2[i],0)+'</td><td>'+fx(SW.L3[i],0)+'</td><td><b>'+fx(SW.RE[i],0)+'</b></td><td>'+fx(SW.PY[i],0)+
+      '</td><td>'+fx(SW.MS[i],0)+' g</td><td>'+fx(SW.UT[i],0)+'%</td><td>'+LIMNAMES[SW.LIM[i]]+'</td></tr>').join("")+
+      '</tbody></table>'
+    : '<p class="note">No feasible designs in this sweep. Shorten the link ranges or lighten the payload.</p>';
+  $$("#swTopTable tr[data-i]").forEach(tr=>tr.onclick = ()=>{
+    const i = +tr.dataset.i;
+    P.L1=Math.round(SW.L1[i]*10)/10; P.L2=Math.round(SW.L2[i]*10)/10;
+    P.L3=Math.round(SW.L3[i]*10)/10; P.payload=Math.round(SW.PY[i]);
+    render(); setTab("analysis"); window.scrollTo({top:0,behavior:"smooth"});
+  });
+}
+</script>
+
+<script>
+"use strict";
+/* =====================================================================
+   EQUATIONS
+   ===================================================================== */
+let eqBuilt = false;
+function renderEquations(){
+  if (eqBuilt) return; eqBuilt = true;
+  const V = s => '<span class="v">'+s+'</span>';
+  $("#eqBody").innerHTML =
+  '<div class="grid2" style="align-items:start">'+
+  '<div class="card"><header><h3>Model</h3><span class="sub">every quantity the bench computes</span></header><div class="pad">'+
+
+  eqb("1 · Cross-section properties",
+    "A printed link is an outline of wall thickness "+V("t")+" wrapped around a core filled to "+V("p")+". "+
+    "Splitting the section at the wall line gives area and second moment from the same decomposition, so mass and stiffness stay consistent.",
+    ["A<sub>eff</sub> = A<sub>outline</sub> − (1 − "+V("p")+") A<sub>core</sub>",
+     "I<sub>eff</sub> = I<sub>outline</sub> − (1 − "+V("p")+") I<sub>core</sub>",
+     "rectangular tube:  A<sub>outline</sub> = "+V("w")+V("h")+",  I<sub>outline</sub> = "+V("w")+V("h")+"<sup>3</sup>/12,  core = ("+V("w")+"−2"+V("t")+")("+V("h")+"−2"+V("t")+")",
+     "round tube:  I<sub>outline</sub> = π"+V("d")+"<sup>4</sup>/64,  I<sub>core</sub> = π("+V("d")+"−2"+V("t")+")<sup>4</sup>/64"],
+    [["A<sub>eff</sub>","effective solid-equivalent area"],["p","infill fraction, 0–1"],["c","distance to the extreme fibre, "+V("h")+"/2"]])+
+
+  eqb("2 · Link mass",
+    "Mass follows from the effective area, the material density and a flat allowance for fasteners, bearings and printed bosses.",
+    ["m<sub>i</sub> = "+V("ρ")+" A<sub>eff,i</sub> L<sub>i</sub> (1 + "+V("k")+"<sub>hw</sub>)"],
+    [["ρ","material density (kg/m³)"],["k<sub>hw</sub>","hardware allowance"]])+
+
+  eqb("3 · Kinematics",
+    "Joint angles are absolute in the working plane: "+V("a")+"<sub>1</sub> = "+V("θ")+"<sub>1</sub>, "+
+    V("a")+"<sub>2</sub> = "+V("θ")+"<sub>1</sub>+"+V("θ")+"<sub>2</sub>, "+V("a")+"<sub>3</sub> = "+V("θ")+"<sub>1</sub>+"+V("θ")+"<sub>2</sub>+"+V("θ")+"<sub>3</sub>. "+
+    "The base joint rotates this plane about the vertical axis.",
+    ["r<sub>0</sub> = 0,   z<sub>0</sub> = h<sub>0</sub>",
+     "r<sub>i</sub> = r<sub>i−1</sub> + L<sub>i</sub> cos "+V("a")+"<sub>i</sub>",
+     "z<sub>i</sub> = z<sub>i−1</sub> + L<sub>i</sub> sin "+V("a")+"<sub>i</sub>"],
+    [["r","horizontal distance from the base yaw axis"],["z","height above the base plate"]])+
+
+  eqb("4 · Static joint torque",
+    "Gravity acts vertically, so the moment arm of any mass about a horizontal pitch axis is its <em>horizontal</em> offset. "+
+    "Each joint carries everything outboard of it.",
+    ["τ<sub>j,static</sub> = "+V("g")+" Σ<sub>i ∈ distal(j)</sub> m<sub>i</sub> (r<sub>i</sub> − r<sub>j</sub>)"],
+    [["distal(j)","links, servos, end effector and payload beyond joint j"],["g","9.80665 m/s²"]])+
+
+  eqb("5 · Inertial term",
+    "Accelerating the outboard chain adds torque on top of holding it. The mass moment of inertia is taken about the joint axis, "+
+    "using the true distance rather than the horizontal projection.",
+    ["I<sub>j</sub> = Σ<sub>i ∈ distal(j)</sub> m<sub>i</sub> [ (r<sub>i</sub>−r<sub>j</sub>)² + (z<sub>i</sub>−z<sub>j</sub>)² ]",
+     "τ<sub>j</sub> = | τ<sub>j,static</sub> | + I<sub>j</sub> "+V("α")],
+    [["α","joint angular acceleration (rad/s²)"]])+
+
+  eqb("6 · The base axis is different",
+    "The base joint rotates about a vertical axis, so gravity produces no moment about it at all. Its duty is inertia plus bearing drag — "+
+    "which is why an oversized base servo can still read as almost unloaded here.",
+    ["I<sub>base</sub> = Σ<sub>all i</sub> m<sub>i</sub> r<sub>i</sub>²",
+     "τ<sub>base</sub> = I<sub>base</sub> "+V("α")+" + τ<sub>drag</sub>"],
+    [["r<sub>i</sub>","radius from the vertical axis"]])+
+
+  eqb("7 · Capacity, utilisation, margin",
+    "Catalogue torque is a stall figure at nominal voltage. A servo cannot hold it continuously, so the usable torque is the stall "+
+    "figure times a derating fraction; the target safety factor is then applied on top of that.",
+    ["τ<sub>usable</sub> = τ<sub>stall</sub> · "+V("k")+"<sub>derate</sub>",
+     "U = τ<sub>req</sub> / τ<sub>usable</sub> × 100 %",
+     "SF = τ<sub>usable</sub> / τ<sub>req</sub>   ≥  SF<sub>min</sub>",
+     "τ<sub>design</sub> = τ<sub>usable</sub> / SF<sub>min</sub>"],
+    [["k<sub>derate</sub>","duty cycle, heat, voltage sag, gear wear"],["U","servo utilisation"]])+
+
+  eqb("8 · Bending stress at the link root",
+    "The bending moment handed to a link at its root is exactly the torque its joint must produce.",
+    ["σ<sub>i</sub> = M<sub>root,i</sub> c<sub>i</sub> / I<sub>eff,i</sub>",
+     "σ<sub>allow</sub> = σ<sub>yield</sub> · "+V("k")+"<sub>z</sub>",
+     "SF<sub>mat</sub> = σ<sub>allow</sub> / σ<sub>i</sub>"],
+    [["k<sub>z</sub>","layer-adhesion knockdown for printed parts"],["σ<sub>yield</sub>","material yield strength"]])+
+
+  eqb("9 · Tip deflection — cantilever chain",
+    "Each link is an Euler–Bernoulli cantilever loaded by the transverse component of everything outboard of it: an end force, an end "+
+    "moment and its own distributed weight. Its end slope then rotates the whole outboard chain, which is what makes the shoulder link dominate.",
+    ["θ<sub>i</sub> = ( F<sub>i</sub>L<sub>i</sub>²/2 + M<sub>i</sub>L<sub>i</sub> + W<sub>i</sub>L<sub>i</sub>²/6 ) / EI<sub>i</sub>",
+     "δ<sub>i</sub> = ( F<sub>i</sub>L<sub>i</sub>³/3 + M<sub>i</sub>L<sub>i</sub>²/2 + W<sub>i</sub>L<sub>i</sub>³/8 ) / EI<sub>i</sub>",
+     "<b>δ</b><sub>tip</sub> = Σ<sub>i</sub> [ <b>n</b><sub>i</sub> δ<sub>i</sub> + θ<sub>i</sub> × (<b>p</b><sub>TCP</sub> − <b>p</b><sub>i</sub>) ]"],
+    [["F<sub>i</sub>, M<sub>i</sub>","transverse end force and end moment"],["W<sub>i</sub>","link self weight"],
+     ["n<sub>i</sub>","unit normal to link i"]])+
+
+  eqb("10 · Centre of mass and tipping",
+    "Every element is a point mass. Tipping is assessed as a rigid-body overturning check about the edge of the base support.",
+    ["r̄ = Σ m<sub>i</sub> r<sub>i</sub> / Σ m<sub>i</sub>,    z̄ = Σ m<sub>i</sub> z<sub>i</sub> / Σ m<sub>i</sub>",
+     "SF<sub>tip</sub> = a<sub>support</sub> / r̄"],
+    [["a<sub>support</sub>","base support radius"]])+
+
+  eqb("11 · The optimisation problem",
+    "The optimiser maximises reach subject to every constraint the analysis view checks, evaluated in the worst-case pose — "+
+    "fully extended and horizontal, where every moment arm is at its maximum.",
+    ["maximise   R = L<sub>1</sub> + L<sub>2</sub> + L<sub>3</sub>",
+     "subject to   SF<sub>j</sub> ≥ SF<sub>min</sub>   for j ∈ {base, shoulder, elbow, wrist}",
+     "             σ<sub>i</sub> ≤ σ<sub>allow</sub>,   |δ<sub>tip</sub>| ≤ δ<sub>max</sub>,   SF<sub>tip</sub> ≥ SF<sub>tip,min</sub>",
+     "             L<sub>min</sub> ≤ L<sub>i</sub> ≤ L<sub>max</sub>"],
+    [])+
+  '</div></div>'+
+
+  '<div style="display:grid;gap:16px;align-content:start">'+
+  '<div class="card"><header><h3>Assumptions and where this model stops</h3></header><div class="pad">'+
+    '<ul class="assume">'+
+    '<li><b>Point masses.</b> Servos, the end effector and the payload are lumped at their joint or at the tool centre point. '+
+      'Links carry their mass at their midpoint — exact for a prismatic link, slightly optimistic for one with a heavy bracket at one end.</li>'+
+    '<li><b>Quasi-static.</b> Static gravity torque plus an inertial allowance <em>I·α</em>, superposed as if they peak together. '+
+      'This is conservative. It is not a trajectory simulation — there is no velocity-dependent friction, no back-EMF, no controller.</li>'+
+    '<li><b>Uniform prismatic sections.</b> Real printed links have joint bosses, bearing seats and fillets. The hardware allowance covers '+
+      'their mass, but stress concentrations at those features are not modelled — the reported bending stress is a nominal section stress.</li>'+
+    '<li><b>Infill as a homogeneous continuum.</b> Treating infill as a uniform fill of the core is standard practice and good for mass, '+
+      'but real gyroid or grid infill is anisotropic and its stiffness contribution is lower than this geometric estimate at low percentages.</li>'+
+    '<li><b>Layer adhesion.</b> The knockdown factor stands in for the fact that a printed part is much weaker across layers than along them. '+
+      'The right value depends on print orientation; 0.4–0.7 is the usual band for a link loaded in bending.</li>'+
+    '<li><b>Small deflections.</b> Deflection is computed on the undeformed geometry. Valid while the tip moves a few millimetres; '+
+      'beyond that the moment arms themselves start to change.</li>'+
+    '<li><b>Servo torque is a catalogue number.</b> Stall torque varies with voltage and between samples. The derating factor is the honest '+
+      'place to absorb that uncertainty — it matters more than any other single input.</li>'+
+    '<li><b>No gearing, springs or counterbalance.</b> Adding a gas spring or counterweight at the shoulder changes the picture completely '+
+      'and is outside this model.</li>'+
+    '</ul></div></div>'+
+  '<div class="card"><header><h3>Material data</h3><span class="sub">nominal values</span></header>'+
+    '<div class="pad tbl-wrap"><table><thead><tr><th>Material</th><th>ρ (kg/m³)</th><th>E (MPa)</th><th>σ<sub>yield</sub> (MPa)</th></tr></thead><tbody>'+
+    Object.keys(MATERIALS).map(k=>'<tr><td class="lbl">'+MATERIALS[k].name+'</td><td>'+MATERIALS[k].rho+'</td><td>'+
+      MATERIALS[k].E+'</td><td>'+MATERIALS[k].sy+'</td></tr>').join("")+'</tbody></table>'+
+    '<p class="note" style="margin-top:9px">Printed-polymer figures are for well-tuned, near-solid specimens along the print plane. '+
+    'The layer-adhesion knockdown is what carries them to a real part.</p></div></div>'+
+  '<div class="card"><header><h3>Unit conversions</h3></header><div class="pad">'+
+    '<div class="kv"><dt>1 kg·cm</dt><dd>0.0980665 N·m</dd>'+
+    '<dt>1 N·m</dt><dd>10.19716 kg·cm</dd>'+
+    '<dt>g</dt><dd>9.80665 m/s²</dd>'+
+    '<dt>1 mm⁴</dt><dd>10⁻¹² m⁴</dd>'+
+    '<dt>1 MPa</dt><dd>10⁶ Pa</dd></div>'+
+    '<p class="note" style="margin-top:10px">Servo ratings are quoted in kg·cm by convention — the force in kilograms-force at one centimetre. '+
+    'Everything inside the model is SI; conversion happens only at the input and display boundaries.</p></div></div>'+
+  '</div></div>';
+
+  function eqb(title, prose, eqs, defs){
+    return '<div class="eqblock"><h4>'+title+'</h4><p>'+prose+'</p>'+
+      eqs.map(e=>'<div class="eq">'+e+'</div>').join("")+
+      (defs && defs.length ? '<dl class="deflist">'+defs.map(d=>'<dt>'+d[0]+'</dt><dd>'+d[1]+'</dd>').join("")+'</dl>' : '')+
+      '</div>';
+  }
+}
+
+/* =====================================================================
+   INSPECTOR  -  every intermediate value
+   ===================================================================== */
+function renderInspector(res){
+  if (!res) return;
+  const K = KGCM_PER_NM;
+  const sec = (title, tag, body, open) =>
+    '<details class="insp"'+(open?" open":"")+'><summary>'+title+'<span class="tag">'+tag+'</span></summary>'+
+    '<div class="body">'+body+'</div></details>';
+  const tbl = (head, rows) => '<div class="tbl-wrap"><table><thead><tr>'+
+    head.map(h=>'<th>'+h+'</th>').join("")+'</tr></thead><tbody>'+rows+'</tbody></table></div>';
+
+  /* 1 — sections */
+  const secRows = res.links.map((l,i)=>
+    '<tr><td class="lbl">Link '+(i+1)+' · '+l.sec.label+'</td><td>'+fx(l.len,1)+'</td><td>'+fx(l.sec.A_out,1)+
+    '</td><td>'+fx(l.sec.A_core,1)+'</td><td>'+fx(l.sec.A_eff,1)+'</td><td>'+fx(l.sec.I_out,0)+'</td><td>'+
+    fx(l.sec.I_core,0)+'</td><td>'+fx(l.sec.I_eff,0)+'</td><td>'+fx(l.sec.c,2)+'</td><td>'+
+    fx(l.m_struct*1000,2)+'</td><td>'+fx(l.m*1000,2)+'</td></tr>').join("")+
+    '<tr><td class="lbl">Column</td><td>'+fx(P.h0,1)+'</td><td>'+fx(res.column.sec.A_out,1)+'</td><td>'+
+    fx(res.column.sec.A_core,1)+'</td><td>'+fx(res.column.sec.A_eff,1)+'</td><td>'+fx(res.column.sec.I_out,0)+
+    '</td><td>'+fx(res.column.sec.I_core,0)+'</td><td>'+fx(res.column.sec.I_eff,0)+'</td><td>'+
+    fx(res.column.sec.c,2)+'</td><td>—</td><td>'+fx(res.column.m*1000,2)+'</td></tr>';
+
+  /* 2 — nodes */
+  const nodeNames = ["Shoulder","Elbow","Wrist","TCP"];
+  const nodeRows = res.N.map((n,i)=>'<tr><td class="lbl">'+nodeNames[i]+'</td><td>'+
+    fx(res.ang[Math.min(i,2)]/D2R,2)+'</td><td>'+fx(n.r*1000,2)+'</td><td>'+fx(n.z*1000,2)+'</td></tr>').join("");
+
+  /* 3 — moment summations */
+  const jointBlocks = res.jointOrder.map(k=>{
+    const j = res.joints[k], isBase = k==="base";
+    const rows = j.terms.map(t=>'<tr><td class="lbl">'+t.name+'</td><td>'+fx(t.m*1000,2)+'</td><td>'+
+      fx(t.w,4)+'</td><td>'+fx(t.dr*1000,2)+'</td><td>'+fx(t.dz*1000,2)+'</td><td>'+
+      (isBase?'—':fx(t.mom,5))+'</td><td>'+t.inr.toExponential(3)+'</td></tr>').join("");
+    const foot = '<tr style="font-weight:600;background:var(--inset)"><td class="lbl">Σ</td><td>'+
+      fx(j.terms.reduce((a,t)=>a+t.m,0)*1000,2)+'</td><td>'+fx(j.terms.reduce((a,t)=>a+t.w,0),4)+
+      '</td><td>—</td><td>—</td><td>'+(isBase?'—':fx(j.Mstat,5))+'</td><td>'+j.Iaxis.toExponential(3)+'</td></tr>';
+    return '<h4 style="font-size:12.5px;margin:14px 0 7px">'+j.name+'</h4>'+
+      tbl(["Element","m (g)","W = mg (N)","Δr (mm)","Δz (mm)","W·Δr (N·m)","m·d² (kg·m²)"], rows+foot)+
+      '<div class="kv" style="margin-top:9px">'+
+      (isBase
+        ? '<dt>τ static</dt><dd>0 — vertical axis</dd>'
+        : '<dt>τ static = |Σ W·Δr|</dt><dd>'+fx(j.tStat,5)+' N·m = '+fx(j.tStat*K,3)+' kg·cm</dd>')+
+      '<dt>τ inertial = I·α</dt><dd>'+j.Iaxis.toExponential(3)+' × '+fx(P.dynOn?P.alpha:0,2)+' = '+fx(j.tDyn*K,4)+' kg·cm</dd>'+
+      (isBase?'<dt>τ bearing drag</dt><dd>'+fx(P.tauFric,3)+' kg·cm</dd>':'')+
+      '<dt>τ required</dt><dd><b>'+fx(j.tReq*K,4)+' kg·cm</b></dd>'+
+      '<dt>τ usable = τ stall × '+fx(P.derate,2)+'</dt><dd>'+fx(j.tStall*K,2)+' × '+fx(P.derate,2)+' = '+fx(j.tAllow*K,3)+' kg·cm</dd>'+
+      '<dt>Utilisation</dt><dd>'+fx(j.util,2)+' %</dd>'+
+      '<dt>Safety factor</dt><dd>'+fx(j.sf,3)+'× (target '+fx(P.sfMin,2)+'×)</dd></div>';
+  }).join("");
+
+  /* 4 — deflection */
+  const defRows = res.deflection.parts.map(p=>'<tr><td class="lbl">Link '+(p.i+1)+'</td><td>'+
+    fx(p.EI,3)+'</td><td>'+fx(p.Fn,4)+'</td><td>'+fx(p.Mt,5)+'</td><td>'+fx(p.Wo,4)+'</td><td>'+
+    (p.th*1000).toFixed(4)+'</td><td>'+(p.dl*1000).toFixed(4)+'</td><td>'+(p.contrib*1000).toFixed(4)+'</td></tr>').join("");
+
+  /* 5 — sensitivity */
+  const keys = [["L1","L₁","mm",2],["L2","L₂","mm",2],["L3","L₃","mm",2],
+                ["payload","Payload","g",5],["mEE","End effector","g",5],
+                ["wall","Wall","mm",0.1],["infill","Infill","%",2],["hh1","Link 1 depth","mm",0.5]];
+  const base = res.jointOrder.map(k=>res.joints[k].tReq);
+  const sensRows = keys.map(([k,lab,u,d])=>{
+    const alt = solve(Object.assign({}, P, {[k]: P[k]+d}), {worst:true});
+    const cells = res.jointOrder.map((jk,i)=>{
+      const dv = (alt.joints[jk].tReq - base[i])/d*K;
+      if (Math.abs(dv) < 1e-9) return '<td style="color:var(--ink-3)">0</td>';
+      return '<td style="color:'+(dv>0?"var(--crit-ink)":"var(--good-ink)")+'">'+
+             (dv>0?"+":"")+dv.toExponential(2)+'</td>';
+    }).join("");
+    const dm = (alt.mArm - res.mArm)*1000/d;
+    return '<tr><td class="lbl">'+lab+' <span style="color:var(--ink-3)">('+u+')</span></td>'+cells+
+           '<td>'+(dm>0?"+":"")+fx(dm,4)+'</td></tr>';
+  }).join("");
+
+  /* 6 — com */
+  const comRows = res.el.map(e=>'<tr><td class="lbl">'+e.name+'</td><td>'+fx(e.m*1000,2)+'</td><td>'+
+    fx(e.r*1000,2)+'</td><td>'+fx(e.z*1000,2)+'</td><td>'+fx(e.m*e.r*1000*1000,1)+'</td><td>'+
+    fx(e.m*e.z*1000*1000,1)+'</td></tr>').join("")+
+    '<tr style="font-weight:600;background:var(--inset)"><td class="lbl">Σ</td><td>'+fx(res.mTot*1000,2)+
+    '</td><td>—</td><td>—</td><td>'+fx(res.com.r*res.mTot*1e6,1)+'</td><td>'+fx(res.com.z*res.mTot*1e6,1)+'</td></tr>';
+
+  $("#inspBody").innerHTML =
+    '<div class="card"><header><h3>Intermediate calculations</h3>'+
+      '<span class="sub">'+(res.useWorst?"worst-case pose":"pose θ "+fx(P.q1,0)+"/"+fx(P.q2,0)+"/"+fx(P.q3,0)+"°")+
+      ' · '+MATERIALS[P.material].name+' · '+SECTIONS[P.section]+'</span></header><div class="pad">'+
+
+    sec("Cross sections and link mass", "mm, mm², mm⁴, g",
+      tbl(["Member","L (mm)","A<sub>out</sub>","A<sub>core</sub>","A<sub>eff</sub>","I<sub>out</sub>","I<sub>core</sub>","I<sub>eff</sub>","c","m struct (g)","m + hw (g)"], secRows)+
+      '<p class="note" style="margin-top:9px">A<sub>eff</sub> = A<sub>out</sub> − (1 − '+fx(P.infill/100,2)+
+      ') A<sub>core</sub>. Hardware allowance ×'+fx(1+P.hwAllow/100,2)+'. Density '+MATERIALS[P.material].rho+' kg/m³.</p>', true)+
+
+    sec("Node coordinates", "mm",
+      tbl(["Node","absolute angle (°)","r (mm)","z (mm)"], nodeRows)+
+      '<p class="note" style="margin-top:9px">r is measured from the base yaw axis, z from the base plate. '+
+      'Reach = r at the TCP = '+fx(res.reach*1000,2)+' mm.</p>')+
+
+    sec("Joint moment summations", "term by term", jointBlocks, true)+
+
+    sec("Bending stress", "MPa",
+      tbl(["Link","M root (N·m)","c (m)","I<sub>eff</sub> (m⁴)","σ (MPa)","σ allow (MPa)","SF"],
+        res.links.map((l,i)=>'<tr><td class="lbl">Link '+(i+1)+'</td><td>'+fx(l.M_root,5)+'</td><td>'+
+        l.sec.c_m.toExponential(3)+'</td><td>'+l.sec.I_eff_m4.toExponential(3)+'</td><td>'+fx(l.sigmaMPa,4)+
+        '</td><td>'+fx(res.sy_allow/1e6,2)+'</td><td>'+fx(l.sfMat,1)+'</td></tr>').join("")+
+        '<tr><td class="lbl">Column</td><td>'+fx(res.column.M_root,5)+'</td><td>'+res.column.sec.c_m.toExponential(3)+
+        '</td><td>'+res.column.sec.I_eff_m4.toExponential(3)+'</td><td>'+fx(res.column.sigmaMPa,4)+'</td><td>'+
+        fx(res.sy_allow/1e6,2)+'</td><td>'+fx(res.column.sfMat,1)+'</td></tr>')+
+      '<p class="note" style="margin-top:9px">σ<sub>allow</sub> = '+MATERIALS[P.material].sy+' MPa × '+
+      (MATERIALS[P.material].printed? fx(P.knock,2)+' layer knockdown' : '1.00 (not a printed part)')+'.</p>')+
+
+    sec("Tip deflection", "cantilever chain",
+      tbl(["Link","EI (N·m²)","F (N)","M (N·m)","W (N)","θ (mrad)","δ local (mm)","tip contribution (mm)"], defRows)+
+      '<div class="kv" style="margin-top:11px"><dt>Δr</dt><dd>'+(res.deflection.r*1000).toFixed(4)+' mm</dd>'+
+      '<dt>Δz</dt><dd>'+(res.deflection.z*1000).toFixed(4)+' mm</dd>'+
+      '<dt>|δ| total</dt><dd><b>'+fx(res.deflection.mm,4)+' mm</b> (limit '+fx(P.defMax,2)+')</dd></div>')+
+
+    sec("Centre of mass", "first moments",
+      tbl(["Element","m (g)","r (mm)","z (mm)","m·r (g·mm)","m·z (g·mm)"], comRows)+
+      '<div class="kv" style="margin-top:11px"><dt>r̄</dt><dd>'+fx(res.com.r*1000,3)+' mm</dd>'+
+      '<dt>z̄</dt><dd>'+fx(res.com.z*1000,3)+' mm</dd>'+
+      '<dt>Overturning moment</dt><dd>'+fx(res.tipping.Mover,4)+' N·m</dd>'+
+      '<dt>Restoring moment</dt><dd>'+fx(res.tipping.Mrest,4)+' N·m</dd>'+
+      '<dt>SF tipping</dt><dd>'+(P.bolted?"bolted — n/a":fx(res.tipping.sf,3)+"×")+'</dd></div>')+
+
+    sec("Sensitivity", "∂τ/∂x in kg·cm per unit",
+      tbl(["Parameter","∂τ shoulder","∂τ elbow","∂τ wrist","∂τ base","∂m arm (g/unit)"], sensRows)+
+      '<p class="note" style="margin-top:9px">Central design lever: the parameter with the largest positive derivative at the '+
+      'limiting joint is what to attack first. Computed as a forward difference on the full model.</p>')+
+
+    sec("Constraint ledger", "all checks",
+      '<p class="note" style="margin-bottom:10px">Torque rows are measured against the <b>design limit</b> '+
+      'τ<sub>design</sub> = τ<sub>usable</sub> / SF<sub>min</sub> = τ<sub>stall</sub> × '+fx(P.derate,2)+' / '+fx(P.sfMin,2)+
+      ', so 100 % here means the target safety factor is exactly met. The torque bars on the analysis tab use the '+
+      'larger τ<sub>usable</sub> as their denominator, which is why they read lower.</p>'+
+      tbl(["Constraint","Value","Limit","% of limit","Status"],
+        constraintRows(res).map(r=>{
+          const st = r.ratio>100?"over":(r.ratio>95?"tight":"ok");
+          return '<tr><td class="lbl">'+r.name+'</td><td colspan="2">'+r.detail+'</td><td>'+fx(r.ratio,1)+
+            '%</td><td><span class="chip '+st+'" style="font-size:10.5px;padding:1px 8px"><i class="dot"></i>'+
+            ({ok:"OK",tight:"Tight",over:"Over"})[st]+'</span></td></tr>';
+        }).join("")))+
+    '</div></div>';
+}
+</script>
+
+<script>
+"use strict";
+/* =====================================================================
+   REPORT + BOOT
+   ===================================================================== */
+function buildReport(){
+  const res = R, K = KGCM_PER_NM, L = [];
+  const pad = (s,n)=>String(s).padEnd(n);
+  L.push("4-DOF ARM DESIGN BENCH — design report");
+  L.push("generated "+new Date().toISOString().slice(0,16).replace("T"," "));
+  L.push("");
+  L.push("GEOMETRY");
+  L.push("  column h0        "+fx(P.h0,1)+" mm");
+  L.push("  L1 / L2 / L3     "+fx(P.L1,1)+" / "+fx(P.L2,1)+" / "+fx(P.L3,1)+" mm");
+  L.push("  reach            "+fx(res.reach*1000,1)+" mm   (pose: "+(res.useWorst?"worst case, fully extended":
+        "θ "+fx(P.q1,0)+"/"+fx(P.q2,0)+"/"+fx(P.q3,0)+"°")+")");
+  L.push("");
+  L.push("STRUCTURE");
+  L.push("  material         "+MATERIALS[P.material].name+"  ρ="+MATERIALS[P.material].rho+" kg/m³  E="+
+        MATERIALS[P.material].E+" MPa  σy="+MATERIALS[P.material].sy+" MPa");
+  L.push("  section          "+SECTIONS[P.section]+"  wall "+fx(P.wall,2)+" mm  infill "+fx(P.infill,0)+"%");
+  res.links.forEach((l,i)=>L.push("  link "+(i+1)+"           "+pad(l.sec.label,12)+
+        " A_eff "+fx(l.sec.A_eff,1)+" mm²  I_eff "+fx(l.sec.I_eff,0)+" mm⁴  m "+fx(l.m*1000,1)+" g"));
+  L.push("  knockdown        "+fx(P.knock,2)+"    hardware allowance "+fx(P.hwAllow,0)+"%");
+  L.push("");
+  L.push("LOADS");
+  L.push("  payload          "+fx(res.payload_g,1)+" g      end effector "+fx(P.mEE,1)+" g");
+  L.push("  total mass       "+fx(res.mTot*1000,1)+" g      moving mass "+fx(res.mArm*1000,1)+" g");
+  L.push("  centre of mass   r "+fx(res.com.r*1000,1)+" mm, z "+fx(res.com.z*1000,1)+" mm");
+  L.push("");
+  L.push("JOINT TORQUE BUDGET   (kg·cm, derate "+fx(P.derate,2)+", target SF "+fx(P.sfMin,2)+"x)");
+  L.push("  joint        static   inertial  required   stall   usable    util     SF");
+  res.jointOrder.forEach(k=>{ const j=res.joints[k];
+    L.push("  "+pad(j.name,12)+pad(fx(j.tStat*K,3),9)+pad(fx(j.tDyn*K,3),10)+pad(fx(j.tReq*K,3),11)+
+      pad(fx(j.tStall*K,1),8)+pad(fx(j.tAllow*K,2),9)+pad(fx(j.util,1)+"%",9)+fx(j.sf,2)+"x"); });
+  L.push("");
+  L.push("STRUCTURAL");
+  res.links.forEach((l,i)=>L.push("  link "+(i+1)+" bending    "+fx(l.sigmaMPa,3)+" MPa  (allow "+
+        fx(res.sy_allow/1e6,1)+")  SF "+fx(l.sfMat,1)+"x"));
+  L.push("  tip deflection   "+fx(res.deflection.mm,3)+" mm  (limit "+fx(P.defMax,2)+")");
+  L.push("  tipping          "+(P.bolted?"bolted down":fx(res.tipping.sf,2)+"x  (need "+fx(P.sfTip,1)+"x)"));
+  L.push("");
+  L.push("VERDICT");
+  L.push("  "+(res.feasible ? "All constraints satisfied." : "VIOLATIONS:"));
+  res.violations.forEach(v=>L.push("    - "+v.label+": "+v.fmt(v.value)+" against "+v.fmt(v.limit)));
+  L.push("  limiting joint   "+res.joints[res.peak].name+" at "+fx(res.joints[res.peak].util,1)+"% of usable torque");
+  L.push("  payload capacity "+fx(maxFeasiblePayload(),1)+" g at the target safety factor");
+  L.push("");
+  L.push("Constraint ledger (utilisation of each limit):");
+  constraintRows(res).forEach(r=>L.push("  "+pad(r.name,22)+pad(fx(r.ratio,1)+"%",9)+r.detail));
+  return L.join("\n");
+}
+
+/* ---------- boot ---------- */
+(function init(){
+  buildRail();
+  $$(".tab").forEach(t=>t.onclick = ()=>{
+    setTab(t.dataset.tab);
+    if (t.dataset.tab==="sweep") buildSweepControls();
+  });
+  $("#btnReset").onclick = ()=>{ P = Object.assign({}, DEFAULTS); buildRail(); render(); };
+  $("#btnCopy").onclick = async (e)=>{
+    const b = e.currentTarget, old = b.textContent;
+    try { await navigator.clipboard.writeText(buildReport()); b.textContent = "Copied"; }
+    catch(err){ b.textContent = "Copy blocked"; }
+    setTimeout(()=>b.textContent = old, 1600);
+  };
+  let rt = 0;
+  addEventListener("resize", ()=>{ clearTimeout(rt); rt = setTimeout(()=>{
+    if (R){ draw3D(R); drawEnvelope(R); } }, 160); });
+  render();
+})();
+</script>
