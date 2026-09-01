@@ -19,6 +19,31 @@ are no dependencies and no build step.
   trade-off plots and a breakdown of what blocks the infeasible designs.
 - **Reach envelope** showing the geometric workspace against the torque-feasible one.
 - Every equation is written out, and every intermediate value is inspectable.
+- **PDF export** of the whole design as a 9-page engineering report, and one-click PNG
+  export of any individual drawing or chart.
+
+## Exporting
+
+The **Export** button in the top bar builds a multi-page A4 PDF of the design exactly as it
+stands: verdict and key results, the side elevation and 3D view, joint torque bars and the
+constraint ledger, the reach envelope and payload limit curve, every input parameter with
+the computed section properties, the mass budget and design review, the sweep trade-off
+plots if a sweep has been run, and the governing equations with the material and servo
+reference tables. Sections are individually selectable. Text stays selectable and
+searchable — only the drawings are raster.
+
+Hovering any drawing or chart reveals a **Save PNG** button for that view alone, rendered
+at 3× resolution.
+
+Two notes on how saving works:
+
+- Charts are re-rendered at a narrower layout width for export, because a chart captured
+  1150 px wide and scaled to a 178 mm page prints its 10 px axis labels at about 4 pt.
+- The published-artifact viewer sandbox blocks page-initiated downloads, so the file is
+  handed over through the platform's `downloads` capability, which asks the viewer to
+  confirm. Opened as a plain local `.html` file there is no sandbox and it falls back to an
+  ordinary browser download. If neither is available the export UI says so rather than
+  appearing to work and doing nothing.
 
 ## Default configuration
 
@@ -102,3 +127,9 @@ outputs were checked against independent hand calculations for the default desig
 (section areas, link masses, joint moments, cantilever deflection) and against structural
 invariants — for example, `∂τ_elbow/∂L₁` and `∂τ_wrist/∂L₂` come out as exact zeros in the
 sensitivity table, since a proximal link length cannot load a distal joint.
+
+Export was verified end to end in a headless browser: the generated PDF was rendered page
+by page and checked for content, pagination and orphaned headings; the `downloads`
+capability was exercised through all four paths (granted, declined, not granted, and no
+viewer at all); and the on-screen canvases were confirmed byte-identical in geometry before
+and after an export, including when exporting from a different tab.

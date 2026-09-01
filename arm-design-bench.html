@@ -2,6 +2,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Serif:ital,wght@1,400;1,500&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js"></script>
 <style>
 :root{
   color-scheme: light;
@@ -191,6 +192,29 @@ details.insp > summary:hover{background:var(--inset)}
 details.insp[open] > summary{border-bottom:1px solid var(--rule)}
 details.insp .body{padding:13px}
 .tag{font-family:var(--mono);font-size:10.5px;color:var(--ink-3);background:var(--inset);border:1px solid var(--rule);padding:1px 6px;border-radius:3px;margin-left:auto}
+/* ---------- export dialog ---------- */
+.backdrop{position:fixed;inset:0;background:rgba(15,34,48,.34);z-index:60;display:grid;place-items:center;padding:20px}
+.backdrop[hidden]{display:none!important}
+.modal{background:var(--surface);border-radius:10px;border:1px solid var(--rule);width:min(520px,100%);
+  max-height:88vh;overflow-y:auto;box-shadow:0 20px 60px -18px rgba(15,34,48,.42)}
+.modal header{padding:16px 20px 13px;border-bottom:1px solid var(--rule);display:flex;align-items:baseline;gap:10px}
+.modal header h3{font-size:14px}
+.modal .close{margin-left:auto;background:none;border:0;font-size:19px;line-height:1;color:var(--ink-3);cursor:pointer;padding:0 2px}
+.modal .close:hover{color:var(--ink)}
+.modal .body{padding:16px 20px}
+.modal footer{padding:13px 20px 16px;border-top:1px solid var(--rule);display:flex;gap:9px;align-items:center}
+.opt{display:flex;gap:10px;align-items:flex-start;padding:7px 0;cursor:pointer}
+.opt input{width:15px;height:15px;accent-color:var(--accent);margin:2px 0 0;flex:none;cursor:pointer}
+.opt span{font-size:12.5px;line-height:1.45}
+.opt em{display:block;font-style:normal;font-size:11.5px;color:var(--ink-3)}
+.opt.off{opacity:.45;cursor:default}
+.savebtn{position:absolute;right:11px;bottom:11px;z-index:2;border:1px solid var(--rule);
+  background:rgba(255,255,255,.92);border-radius:5px;padding:3px 9px;font-size:11px;font-weight:500;
+  color:var(--ink-2);cursor:pointer;font-family:var(--sans);opacity:0;transition:opacity .14s}
+.viz:hover .savebtn,.savebtn:focus-visible{opacity:1}
+.savebtn:hover{background:var(--inset);color:var(--ink)}
+.exportmsg{font-size:11.5px;margin-left:auto;text-align:right;line-height:1.4}
+.exportmsg.err{color:var(--crit-ink)} .exportmsg.ok{color:var(--good-ink)} .exportmsg.busy{color:var(--ink-3)}
 @media (max-width:980px){
   .app{grid-template-columns:1fr}
   .rail{position:static;height:auto;border-right:0;border-bottom:1px solid var(--rule)}
@@ -240,6 +264,7 @@ details.insp .body{padding:13px}
         <button class="tab" role="tab" data-tab="inspector" aria-selected="false">Inspector</button>
       </nav>
       <div id="verdict"></div>
+      <button class="btn" id="btnExport" style="margin-left:4px">Export</button>
     </div>
 
     <div class="content">
@@ -253,7 +278,7 @@ details.insp .body{padding:13px}
               <h3>Side elevation</h3>
               <span class="sub" id="poseLabel"></span>
             </header>
-            <div class="viz"><svg id="side" viewBox="0 0 720 392" style="width:100%;height:auto;display:block"></svg></div>
+            <div class="viz"><svg id="side" viewBox="0 0 720 392" style="width:100%;height:auto;display:block"></svg><button class="savebtn" data-png="side" data-name="side-elevation">Save PNG</button></div>
           </div>
 
           <div class="card">
@@ -268,6 +293,7 @@ details.insp .body{padding:13px}
                 <button class="iconbtn" id="v3dTop" title="Top view">◎</button>
                 <button class="iconbtn" id="v3dFront" title="Front view">▭</button>
               </div>
+              <button class="savebtn" data-png="three" data-name="3d-preview">Save PNG</button>
             </div>
             <div class="legend">
               <span><i class="sw" style="background:#7d919e"></i>Structure</span>
@@ -297,7 +323,7 @@ details.insp .body{padding:13px}
               <h3>Reach envelope</h3>
               <span class="sub">side plane, swept through joint limits</span>
             </header>
-            <div class="viz"><canvas id="env" height="360"></canvas></div>
+            <div class="viz"><canvas id="env" height="360"></canvas><button class="savebtn" data-png="env" data-name="reach-envelope">Save PNG</button></div>
             <div class="legend">
               <span><i class="sw" style="background:#e8eef6"></i>Geometrically reachable</span>
               <span><i class="sw" style="background:#a8c9ef"></i>Torque-feasible with payload</span>
@@ -311,7 +337,7 @@ details.insp .body{padding:13px}
               <h3>Payload vs. maximum reach</h3>
               <span class="sub">limit curve at current geometry ratios</span>
             </header>
-            <div class="viz"><svg id="prChart" viewBox="0 0 560 320" style="width:100%;height:auto;display:block"></svg><div class="tip" id="prTip"></div></div>
+            <div class="viz"><svg id="prChart" viewBox="0 0 560 320" style="width:100%;height:auto;display:block"></svg><div class="tip" id="prTip"></div><button class="savebtn" data-png="prChart" data-name="payload-reach"></button></div>
             <div class="legend">
               <span><i class="sw line" style="background:#2a78d6"></i>Max feasible reach</span>
               <span><i class="sw line" style="background:#0f2230;opacity:.45"></i>Current design</span>
@@ -364,6 +390,23 @@ details.insp .body{padding:13px}
         <div id="inspBody"></div>
       </section>
     </div>
+  </div>
+</div>
+
+<div class="backdrop" id="exportModal" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="exTitle">
+    <header><h3 id="exTitle">Export design report</h3>
+      <button class="close" id="exClose" aria-label="Close">&times;</button></header>
+    <div class="body">
+      <p class="note" style="margin:0 0 10px">A multi-page PDF of the current design — parameters,
+        calculated results, and the drawings exactly as they stand now.</p>
+      <div id="exOpts"></div>
+    </div>
+    <footer>
+      <button class="btn primary" id="exRun">Download PDF</button>
+      <button class="btn" id="exCancel">Cancel</button>
+      <span class="exportmsg" id="exMsg"></span>
+    </footer>
   </div>
 </div>
 
@@ -1232,9 +1275,11 @@ function drawSide(res){
    world axes: x forward, y left, z up.  Base yaw rotates about z.
    ===================================================================== */
 const cam = {az: -38*D2R, el: 22*D2R, zoom: 1, yaw: 25*D2R};
+const EXPORT = {scale: 0};                 // >0 while capturing for export
+const outDpr = () => EXPORT.scale || Math.min(devicePixelRatio||1, 2);
 function draw3D(res){
   if (!res) return;
-  const cv = $("#three"), dpr = Math.min(devicePixelRatio||1, 2);
+  const cv = $("#three"), dpr = outDpr();
   /* match the side elevation's aspect so the two cards line up */
   const cssW = cv.clientWidth || 620;
   const cssH = Math.max(290, Math.min(470, Math.round(cssW*392/720)));
@@ -1463,9 +1508,10 @@ function envKernel(res){
   };
 }
 
+let ENVSTATS = null, RECS = [];
 function drawEnvelope(res){
   if (!res) return;
-  const cv = $("#env"), dpr = Math.min(devicePixelRatio||1, 2);
+  const cv = $("#env"), dpr = outDpr();
   const cssW = cv.clientWidth || 620, cssH = 360;
   cv.width = cssW*dpr; cv.height = cssH*dpr;
   const g = cv.getContext("2d"); g.setTransform(dpr,0,0,dpr,0,0);
@@ -1544,6 +1590,9 @@ function drawEnvelope(res){
     g.strokeStyle="#0f2230"; g.lineWidth=1.4; g.stroke(); });
 
   const cellArea = (CELL/s)*(CELL/s);
+  ENVSTATS = {areaFea: cFea*cellArea/100, areaGeo: cGeo*cellArea/100,
+              pct: cGeo? cFea/cGeo*100 : 0, maxR: maxR>-1e8?maxR*1000:null,
+              maxZ: maxZ>-1e8?maxZ*1000:null, poses: n1*n2*n3};
   $("#envStats").innerHTML =
     '<div class="kv">'+
     '<dt>Torque-feasible workspace</dt><dd>'+fx(cFea*cellArea/100,0)+' cm²  ('+fx(cGeo?cFea/cGeo*100:0,0)+'% of geometric)</dd>'+
@@ -1738,6 +1787,7 @@ function renderRecs(res){
            ". Run the optimiser to see how much reach is still on the table."});
   }
 
+  RECS = recs;
   $("#recCount").textContent = recs.length + (recs.length===1?" item":" items");
   $("#recs").innerHTML = recs.map(r=>
     '<div class="rec '+r.lvl+'"><div class="ico">'+(r.lvl==="crit"?"!":r.lvl==="warn"?"!":"i")+'</div>'+
@@ -2126,7 +2176,7 @@ function runSweep(){
 
 /* ---------- generic scatter with nearest-point probing ---------- */
 function scatter(cv, o){
-  const dpr = Math.min(devicePixelRatio||1, 2);
+  const dpr = outDpr();
   const cssW = cv.clientWidth || 560, cssH = o.height || 340;
   cv.width = cssW*dpr; cv.height = cssH*dpr;
   const g = cv.getContext("2d"); g.setTransform(dpr,0,0,dpr,0,0);
@@ -2624,6 +2674,685 @@ function renderInspector(res){
 <script>
 "use strict";
 /* =====================================================================
+   EXPORT  -  PDF report and per-view PNG
+   The viewer sandbox blocks page-initiated downloads, so a file is handed
+   over through the downloads capability when it is available; opened as a
+   plain local file the page falls back to an ordinary blob download.
+   ===================================================================== */
+let DL = null, DL_READY = false;
+const IN_VIEWER = !!(window.claude && typeof window.claude.use === "function");
+(async function resolveDownloads(){
+  try { DL = IN_VIEWER ? await window.claude.use("downloads") : null; }
+  catch(e){ DL = null; }
+  DL_READY = true; syncExportUI();
+})();
+
+async function saveFile(filename, data, mime){
+  if (DL){
+    try { await DL.save({filename, data}); return {ok:true}; }
+    catch(err){ return {ok:false, code:(err && err.code) || "unavailable"}; }
+  }
+  if (IN_VIEWER) return {ok:false, code:"unavailable"};
+  try {
+    const blob = data instanceof Blob ? data : new Blob([data], {type: mime || "application/octet-stream"});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = filename; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url), 5000);
+    return {ok:true};
+  } catch(e){ return {ok:false, code:"unavailable"}; }
+}
+const SAVE_MSG = {
+  declined:      "Save cancelled.",
+  rate_limited:  "A save prompt is already open — try again in a moment.",
+  too_large:     "Report is over the 16 MB limit — leave out the sweep charts.",
+  rejected_extension:   "This view can’t save that file type.",
+  extension_not_enabled:"PDF saving isn’t enabled in this view.",
+  bad_request:   "Something went wrong building the file.",
+  unavailable:   "Downloads aren’t available in this view — open the .html file directly to save."
+};
+
+/* ---------- rasterising the views ---------- */
+const TOKEN_NAMES = ["ink","ink-2","ink-3","rule","rule-2","grid","accent","accent-deep",
+                     "s1","s2","s3","s4","s5","surface","inset","paper"];
+function cssTokens(){
+  const cs = getComputedStyle(document.documentElement), t = {};
+  TOKEN_NAMES.forEach(n=>{ t[n] = (cs.getPropertyValue("--"+n)||"").trim() || "#000"; });
+  /* generic families only: an SVG rasterised from a data URI is its own
+     document and never sees the page's web fonts, and a quoted family name
+     would break the attribute it is substituted into */
+  t.sans = "sans-serif"; t.mono = "monospace"; t.serif = "serif";
+  return t;
+}
+function svgToPNG(svgEl, scale){
+  return new Promise((resolve, reject)=>{
+    const vb = svgEl.viewBox.baseVal, w = vb.width || 720, h = vb.height || 400;
+    const clone = svgEl.cloneNode(true);
+    clone.removeAttribute("style");
+    clone.setAttribute("xmlns", SVGNS);
+    clone.setAttribute("width", w*scale); clone.setAttribute("height", h*scale);
+    const bg = document.createElementNS(SVGNS, "rect");
+    bg.setAttribute("x", vb.x||0); bg.setAttribute("y", vb.y||0);
+    bg.setAttribute("width", w); bg.setAttribute("height", h); bg.setAttribute("fill", "#ffffff");
+    clone.insertBefore(bg, clone.firstChild);
+    const TOK = cssTokens();
+    const src = new XMLSerializer().serializeToString(clone)
+      .replace(/var\(--([a-z0-9-]+)\)/g, (m,n)=> TOK[n] || "#000000");
+    const img = new Image();
+    img.onload = ()=>{
+      const c = document.createElement("canvas");
+      c.width = Math.round(w*scale); c.height = Math.round(h*scale);
+      const g = c.getContext("2d");
+      g.fillStyle = "#fff"; g.fillRect(0,0,c.width,c.height);
+      g.drawImage(img, 0, 0, c.width, c.height);
+      resolve({data:c.toDataURL("image/png"), w:c.width, h:c.height});
+    };
+    img.onerror = ()=>reject(new Error("svg raster failed"));
+    img.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(src);
+  });
+}
+function canvasPNG(cv){ return {data: cv.toDataURL("image/png"), w: cv.width, h: cv.height}; }
+
+/** briefly reveal a hidden panel off-screen so its canvases have a real width */
+function withPanel(id, width, fn){
+  const el = $(id); if (!el) return fn();
+  const wasHidden = el.hidden, prevStyle = el.getAttribute("style") || "";
+  el.hidden = false;
+  el.style.cssText = "position:absolute;left:-99999px;top:0;width:"+width+"px";
+  void el.offsetWidth;                              // force layout at the new width
+  try { return fn(); }
+  finally { el.hidden = wasHidden; el.setAttribute("style", prevStyle); }
+}
+
+async function captureViews(want){
+  const shots = {};
+  EXPORT.scale = 2.6;
+  withPanel("#panel-analysis", 760, ()=>{
+    if (want.three){ draw3D(R); shots.three = canvasPNG($("#three")); }
+    if (want.env){   drawEnvelope(R); shots.env = canvasPNG($("#env")); }
+  });
+  if (want.sweep && SW.n && $("#swMain")){
+    withPanel("#panel-sweep", 720, ()=>{
+      [["#swMain","swMain"],["#swUtil","swUtil"]].forEach(([sel,key])=>{
+        const cv = $(sel); if (!cv || !cv._probe) return;
+        scatter(cv, cv._probe.o); shots[key] = canvasPNG(cv);
+      });
+    });
+  }
+  EXPORT.scale = 0;
+  /* SVGs read their own markup, so they need the panel only for layout-free cloning */
+  if (want.side) shots.side = await svgToPNG($("#side"), 2.6).catch(()=>null);
+  if (want.pr)   shots.pr   = await svgToPNG($("#prChart"), 2.6).catch(()=>null);
+  /* restore the on-screen rendering at the real layout width */
+  if (!$("#panel-analysis").hidden){ draw3D(R); drawEnvelope(R); }
+  if (SW.n && $("#swMain") && !$("#panel-sweep").hidden){
+    ["#swMain","#swUtil"].forEach(sel=>{ const cv=$(sel); if (cv && cv._probe) scatter(cv, cv._probe.o); });
+  }
+  return shots;
+}
+
+/* ---------- PDF ---------- */
+/* the built-in PDF fonts are Latin-1: map the symbols the app uses */
+const GLY = {"₀":"0","₁":"1","₂":"2","₃":"3","θ":"theta","τ":"tau","σ":"sigma","δ":"delta",
+  "α":"alpha","ρ":"rho","Δ":"D","Σ":"Sum","Ø":"dia ","≥":">=","≤":"<=","≈":"~","→":"->",
+  "–":"-","—":"-","·":"-","×":"x","•":"-","’":"'","‘":"'","“":'"',"”":'"',"…":"...","₂":"2"};
+function A(v){
+  return String(v==null?"":v).replace(/[^\x20-\x7E]/g, c => GLY[c]!==undefined ? GLY[c] : (c.charCodeAt(0)<256?c:"?"));
+}
+function stripTags(html){
+  return A(String(html).replace(/<[^>]*>/g, "").replace(/&mdash;/g,"-").replace(/&nbsp;/g," ")
+    .replace(/&amp;/g,"&").replace(/&lt;/g,"<").replace(/&gt;/g,">").replace(/\s+/g," ").trim());
+}
+
+const RGB = {ink:[15,34,48], ink2:[75,96,112], ink3:[125,145,158], rule:[222,229,234],
+             grid:[236,241,244], accent:[42,120,214], good:[12,163,12], warn:[250,178,25],
+             crit:[208,59,59], inset:[246,248,250], white:[255,255,255]};
+
+function makeDoc(){
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({unit:"mm", format:"a4", orientation:"portrait", compress:true});
+  const L = {doc, M:16, W:210, H:297, y:0, page:0, foot:16,
+             stamp: new Date().toISOString().slice(0,16).replace("T"," ")};
+  L.txt = (c)=>{ doc.setTextColor(c[0],c[1],c[2]); };
+  L.fill = (c)=>{ doc.setFillColor(c[0],c[1],c[2]); };
+  L.draw = (c)=>{ doc.setDrawColor(c[0],c[1],c[2]); };
+  L.font = (sz, bold)=>{ doc.setFont("helvetica", bold?"bold":"normal"); doc.setFontSize(sz); };
+  L.newPage = ()=>{
+    if (L.page>0) doc.addPage();
+    L.page++;
+    L.font(7.5,false); L.txt(RGB.ink3);
+    doc.text("4-DOF ARM DESIGN BENCH", L.M, 11);
+    doc.text("page "+L.page, L.W-L.M, 11, {align:"right"});
+    L.draw(RGB.rule); doc.setLineWidth(0.2);
+    doc.line(L.M, 13.5, L.W-L.M, 13.5);
+    doc.setFontSize(7.5); doc.text(L.stamp, L.W-L.M, L.H-8, {align:"right"});
+    L.y = 22;
+  };
+  L.need = (h)=>{ if (L.y + h > L.H - L.foot) L.newPage(); };
+  L.gap = (h)=>{ L.y += h; };
+  L.h1 = (t)=>{ L.need(14); L.font(13,true); L.txt(RGB.ink); doc.text(A(t), L.M, L.y); L.y += 6.5; };
+  L.h2 = (t)=>{ L.need(30); L.font(9,true); L.txt(RGB.ink); doc.text(A(t), L.M, L.y);
+                L.draw(RGB.rule); doc.setLineWidth(0.2); doc.line(L.M, L.y+1.6, L.W-L.M, L.y+1.6); L.y += 6; };
+  L.para = (t, sz)=>{
+    L.font(sz||8.4,false); L.txt(RGB.ink2);
+    const lines = doc.splitTextToSize(A(t), L.W-2*L.M);
+    L.need(lines.length*3.9+2);
+    doc.text(lines, L.M, L.y); L.y += lines.length*3.9 + 2.5;
+  };
+  L.kv = (rows, colW)=>{
+    const w = colW || 62;
+    L.need(Math.min(rows.length,6)*4.7);        // keep a short list on one page
+    L.font(8.2,false);
+    rows.forEach(([k,v])=>{
+      L.need(5.4);
+      L.txt(RGB.ink3); doc.text(A(k), L.M, L.y);
+      L.txt(RGB.ink);  doc.text(A(v), L.M+w, L.y);
+      L.y += 4.7;
+    });
+    L.y += 1.5;
+  };
+  /* cols: [{t,w,a}] widths in mm, a = "l"|"r" */
+  L.table = (cols, rows, opt)=>{
+    opt = opt || {};
+    const rowH = 5.0, headH = 5.6;
+    const drawHead = ()=>{
+      L.font(6.9,true); L.txt(RGB.ink3);
+      let x = L.M;
+      cols.forEach(c=>{
+        doc.text(A(c.t).toUpperCase(), c.a==="r" ? x+c.w : x, L.y, {align: c.a==="r"?"right":"left"});
+        x += c.w;
+      });
+      L.draw(RGB.rule); doc.setLineWidth(0.25); doc.line(L.M, L.y+1.8, L.M+cols.reduce((a,c)=>a+c.w,0), L.y+1.8);
+      L.y += headH;
+    };
+    L.need(headH + rowH*Math.min(rows.length,6) + 2);
+    drawHead();
+    rows.forEach((r, i)=>{
+      if (L.y + rowH > L.H - L.foot){ L.newPage(); drawHead(); }
+      if (r.__rule){ L.draw(RGB.rule); doc.setLineWidth(0.25);
+                     doc.line(L.M, L.y-2.6, L.M+cols.reduce((a,c)=>a+c.w,0), L.y-2.6); }
+      if (i%2===1 && !opt.plain){ L.fill(RGB.inset);
+        doc.rect(L.M-1.2, L.y-3.4, cols.reduce((a,c)=>a+c.w,0)+2.4, rowH, "F"); }
+      let x = L.M;
+      cols.forEach((c,ci)=>{
+        L.font(7.4, !!r.__bold || ci===0 && opt.boldFirst);
+        L.txt(ci===0 ? RGB.ink : RGB.ink2);
+        const cell = A(r.c[ci]==null ? "" : r.c[ci]);
+        doc.text(cell, c.a==="r" ? x+c.w : x, L.y, {align: c.a==="r"?"right":"left", maxWidth: c.w-1.5});
+        x += c.w;
+      });
+      L.y += rowH;
+    });
+    L.y += 3;
+  };
+  L.image = (shot, maxW, cap)=>{
+    if (!shot) return;
+    const w = Math.min(maxW || (L.W-2*L.M), L.W-2*L.M);
+    const h = w * shot.h / shot.w;
+    L.need(h + (cap?5:0) + 3);
+    L.draw(RGB.rule); doc.setLineWidth(0.2);
+    doc.addImage(shot.data, "PNG", L.M, L.y, w, h, undefined, "FAST");
+    doc.rect(L.M, L.y, w, h, "S");
+    L.y += h + 2;
+    if (cap){ L.font(7,false); L.txt(RGB.ink3); doc.text(A(cap), L.M, L.y+2.4); L.y += 5; }
+    L.y += 2;
+  };
+  L.banner = (state, title, sub)=>{
+    const c = state==="ok" ? RGB.good : state==="tight" ? RGB.warn : RGB.crit;
+    L.need(15);
+    L.fill(c); doc.rect(L.M, L.y-3.6, 1.6, 11.5, "F");
+    L.font(10,true); L.txt(RGB.ink); doc.text(A(title), L.M+4.5, L.y+0.6);
+    L.font(8,false); L.txt(RGB.ink2); doc.text(A(sub), L.M+4.5, L.y+5.4);
+    L.y += 15;
+  };
+  L.stats = (items)=>{
+    const n = items.length, gap = 3, w = (L.W-2*L.M - gap*(n-1))/n;
+    L.need(19);
+    items.forEach((it,i)=>{
+      const x = L.M + i*(w+gap);
+      L.draw(RGB.rule); doc.setLineWidth(0.2); L.fill(RGB.white);
+      doc.roundedRect(x, L.y-3.5, w, 16, 1.2, 1.2, "FD");
+      L.font(5.8,true); L.txt(RGB.ink3); doc.text(A(it[0]).toUpperCase(), x+2.4, L.y);
+      L.font(12,true); L.txt(it[3] ? (it[3]==="ok"?RGB.good:it[3]==="over"?RGB.crit:RGB.warn) : RGB.ink);
+      doc.text(A(it[1]), x+2.4, L.y+5.8);
+      L.font(6.4,false); L.txt(RGB.ink3);
+      doc.text(doc.splitTextToSize(A(it[2]), w-4)[0] || "", x+2.4, L.y+10.4);
+    });
+    L.y += 19;
+  };
+  /* vector torque bars, so the numbers stay selectable text */
+  L.bars = (rows, unit)=>{
+    const labW = 30, valW = 40, trackW = L.W-2*L.M-labW-valW-6;
+    rows.forEach(r=>{
+      L.need(9);
+      L.font(7.6,false); L.txt(RGB.ink); doc.text(A(r.name), L.M, L.y+0.6);
+      const x = L.M+labW;
+      L.fill(RGB.inset); L.draw(RGB.rule); doc.setLineWidth(0.2);
+      doc.rect(x, L.y-2.6, trackW, 4.4, "FD");
+      const c = r.state==="ok"?RGB.good:r.state==="tight"?RGB.warn:RGB.crit;
+      L.fill(c); doc.rect(x, L.y-2.6, trackW*Math.min(r.pct,100)/100, 4.4, "F");
+      if (r.tick!=null){ L.draw(RGB.ink); doc.setLineWidth(0.35);
+        doc.line(x+trackW*Math.min(r.tick,100)/100, L.y-3.4, x+trackW*Math.min(r.tick,100)/100, L.y+2.6); }
+      L.font(7.4,false); L.txt(RGB.ink2);
+      doc.text(A(r.val), L.W-L.M, L.y+0.6, {align:"right"});
+      L.y += 8;
+    });
+    L.font(6.6,false); L.txt(RGB.ink3);
+    doc.text(A(unit), L.M, L.y+0.5); L.y += 5;
+  };
+  return L;
+}
+
+const EXPORT_SECTIONS = [
+  {k:"summary",  label:"Summary and drawings",   note:"Verdict, key results, side elevation and 3D view", on:true},
+  {k:"torque",   label:"Joint torque budget",    note:"Per-joint bars, torque table and the constraint ledger", on:true},
+  {k:"workspace",label:"Workspace",              note:"Reach envelope and the payload-vs-reach limit curve", on:true},
+  {k:"params",   label:"Full parameter set",     note:"Every input, plus the computed section properties", on:true},
+  {k:"mass",     label:"Mass budget and review", note:"Mass elements, centre of mass and design recommendations", on:true},
+  {k:"sweep",    label:"Parameter sweep results",note:"Trade-off plots and the best designs found", on:true, needs:"sweep"},
+  {k:"model",    label:"Model and assumptions",  note:"Governing equations and what the model does not cover", on:true},
+];
+
+async function buildPDF(opts){
+  const res = R;
+  const want = {side:opts.summary, three:opts.summary, env:opts.workspace,
+                pr:opts.workspace, sweep:opts.sweep && SW.n>0};
+  const shots = await captureViews(want);
+  const L = makeDoc(), doc = L.doc, K = KGCM_PER_NM;
+  const st = designState(res), peak = res.joints[res.peak];
+  doc.setProperties({title:"4-DOF arm design report", subject:"Static torque and reach analysis",
+                     creator:"4-DOF Arm Design Bench"});
+
+  /* ---- page 1 ---- */
+  L.newPage();
+  L.font(17,true); L.txt(RGB.ink);
+  doc.text("4-DOF Arm Design Report", L.M, L.y+2); L.y += 9;
+  L.font(8.4,false); L.txt(RGB.ink3);
+  doc.text(A(MATERIALS[P.material].name+"  -  "+SECTIONS[P.section]+"  -  reach "+fx(res.reach*1000,0)+
+           " mm  -  payload "+fx(res.payload_g,0)+" g  -  "+L.stamp), L.M, L.y); L.y += 9;
+
+  L.banner(st,
+    st==="ok" ? "Within all limits" : st==="tight" ? "Below target margin" : "Over limit",
+    peak.name+" is the limiting joint at "+fx(peak.util,0)+"% of usable torque (SF "+fx(peak.sf,2)+
+    "x, target "+fx(P.sfMin,2)+"x)"+(res.useWorst?" - worst-case pose":" - pose theta "+
+    fx(P.q1,0)+"/"+fx(P.q2,0)+"/"+fx(P.q3,0)+" deg"));
+
+  const maxPay = maxFeasiblePayload();
+  L.stats([
+    ["Reach", fx(res.reach*1000,0)+" mm", "L1+L2+L3 = "+fx(res.reachMax*1000,0)+" mm", null],
+    ["Peak servo load", fx(peak.util,0)+"%", peak.name+" SF "+fx(peak.sf,2)+"x", jointState(peak)],
+    ["Payload capacity", fx(maxPay,0)+" g", "now "+fx(res.payload_g,0)+" g", res.payload_g<=maxPay?"ok":"over"],
+    ["Total mass", fx(res.mTot*1000,0)+" g", "moving "+fx(res.mArm*1000,0)+" g", null],
+    ["Tip deflection", fx(res.deflection.mm,2)+" mm", "limit "+fx(P.defMax,2)+" mm",
+      res.deflection.mm<=P.defMax?"ok":"over"],
+  ]);
+
+  if (opts.summary){
+    L.gap(2);
+    L.image(shots.side, 165, "Side elevation - "+(res.useWorst?"worst case, fully extended and horizontal":"current pose"));
+    L.image(shots.three, 165, "3D preview - structure grey, servos blue, payload orange, centre of mass marked");
+  }
+
+  /* ---- torque ---- */
+  if (opts.torque){
+    L.newPage(); L.h1("Joint torque budget");
+    L.para("Bar length is the usable torque, stall x "+fx(P.derate,2)+". The tick marks the torque that still "+
+      "meets the "+fx(P.sfMin,2)+"x target safety factor. The base axis is vertical, so gravity applies no moment "+
+      "to it - its load is inertia plus bearing drag.");
+    L.gap(1);
+    L.bars(res.jointOrder.map(k=>{ const j = res.joints[k];
+      return {name:j.name, pct:j.util, tick:100/P.sfMin, state:jointState(j),
+              val: fx(j.tReq*K,2)+" / "+fx(j.tAllow*K,2)+" kg-cm   SF "+fx(j.sf,2)+"x"};
+    }), "required / usable torque in kg-cm");
+
+    L.h2("Torque table");
+    L.table([{t:"Joint",w:30},{t:"tau static",w:20,a:"r"},{t:"tau inert.",w:20,a:"r"},
+             {t:"tau req.",w:20,a:"r"},{t:"stall",w:17,a:"r"},{t:"usable",w:19,a:"r"},
+             {t:"util %",w:18,a:"r"},{t:"SF",w:14,a:"r"},{t:"I (kg m2)",w:20,a:"r"}],
+      res.jointOrder.map(k=>{ const j=res.joints[k];
+        return {c:[j.name, fx(j.tStat*K,3), fx(j.tDyn*K,3), fx(j.tReq*K,3), fx(j.tStall*K,1),
+                   fx(j.tAllow*K,2), fx(j.util,1), fx(j.sf,2), j.Iaxis.toExponential(2)]}; }));
+
+    L.h2("Constraint ledger");
+    L.para("Torque rows are measured against the design limit tau_design = tau_usable / SF_min, so 100% means the "+
+      "target safety factor is exactly met.");
+    L.table([{t:"Constraint",w:44},{t:"Value against limit",w:74},{t:"% of limit",w:26,a:"r"},{t:"Status",w:34,a:"r"}],
+      constraintRows(res).map(r=>({c:[r.name, r.detail, fx(r.ratio,1)+"%",
+        r.ratio>100?"OVER":r.ratio>95?"TIGHT":"OK"]})));
+
+    L.h2("Structural checks");
+    L.table([{t:"Member",w:34},{t:"Root moment (N m)",w:36,a:"r"},{t:"sigma (MPa)",w:30,a:"r"},
+             {t:"allowable (MPa)",w:34,a:"r"},{t:"SF",w:24,a:"r"}],
+      res.links.map((l,i)=>({c:["Link "+(i+1), fx(l.M_root,5), fx(l.sigmaMPa,3),
+        fx(res.sy_allow/1e6,1), fx(l.sfMat,1)]}))
+        .concat([{c:["Column", fx(res.column.M_root,5), fx(res.column.sigmaMPa,3),
+                     fx(res.sy_allow/1e6,1), fx(res.column.sfMat,1)]}]));
+    L.kv([
+      ["Tip deflection", fx(res.deflection.mm,3)+" mm  (limit "+fx(P.defMax,2)+" mm)"],
+      ["Deflection components", "dr "+(res.deflection.r*1000).toFixed(3)+" mm, dz "+(res.deflection.z*1000).toFixed(3)+" mm"],
+      ["Tipping factor", P.bolted ? "bolted down - not assessed"
+         : fx(res.tipping.sf,2)+"x  (need "+fx(P.sfTip,1)+"x, CoM overhang "+fx(res.tipping.rCom*1000,1)+
+           " mm of "+fx(P.footR,0)+" mm)"],
+    ]);
+  }
+
+  /* ---- workspace ---- */
+  if (opts.workspace){
+    L.newPage(); L.h1("Workspace");
+    L.image(shots.env, 168, "Reach envelope in the working plane - pale: geometrically reachable, "+
+      "mid blue: torque-feasible at "+fx(res.payload_g,0)+" g, dark line: the current pose");
+    if (ENVSTATS) L.kv([
+      ["Torque-feasible area", fx(ENVSTATS.areaFea,0)+" cm2  ("+fx(ENVSTATS.pct,0)+"% of geometric)"],
+      ["Geometric area", fx(ENVSTATS.areaGeo,0)+" cm2"],
+      ["Furthest feasible reach", ENVSTATS.maxR!=null ? fx(ENVSTATS.maxR,0)+" mm" : "-"],
+      ["Highest feasible point", ENVSTATS.maxZ!=null ? fx(ENVSTATS.maxZ,0)+" mm" : "-"],
+      ["Poses evaluated", ENVSTATS.poses.toLocaleString()],
+      ["Joint travel used", "theta1 "+fx(P.limShMin,0)+" to "+fx(P.limShMax,0)+" deg, theta2 "+
+        fx(P.limElMin,0)+" to "+fx(P.limElMax,0)+" deg, theta3 "+fx(P.limWrMin,0)+" to "+fx(P.limWrMax,0)+" deg"],
+    ], 52);
+    L.gap(2);
+    L.image(shots.pr, 168, "Maximum feasible reach against payload, holding the L1:L2:L3 ratio fixed");
+    if (prData && prData.length){
+      L.h2("Limit curve");
+      const rows = prData.filter((d,i)=>i%4===0).map(d=>({c:[fx(d.pay,0), fx(d.reach,0),
+        fx(d.reach-prData[0].reach,0)]}));
+      L.table([{t:"Payload (g)",w:36},{t:"Max reach (mm)",w:40,a:"r"},{t:"Change vs. unloaded (mm)",w:52,a:"r"}], rows);
+    }
+  }
+
+  /* ---- parameters ---- */
+  if (opts.params){
+    L.need(115); L.h1("Parameters");
+    L.h2("Servos");
+    L.table([{t:"Joint",w:32},{t:"Model",w:32},{t:"Stall (kg-cm)",w:30,a:"r"},
+             {t:"Usable (kg-cm)",w:32,a:"r"},{t:"Mass (g)",w:26,a:"r"},{t:"Util %",w:26,a:"r"}],
+      [["Base (yaw)","srvBase","tauBase","mBase","base"],["Shoulder","srvSh","tauSh","mSh","sh"],
+       ["Elbow","srvEl","tauEl","mEl","el"],["Wrist","srvWr","tauWr","mWr","wr"]]
+        .map(([n,sk,tk,mk,jk])=>({c:[n, SERVOS[P[sk]] ? SERVOS[P[sk]].name : "Custom",
+          fx(P[tk],1), fx(P[tk]*P.derate,2), fx(P[mk],1), fx(res.joints[jk].util,1)]})));
+    L.kv([
+      ["Usable fraction of stall", fx(P.derate,2)],
+      ["Target safety factor", fx(P.sfMin,2)+"x"],
+      ["Inertial term", P.dynOn ? "included, alpha = "+fx(P.alpha,1)+" rad/s2" : "not included (static only)"],
+      ["Base bearing drag", fx(P.tauFric,2)+" kg-cm"],
+    ]);
+
+    L.h2("Geometry");
+    L.kv([
+      ["Column height h0", fx(P.h0,1)+" mm"],
+      ["L1 shoulder to elbow", fx(P.L1,1)+" mm"],
+      ["L2 elbow to wrist", fx(P.L2,1)+" mm"],
+      ["L3 wrist to TCP", fx(P.L3,1)+" mm"],
+      ["Pose", res.useWorst ? "worst case - fully extended, horizontal"
+         : "theta1 "+fx(P.q1,0)+" deg, theta2 "+fx(P.q2,0)+" deg, theta3 "+fx(P.q3,0)+" deg"],
+      ["TCP position", "r "+fx(res.N[3].r*1000,1)+" mm, z "+fx(res.N[3].z*1000,1)+" mm"],
+    ]);
+
+    L.h2("Structure and material");
+    L.kv([
+      ["Material", MATERIALS[P.material].name+"  (rho "+MATERIALS[P.material].rho+" kg/m3, E "+
+        MATERIALS[P.material].E+" MPa, yield "+MATERIALS[P.material].sy+" MPa)"],
+      ["Cross section", SECTIONS[P.section]],
+      ["Wall thickness", fx(P.wall,2)+" mm"],
+      ["Infill", P.section==="ibeam" ? "n/a - I-beam cavities are open" : fx(P.infill,0)+" %"],
+      ["Layer-adhesion knockdown", MATERIALS[P.material].printed ? fx(P.knock,2) : "1.00 (not a printed part)"],
+      ["Allowable stress", fx(res.sy_allow/1e6,1)+" MPa"],
+      ["Fasteners and brackets", "+"+fx(P.hwAllow,0)+" % on link mass"],
+    ], 52);
+    L.h2("Computed section properties");
+    L.table([{t:"Member",w:28},{t:"Section",w:22},{t:"L (mm)",w:20,a:"r"},{t:"A_eff (mm2)",w:26,a:"r"},
+             {t:"I_eff (mm4)",w:28,a:"r"},{t:"c (mm)",w:20,a:"r"},{t:"Mass (g)",w:24,a:"r"}],
+      res.links.map((l,i)=>({c:["Link "+(i+1), l.sec.label, fx(l.len,1), fx(l.sec.A_eff,1),
+        fx(l.sec.I_eff,0), fx(l.sec.c,2), fx(l.m*1000,2)]}))
+        .concat([{c:["Column", res.column.sec.label, fx(P.h0,1), fx(res.column.sec.A_eff,1),
+          fx(res.column.sec.I_eff,0), fx(res.column.sec.c,2), fx(res.column.m*1000,2)]}]));
+    L.para("A_eff = A_outline - (1 - p) A_core with p = "+fx(P.section==="ibeam"?1:P.infill/100,2)+
+      "; I_eff follows the same split, so mass and stiffness stay consistent.");
+
+    L.h2("Loads and limits");
+    L.kv([
+      ["Payload at TCP", fx(P.payload,1)+" g"],
+      ["End effector mass", fx(P.mEE,1)+" g"],
+      ["Base plate mass", fx(P.mPlate,1)+" g"],
+      ["Base support radius", fx(P.footR,1)+" mm"+(P.bolted?"  (bolted down)":"")],
+      ["Max tip deflection", fx(P.defMax,2)+" mm"],
+      ["Min tipping factor", fx(P.sfTip,1)+"x"],
+      ["Optimiser link bounds", fx(P.lMin,0)+" to "+fx(P.lMax,0)+" mm"],
+    ]);
+  }
+
+  /* ---- mass and review ---- */
+  if (opts.mass){
+    L.need(115); L.h1("Mass budget");
+    L.table([{t:"Element",w:44},{t:"Mass (g)",w:26,a:"r"},{t:"Share %",w:24,a:"r"},
+             {t:"r (mm)",w:24,a:"r"},{t:"z (mm)",w:24,a:"r"},{t:"m r (g mm)",w:36,a:"r"}],
+      res.el.slice().sort((a,b)=>b.m-a.m).map(e=>({c:[e.name, fx(e.m*1000,2),
+        fx(e.m/res.mTot*100,1), fx(e.r*1000,1), fx(e.z*1000,1), fx(e.m*e.r*1e6,1)]}))
+        .concat([{__bold:true, __rule:true, c:["Total", fx(res.mTot*1000,2), "100.0",
+          fx(res.com.r*1000,1), fx(res.com.z*1000,1), fx(res.com.r*res.mTot*1e6,1)]}]));
+    L.kv([
+      ["Centre of mass, whole machine", "r "+fx(res.com.r*1000,1)+" mm, z "+fx(res.com.z*1000,1)+" mm"],
+      ["Centre of mass, moving arm", "r "+fx(res.comArm.r*1000,1)+" mm, z "+fx(res.comArm.z*1000,1)+" mm"],
+      ["Moving mass", fx(res.mArm*1000,1)+" g of "+fx(res.mTot*1000,1)+" g"],
+      ["Overturning / restoring moment", fx(res.tipping.Mover,4)+" / "+fx(res.tipping.Mrest,4)+" N m"],
+    ], 62);
+
+    L.h2("Design review");
+    if (!RECS.length) L.para("No findings.");
+    RECS.forEach(r=>{
+      L.need(13);
+      const c = r.lvl==="crit"?RGB.crit:r.lvl==="warn"?RGB.warn:RGB.accent;
+      L.fill(c); doc.circle(L.M+1.4, L.y-1.1, 1.4, "F");
+      L.font(8.4,true); L.txt(RGB.ink); doc.text(A(r.title), L.M+5, L.y); L.y += 4.2;
+      L.font(7.8,false); L.txt(RGB.ink2);
+      const lines = doc.splitTextToSize(stripTags(r.body), L.W-2*L.M-5);
+      L.need(lines.length*3.6+2);
+      doc.text(lines, L.M+5, L.y); L.y += lines.length*3.6 + 4;
+    });
+  }
+
+  /* ---- sweep ---- */
+  if (opts.sweep && SW.n){
+    L.newPage(); L.h1("Parameter sweep");
+    const feas = []; for (let i=0;i<SW.n;i++) if (SW.FE[i]) feas.push(i);
+    L.kv([
+      ["Designs simulated", SW.n.toLocaleString()],
+      ["Feasible", feas.length.toLocaleString()+"  ("+fx(feas.length/SW.n*100,1)+"%)"],
+      ["L1 range", fx(SW.cfg.l1a,0)+" to "+fx(SW.cfg.l1b,0)+" mm in "+SW.cfg.l1n+" steps"],
+      ["L2 range", fx(SW.cfg.l2a,0)+" to "+fx(SW.cfg.l2b,0)+" mm in "+SW.cfg.l2n+" steps"],
+      ["L3 range", fx(SW.cfg.l3a,0)+" to "+fx(SW.cfg.l3b,0)+" mm in "+SW.cfg.l3n+" steps"],
+      ["Payload range", fx(SW.cfg.pa,0)+" to "+fx(SW.cfg.pb,0)+" g in "+SW.cfg.pn+" steps"],
+    ], 52);
+    L.image(shots.swMain, 172, "Reach vs. payload - grey infeasible, blue feasible shaded by margin used, "+
+      "black staircase is the Pareto frontier, orange cross is the current design");
+    L.image(shots.swUtil, 172, "Margin consumed as the arm grows - the lower edge is the most efficient link split at each reach");
+    const top = feas.slice().sort((a,b)=> SW.RE[b]-SW.RE[a] || SW.PY[b]-SW.PY[a]).slice(0,14);
+    if (top.length){
+      L.h2("Best feasible designs by reach");
+      L.table([{t:"#",w:10},{t:"L1",w:20,a:"r"},{t:"L2",w:20,a:"r"},{t:"L3",w:20,a:"r"},
+               {t:"Reach (mm)",w:28,a:"r"},{t:"Payload (g)",w:28,a:"r"},{t:"Moving mass (g)",w:32,a:"r"},
+               {t:"Margin used",w:26,a:"r"}],
+        top.map((i,k)=>({c:[String(k+1), fx(SW.L1[i],0), fx(SW.L2[i],0), fx(SW.L3[i],0),
+          fx(SW.RE[i],0), fx(SW.PY[i],0), fx(SW.MS[i],0), fx(SW.UT[i],0)+"%"]})));
+    }
+    const limCount = {};
+    for (let i=0;i<SW.n;i++){ if (SW.FE[i]) continue; const k=LIMNAMES[SW.LIM[i]]; limCount[k]=(limCount[k]||0)+1; }
+    const limRows = Object.keys(limCount).map(k=>({k,v:limCount[k]})).sort((a,b)=>b.v-a.v);
+    if (limRows.length){
+      L.h2("What blocks the infeasible designs");
+      L.table([{t:"Tightest constraint",w:60},{t:"Designs rejected",w:38,a:"r"},{t:"Share",w:26,a:"r"}],
+        limRows.map(r=>({c:[r.k, r.v.toLocaleString(), fx(r.v/(SW.n-feas.length)*100,1)+"%"]})));
+    }
+  }
+
+  /* ---- model ---- */
+  if (opts.model){
+    L.newPage(); L.h1("Model");
+    const eqs = [
+      ["Section properties", ["A_eff = A_outline - (1 - p) * A_core",
+        "I_eff = I_outline - (1 - p) * I_core",
+        "m_i   = rho * A_eff,i * L_i * (1 + k_hw)"]],
+      ["Kinematics", ["r_i = r_(i-1) + L_i cos a_i", "z_i = z_(i-1) + L_i sin a_i",
+        "a1 = th1,  a2 = th1 + th2,  a3 = th1 + th2 + th3"]],
+      ["Static joint torque", ["tau_j,static = g * SUM over distal(j) of m_i (r_i - r_j)"]],
+      ["Inertial term", ["I_j  = SUM over distal(j) of m_i [ (r_i-r_j)^2 + (z_i-z_j)^2 ]",
+        "tau_j = | tau_j,static | + I_j * alpha"]],
+      ["Base yaw axis", ["I_base   = SUM over all i of m_i r_i^2",
+        "tau_base = I_base * alpha + tau_drag        (gravity gives no moment about a vertical axis)"]],
+      ["Capacity and margin", ["tau_usable = tau_stall * k_derate",
+        "U  = tau_req / tau_usable * 100 %", "SF = tau_usable / tau_req  >=  SF_min"]],
+      ["Bending stress", ["sigma_i = M_root,i * c_i / I_eff,i",
+        "sigma_allow = sigma_yield * k_z"]],
+      ["Tip deflection", ["theta_i = ( F_i L_i^2/2 + M_i L_i + W_i L_i^2/6 ) / EI_i",
+        "delta_i = ( F_i L_i^3/3 + M_i L_i^2/2 + W_i L_i^3/8 ) / EI_i",
+        "delta_tip = SUM over i of [ n_i delta_i + theta_i x (p_TCP - p_i) ]"]],
+      ["Centre of mass and tipping", ["r_bar = SUM m_i r_i / SUM m_i",
+        "SF_tip = a_support / | r_bar |"]],
+      ["Optimisation", ["maximise  R = L1 + L2 + L3",
+        "s.t.  SF_j >= SF_min for every joint,  sigma_i <= sigma_allow,",
+        "      | delta_tip | <= delta_max,  SF_tip >= SF_tip,min,  L_min <= L_i <= L_max"]],
+    ];
+    eqs.forEach(([t, lines])=>{
+      L.need(9 + lines.length*4);
+      L.font(8.2,true); L.txt(RGB.ink); doc.text(A(t), L.M, L.y); L.y += 4.4;
+      L.fill(RGB.inset); doc.rect(L.M, L.y-3.2, L.W-2*L.M, lines.length*4+2.4, "F");
+      L.fill(RGB.accent); doc.rect(L.M, L.y-3.2, 0.7, lines.length*4+2.4, "F");
+      doc.setFont("courier","normal"); doc.setFontSize(7.4); L.txt(RGB.ink);
+      lines.forEach(ln=>{ doc.text(A(ln), L.M+3, L.y); L.y += 4; });
+      L.y += 4.5;
+    });
+
+    L.need(88);
+    L.h2("Assumptions and limits");
+    [ "Point masses. Servos, the end effector and the payload are lumped at their joint or at the tool centre point; links carry their mass at their midpoint.",
+      "Quasi-static. Static gravity torque plus an inertial allowance I*alpha, superposed as if they peak together, which is conservative. This is not a trajectory simulation.",
+      "Uniform prismatic sections. Stress concentrations at bosses, bearing seats and fillets are not modelled, so the reported bending stress is a nominal section stress.",
+      "Infill as a homogeneous continuum. Good for mass; optimistic for stiffness at low percentages, where real gyroid or grid infill is anisotropic.",
+      "Layer adhesion. The knockdown factor stands in for a printed part being much weaker across layers than along them; 0.4 to 0.7 is the usual band for a link in bending.",
+      "Small deflections, computed on the undeformed geometry.",
+      "Servo torque is a catalogue stall number that varies with voltage and between samples. The derating factor absorbs that uncertainty and matters more than any other single input.",
+      "No gearing, springs or counterbalance - a shoulder counterweight changes the picture entirely and is outside this model."
+    ].forEach(t=>{
+      L.font(7.8,false); L.txt(RGB.ink2);
+      const lines = doc.splitTextToSize(A(t), L.W-2*L.M-4);
+      L.need(lines.length*3.6+2);
+      L.fill(RGB.ink3); doc.circle(L.M+1, L.y-1, 0.7, "F");
+      doc.text(lines, L.M+4, L.y); L.y += lines.length*3.6 + 2.4;
+    });
+
+    L.gap(3);
+    L.h2("Material library");
+    L.table([{t:"Material",w:52},{t:"Density (kg/m3)",w:36,a:"r"},{t:"E (MPa)",w:30,a:"r"},
+             {t:"Yield (MPa)",w:32,a:"r"},{t:"Printed",w:28,a:"r"}],
+      Object.keys(MATERIALS).map(k=>({__bold: k===P.material,
+        c:[MATERIALS[k].name + (k===P.material ? "   (this design)" : ""), String(MATERIALS[k].rho),
+           String(MATERIALS[k].E), String(MATERIALS[k].sy), MATERIALS[k].printed ? "yes" : "no"]})));
+    L.para("Printed-polymer figures are for well-tuned, near-solid specimens along the print plane. "+
+      "The layer-adhesion knockdown is what carries them to a real part.");
+
+    L.h2("Servo library");
+    L.table([{t:"Model",w:52},{t:"Stall (kg-cm)",w:36,a:"r"},{t:"Mass (g)",w:30,a:"r"},
+             {t:"Usable at "+fx(P.derate,2)+" (kg-cm)",w:60,a:"r"}],
+      Object.keys(SERVOS).filter(k=>SERVOS[k].tau).map(k=>({
+        c:[SERVOS[k].name, fx(SERVOS[k].tau,1), fx(SERVOS[k].mass,1), fx(SERVOS[k].tau*P.derate,2)]})));
+
+    L.h2("Unit conventions");
+    L.kv([
+      ["1 kg-cm", "0.0980665 N m"],
+      ["1 N m", "10.19716 kg-cm"],
+      ["g", "9.80665 m/s2"],
+      ["Servo ratings", "quoted in kg-cm by convention - kilograms-force at one centimetre"],
+      ["Internally", "everything is SI; conversion happens only at the input and display boundaries"],
+    ], 40);
+  }
+
+  const name = "arm-design-report_" + fx(res.reach*1000,0) + "mm_" +
+               fx(res.payload_g,0) + "g_" + new Date().toISOString().slice(0,10) + ".pdf";
+  return {buffer: doc.output("arraybuffer"), filename: name, pages: L.page};
+}
+
+/* ---------- export UI ---------- */
+function buildExportUI(){
+  $("#exOpts").innerHTML = EXPORT_SECTIONS.map(sec=>{
+    const avail = sec.needs !== "sweep" || SW.n > 0;
+    return '<label class="opt'+(avail?"":" off")+'">'+
+      '<input type="checkbox" data-sec="'+sec.k+'"'+(sec.on&&avail?" checked":"")+(avail?"":" disabled")+'>'+
+      '<span>'+sec.label+'<em>'+(avail?sec.note:"Run a parameter sweep first")+'</em></span></label>';
+  }).join("");
+}
+function syncExportUI(){
+  const msg = $("#exMsg"); if (!msg) return;
+  if (DL_READY && !DL && IN_VIEWER){
+    msg.className = "exportmsg err";
+    msg.textContent = "Downloads are unavailable in this view.";
+    $("#exRun").disabled = true;
+  }
+}
+function openExport(){
+  buildExportUI();
+  $("#exMsg").className = "exportmsg"; $("#exMsg").textContent = "";
+  $("#exRun").disabled = false;
+  syncExportUI();
+  $("#exportModal").hidden = false;
+  $("#exRun").focus();
+}
+function closeExport(){ $("#exportModal").hidden = true; $("#btnExport").focus(); }
+
+async function runExport(){
+  const btn = $("#exRun"), msg = $("#exMsg");
+  const opts = {};
+  $$("#exOpts input[data-sec]").forEach(c=>{ opts[c.dataset.sec] = c.checked; });
+  if (!Object.keys(opts).some(k=>opts[k])){
+    msg.className = "exportmsg err"; msg.textContent = "Pick at least one section."; return;
+  }
+  if (!(window.jspdf && window.jspdf.jsPDF)){
+    msg.className = "exportmsg err"; msg.textContent = "The PDF library didn’t load — check the connection and reopen."; return;
+  }
+  btn.disabled = true;
+  msg.className = "exportmsg busy"; msg.textContent = "Rendering…";
+  try {
+    const out = await buildPDF(opts);
+    const mb = out.buffer.byteLength/1048576;
+    msg.textContent = "Saving " + out.pages + " pages, " + mb.toFixed(1) + " MB…";
+    const r = await saveFile(out.filename, out.buffer, "application/pdf");
+    if (r.ok){ msg.className = "exportmsg ok"; msg.textContent = "Saved " + out.pages + " pages."; }
+    else { msg.className = "exportmsg err"; msg.textContent = SAVE_MSG[r.code] || SAVE_MSG.unavailable; }
+  } catch(e){
+    msg.className = "exportmsg err";
+    msg.textContent = "Couldn’t build the report: " + (e && e.message ? e.message : "unknown error");
+  } finally { btn.disabled = false; }
+}
+
+async function savePNG(btn){
+  const id = btn.dataset.png, label = btn.textContent;
+  btn.textContent = "Rendering…"; btn.disabled = true;
+  try {
+    const el = document.getElementById(id);
+    let shot;
+    if (el.tagName.toLowerCase() === "svg") shot = await svgToPNG(el, 3);
+    else {
+      EXPORT.scale = 3;
+      if (id === "three") draw3D(R); else if (id === "env") drawEnvelope(R);
+      shot = canvasPNG(el);
+      EXPORT.scale = 0;
+      if (id === "three") draw3D(R); else if (id === "env") drawEnvelope(R);
+    }
+    const bin = atob(shot.data.split(",")[1]);
+    const buf = new Uint8Array(bin.length);
+    for (let i=0;i<bin.length;i++) buf[i] = bin.charCodeAt(i);
+    const r = await saveFile(btn.dataset.name + ".png", buf.buffer, "image/png");
+    btn.textContent = r.ok ? "Saved" : (SAVE_MSG[r.code] || SAVE_MSG.unavailable);
+  } catch(e){ btn.textContent = "Failed"; }
+  finally {
+    btn.disabled = false;
+    setTimeout(()=>{ btn.textContent = label; }, 2200);
+  }
+}
+</script>
+
+<script>
+"use strict";
+/* =====================================================================
    REPORT + BOOT
    ===================================================================== */
 function buildReport(){
@@ -2682,6 +3411,14 @@ function buildReport(){
     if (t.dataset.tab==="sweep") buildSweepControls();
   });
   $("#btnReset").onclick = ()=>{ P = Object.assign({}, DEFAULTS); buildRail(); render(); };
+  $("#btnExport").onclick = openExport;
+  $("#exClose").onclick = closeExport;
+  $("#exCancel").onclick = closeExport;
+  $("#exRun").onclick = runExport;
+  $("#exportModal").addEventListener("click", e=>{ if (e.target.id==="exportModal") closeExport(); });
+  addEventListener("keydown", e=>{ if (e.key==="Escape" && !$("#exportModal").hidden) closeExport(); });
+  $$(".savebtn").forEach(b=>{ if (!b.textContent.trim()) b.textContent = "Save PNG";
+                              b.onclick = ()=>savePNG(b); });
   $("#btnCopy").onclick = async (e)=>{
     const b = e.currentTarget, old = b.textContent;
     try { await navigator.clipboard.writeText(buildReport()); b.textContent = "Copied"; }
