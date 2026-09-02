@@ -1,7 +1,7 @@
 # 4-DOF Arm Design Bench
 
 A single-file design and optimisation tool for a 4-DOF desktop robotic arm. It is not a
-motion simulator — it sizes the machine. Open `arm-design-bench.html` in a browser; there
+motion simulator — it sizes the machine. Open `index.html` in a browser; there
 are no dependencies and no build step.
 
 ## The interface
