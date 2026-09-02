@@ -2,7 +2,8 @@
 
 A single-file design and optimisation tool for a 4-DOF desktop robotic arm. It is not a
 motion simulator — it sizes the machine. Open `index.html` in a browser; there
-are no dependencies and no build step.
+are no dependencies, no build step and no network access required — jsPDF (MIT) is inlined
+rather than fetched, so the PDF export works offline and cannot be broken by a CDN.
 
 ## The interface
 
@@ -81,6 +82,9 @@ Two notes on how saving works:
 
 - Charts are re-rendered at a narrower layout width for export, because a chart captured
   1150 px wide and scaled to a 178 mm page prints its 10 px axis labels at about 4 pt.
+- The PDF engine is inlined, not loaded from a CDN. A CDN fetch is a live dependency that
+  can 404 or be refused by the host page's CSP, and the export is a core feature; the
+  export is verified in a browser with all HTTP and HTTPS blocked.
 - The published-artifact viewer sandbox blocks page-initiated downloads, so the file is
   handed over through the platform's `downloads` capability, which asks the viewer to
   confirm. Opened as a plain local `.html` file there is no sandbox and it falls back to an
