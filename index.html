@@ -663,11 +663,7 @@ body.params-open .params{transform:none}              /* trigger: click Paramete
 .ddel:hover{background:#fff;color:var(--crit-ink)}
 .ddel.armed{font-size:11px;font-weight:600;color:#fff;background:var(--crit);border-color:var(--crit)}
 .dacts{display:flex;gap:6px;flex-wrap:wrap}
-.dpaste{display:grid;gap:7px}
-.dpaste textarea{width:100%;padding:8px 10px;border:1px solid var(--hair-2);border-radius:11px;
-  background:rgba(255,255,255,.7);font-family:var(--mono);font-size:11px;resize:vertical}
-.dpaste textarea:focus{border-color:var(--accent);outline:none;background:#fff;box-shadow:0 0 0 3px rgba(42,120,214,.14)}
-.dpaste-row{display:flex;gap:9px;align-items:center}
+#dPasteBox{font-family:var(--mono);font-size:11px}
 /* ---------- control groups ---------- */
 .group{border-bottom:1px solid var(--hair)}
 .group > summary{list-style:none;cursor:pointer;padding:12px 18px;display:flex;align-items:center;
@@ -4865,7 +4861,9 @@ function undoLoad(){
 
 /* ---------- the Designs group at the top of the parameters panel ---------- */
 function buildDesignsGroup(){
-  const d = el("details","group designs");
+  /* open by default: this is the panel's entry point for loading and saving,
+     and a collapsed group hid the paste field three clicks deep */
+  const d = el("details","group designs"); d.open = true;
   const s = el("summary"); s.append("Designs"); s.append(el("i","chev")); d.append(s);
   const body = el("div","groupbody"); d.append(body);
 
@@ -4876,18 +4874,19 @@ function buildDesignsGroup(){
 
   const list = el("div","dlist"); list.id = "dList"; body.append(list);
 
+  /* the paste field mirrors the save field above it and is always visible */
+  const paste = el("div","dsave");
+  paste.innerHTML = '<input type="text" id="dPasteBox" placeholder="Paste a design code or report">' +
+                    '<button class="btn sm" id="dLoad">Load</button>';
+  body.append(paste);
+
   const acts = el("div","dacts");
   acts.innerHTML = '<button class="btn sm" id="dCopy">Copy design code</button>' +
-                   '<button class="btn sm" id="dPaste">Paste design</button>' +
                    '<button class="btn sm" id="dUndo">Undo load</button>';
   body.append(acts);
 
-  const paste = el("div","dpaste"); paste.id = "dPasteWrap"; paste.hidden = true;
-  paste.innerHTML = '<textarea id="dPasteBox" rows="3" placeholder="Paste a design code or a full report here"></textarea>' +
-                    '<div class="dpaste-row"><button class="btn sm primary" id="dLoad">Load design</button>' +
-                    '<span class="note" id="dPasteMsg"></span></div>';
-  body.append(paste);
-  body.append(el("p","note","Saved in this browser only. The bench also remembers your last session automatically."));
+  body.append(el("p","note","Paste a code above, or press ⌘V / Ctrl+V anywhere on the page. "+
+    "Saved designs live in this browser only; your last session is remembered automatically."));
 
   queueMicrotask(()=>{
     renderDesignList();
@@ -4903,14 +4902,20 @@ function buildDesignsGroup(){
       catch(err){ b.textContent = "Copy blocked"; }
       setTimeout(()=>b.textContent = old, 1600);
     };
-    $("#dPaste").onclick = ()=>{
-      const w = $("#dPasteWrap"); w.hidden = !w.hidden;
-      if (!w.hidden){ $("#dPasteMsg").textContent = ""; $("#dPasteBox").value = ""; $("#dPasteBox").focus(); }
-    };
+    /* pasting into the field loads immediately - no second click needed */
+    $("#dPasteBox").addEventListener("paste", ev=>{
+      const text = ev.clipboardData && ev.clipboardData.getData("text");
+      const snap = text && decodeDesign(text);
+      if (!snap) return;                       // not a code: let it paste so they can see it
+      ev.preventDefault();
+      if (loadInto(snap, "Design loaded")){ ev.target.value = ""; syncDesignActions(); }
+    });
+    $("#dPasteBox").addEventListener("keydown", e=>{ if (e.key==="Enter") $("#dLoad").click(); });
     $("#dLoad").onclick = ()=>{
-      const snap = decodeDesign($("#dPasteBox").value);
-      if (!snap){ $("#dPasteMsg").textContent = "No design code found in that text."; return; }
-      if (loadInto(snap, "Design loaded")) $("#dPasteWrap").hidden = true;
+      const box = $("#dPasteBox");
+      const snap = decodeDesign(box.value);
+      if (!snap){ showToast(box.value.trim() ? "No design code found in that text" : "Paste a design code first"); return; }
+      if (loadInto(snap, "Design loaded")){ box.value = ""; syncDesignActions(); }
     };
     $("#dUndo").onclick = undoLoad;
     syncDesignActions();

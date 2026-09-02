@@ -77,8 +77,9 @@ To move a design between machines or share it, use **Copy design code**: a snaps
 only what *differs from the defaults*, so a code is a couple of hundred characters and stays
 forward-compatible — a parameter added in a later version simply takes its new default.
 `Copy report` appends the same code to the readable report, so one copy is both a document
-and a restorable snapshot. To load one, paste it into **Paste design**, or just press ⌘V
-anywhere on the page.
+and a restorable snapshot. To load one, paste it into the **Paste a design code or report**
+field at the top of the panel — pasting there loads it immediately, no second click — or
+just press ⌘V anywhere on the page.
 
 Two things worth knowing:
 
