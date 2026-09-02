@@ -4,6 +4,33 @@ A single-file design and optimisation tool for a 4-DOF desktop robotic arm. It i
 motion simulator — it sizes the machine. Open `arm-design-bench.html` in a browser; there
 are no dependencies and no build step.
 
+## The interface
+
+The 3D arm is the ground layer of the page — full-viewport, always live. Everything else is
+glass chrome floating above it, following Apple's Liquid Glass framing: one elevation
+technique (lensing — backdrop blur with a specular top edge) used on every raised surface,
+never a second shadow language.
+
+- **The model is the control surface.** Hover any part for its live numbers — a servo shows
+  required vs. usable torque, utilisation and safety factor; a link shows its section, mass,
+  effective area and second moment, and root stress. Click a part to open the parameter that
+  governs it, with the field highlighted.
+- **Drag to pose.** With worst case off, dragging a link rotates its joint to follow the
+  pointer in the arm's own working plane; dragging the base swings the yaw axis; dragging
+  empty space orbits the camera. Joint travel limits are respected. Grabbing the arm while
+  worst case is on turns it off and says so.
+- **Detail on demand.** The dock at the bottom carries five live readouts and nothing else.
+  Scroll and the analysis sheet rises over the model through the glass; the pose panel and
+  view buttons retire once the model is out of view, and the dock steps aside on the way
+  down and returns when you scroll back up. Parameters are summoned (click, or press `P`),
+  never resident.
+
+Design tokens: surface `#FFFCF8`, ink `#1E305E` — two UI colours, with every other colour
+coming from real content (the chart palette and the good/tight/over status states). Radius
+scale is `0` for the full-bleed stage, `18px` for panels and cards, `999px` for pills.
+Instrument Sans owns all UI text; IBM Plex Mono owns numbers and equations, exclusively.
+Every transition is triggered by hover, click, drag or scroll — nothing animates on its own.
+
 ## What it does
 
 - **Torque budget** for all four joints from a full moment summation, with servo
@@ -127,6 +154,12 @@ outputs were checked against independent hand calculations for the default desig
 (section areas, link masses, joint moments, cantilever deflection) and against structural
 invariants — for example, `∂τ_elbow/∂L₁` and `∂τ_wrist/∂L₂` come out as exact zeros in the
 sensitivity table, since a proximal link length cannot load a distal joint.
+
+The interaction layer was verified in a headless browser too: all eleven parts of the model
+are pickable, the hover card reports live values, clicking a part opens the right parameter
+group, and dragging a link turns off worst case and drives the joint to its travel limit.
+Stage redraw measures 0.8 ms and a drag frame 6 ms, so posing the arm stays at full frame
+rate; the expensive envelope and limit-curve solves are deferred to pointer release.
 
 Export was verified end to end in a headless browser: the generated PDF was rendered page
 by page and checked for content, pagination and orphaned headings; the `downloads`

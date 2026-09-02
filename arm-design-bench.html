@@ -1,404 +1,675 @@
 <title>4-DOF Arm Design Bench</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Serif:ital,wght@1,400;1,500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;450;500&display=swap">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js"></script>
 <style>
+/* =====================================================================
+   DESIGN SYSTEM
+   Surface  #FFFCF8 warm off-white   Ink  #1E305E navy   - two UI colours.
+   All other colour comes from real content: the chart palette and the
+   good/tight/over status states.
+   Elevation: one technique everywhere - lensing glass (backdrop blur plus a
+   specular top edge), never a second shadow language.
+   Radius:  0 full-bleed stage | 18px panels and cards | 999px pills.
+   Type:    Instrument Sans owns all UI. IBM Plex Mono owns numbers and
+            equations, exclusively. The two never share a text block.
+   Motion:  every transition below is triggered by hover, click, drag or
+            scroll. Nothing animates on its own.
+   ===================================================================== */
 :root{
   color-scheme: light;
-  --paper:#eef1f4;
-  --surface:#ffffff;
-  --inset:#f6f8fa;
-  --ink:#0f2230;
-  --ink-2:#4b6070;
-  --ink-3:#7d919e;
-  --rule:#dee5ea;
-  --rule-2:#c7d3db;
-  --grid:#e8eef2;
-  --accent:#2a78d6;
-  --accent-deep:#1a5aa8;
-  --accent-wash:#e8f1fc;
-  --good:#0ca30c;   --good-ink:#006300;  --good-wash:#e8f6e8;
-  --warn:#fab219;   --warn-ink:#8a5a00;  --warn-wash:#fdf3de;
-  --crit:#d03b3b;   --crit-ink:#a32020;  --crit-wash:#fbeaea;
-  --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a; --s4:#eda100; --s5:#e87ba4;
-  --shadow:0 1px 2px rgba(15,34,48,.05), 0 6px 18px -10px rgba(15,34,48,.18);
-  --r:7px;
-  --sans:"IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --paper:#FFFCF8;
+  --ink:#1E305E;
+  --ink-2:rgba(30,48,94,.66);
+  --ink-3:rgba(30,48,94,.42);
+  --hair:rgba(30,48,94,.10);
+  --hair-2:rgba(30,48,94,.18);
+  --wash:rgba(30,48,94,.045);
+
+  /* chart + status colours: content, not chrome */
+  --accent:#2a78d6; --accent-deep:#1a5aa8;
+  --good:#0ca30c;   --good-ink:#046504;
+  --warn:#fab219;   --warn-ink:#7d5000;
+  --crit:#d03b3b;   --crit-ink:#9d1f1f;
+  --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a; --s4:#eda100; --s5:#8f9bb3;
+
+  --r-panel:18px; --r-pill:999px; --r-inner:11px;
+  --sans:"Instrument Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
   --mono:"IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
-  --serif:"IBM Plex Serif", Georgia, serif;
+  --ease:cubic-bezier(.22,.9,.24,1);
+  --topbar-h:60px; --dock-h:78px;
 }
 *{box-sizing:border-box}
-body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:13.5px;line-height:1.5;-webkit-font-smoothing:antialiased}
-h1,h2,h3,h4{margin:0;font-weight:600;text-wrap:balance;letter-spacing:-.01em}
+html,body{height:100%}
+body{
+  margin:0; background:var(--paper); color:var(--ink);
+  font-family:var(--sans); font-size:13.5px; line-height:1.5;
+  -webkit-font-smoothing:antialiased; overflow-x:hidden;
+}
+h1,h2,h3,h4{margin:0;font-weight:600;letter-spacing:-.015em;text-wrap:balance}
 button,input,select{font:inherit;color:inherit}
 a{color:var(--accent-deep)}
-:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:3px}
-.tnum{font-variant-numeric:tabular-nums}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
+.tnum,td,th{font-variant-numeric:tabular-nums}
+.mono{font-family:var(--mono)}
 
-/* ---------- shell ---------- */
-.app{display:grid;grid-template-columns:334px minmax(0,1fr);min-height:100vh}
-.rail{background:var(--surface);border-right:1px solid var(--rule);display:flex;flex-direction:column;position:sticky;top:0;height:100vh}
-.railhead{padding:16px 18px 13px;border-bottom:1px solid var(--rule);display:flex;gap:11px;align-items:center}
-.mark{width:30px;height:30px;flex:none}
-.brandname{font-size:14px;font-weight:600;letter-spacing:-.015em;line-height:1.15}
-.brandsub{font-size:10.5px;color:var(--ink-3);letter-spacing:.07em;text-transform:uppercase;font-weight:500}
-.railbody{overflow-y:auto;flex:1;padding-bottom:60px}
-.railfoot{border-top:1px solid var(--rule);padding:9px 14px;display:flex;gap:8px;background:var(--surface)}
+/* ---------- the one elevation technique: lensing glass ---------- */
+.glass{
+  background:linear-gradient(180deg, rgba(255,255,255,.74), rgba(255,255,255,.52));
+  backdrop-filter:blur(22px) saturate(180%);
+  -webkit-backdrop-filter:blur(22px) saturate(180%);
+  border:1px solid rgba(255,255,255,.7);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.95),
+    inset 0 -1px 0 rgba(30,48,94,.05),
+    0 1px 2px rgba(30,48,94,.05),
+    0 14px 40px -14px rgba(30,48,94,.20);
+}
+.glass-deep{
+  background:linear-gradient(180deg, rgba(255,252,248,.90), rgba(255,252,248,.84));
+  backdrop-filter:blur(30px) saturate(170%);
+  -webkit-backdrop-filter:blur(30px) saturate(170%);
+  border:1px solid rgba(255,255,255,.65);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.9),
+    0 20px 60px -22px rgba(30,48,94,.28);
+}
 
-.main{min-width:0;display:flex;flex-direction:column}
-.topbar{position:sticky;top:0;z-index:20;background:rgba(238,241,244,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--rule);padding:0 26px;display:flex;align-items:center;gap:20px;min-height:57px;flex-wrap:wrap}
-.tabs{display:flex;gap:2px;margin-right:auto}
-.tab{background:none;border:0;padding:18px 13px 15px;font-size:13px;font-weight:500;color:var(--ink-2);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px}
+/* ---------- stage: the 3D arm is the ground layer, always present ---- */
+#three{
+  position:fixed; inset:0; width:100vw; height:100vh; display:block;
+  z-index:0; touch-action:none; cursor:grab;
+  transition:transform .55s var(--ease);
+}
+#three.grabbing{cursor:grabbing}
+#three.pickable{cursor:pointer}
+body.params-open #three{transform:translateX(-176px)}
+@media (max-width:900px){ body.params-open #three{transform:none} }
+
+/* ---------- floating chrome ---------- */
+.topbar{
+  position:fixed; top:0; left:0; right:0; height:var(--topbar-h); z-index:40;
+  display:flex; align-items:center; gap:14px; padding:0 18px; pointer-events:none;
+}
+.topbar > *{pointer-events:auto}
+.brand{display:flex;align-items:center;gap:10px;min-width:0}
+.brand svg{width:26px;height:26px;flex:none}
+.brand b{font-size:13.5px;font-weight:600;letter-spacing:-.02em;white-space:nowrap}
+.brand span{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);
+  font-weight:500;display:block;line-height:1.1}
+
+/* tabs: one floating pill, blurred edges, active indicator glides on click */
+.tabwrap{position:relative;margin:0 auto;border-radius:var(--r-pill);padding:4px;
+  -webkit-mask-image:linear-gradient(90deg,transparent 0,#000 22px,#000 calc(100% - 22px),transparent 100%);
+  mask-image:linear-gradient(90deg,transparent 0,#000 22px,#000 calc(100% - 22px),transparent 100%);}
+.tabs{display:flex;gap:2px;position:relative}
+.tabs .glide{position:absolute;top:0;bottom:0;border-radius:var(--r-pill);
+  background:rgba(30,48,94,.085);box-shadow:inset 0 1px 0 rgba(255,255,255,.5);
+  transition:transform .42s var(--ease), width .42s var(--ease);pointer-events:none}
+.tab{position:relative;background:none;border:0;padding:7px 15px;border-radius:var(--r-pill);
+  font-size:12.5px;font-weight:500;color:var(--ink-2);cursor:pointer;white-space:nowrap;
+  transition:color .2s}
 .tab:hover{color:var(--ink)}
-.tab[aria-selected="true"]{color:var(--accent-deep);border-bottom-color:var(--accent)}
-.content{padding:22px 26px 90px;display:grid;gap:16px;max-width:1560px;width:100%}
-.panel[hidden]{display:none}
-.panel{display:grid;gap:16px}
+.tab[aria-selected="true"]{color:var(--ink);font-weight:600}
+
+.topright{display:flex;align-items:center;gap:8px;margin-left:auto}
+
+.pill{display:inline-flex;align-items:center;gap:7px;padding:6px 13px;border-radius:var(--r-pill);
+  font-size:12px;font-weight:500;border:1px solid rgba(255,255,255,.7);cursor:default;
+  backdrop-filter:blur(18px) saturate(180%);-webkit-backdrop-filter:blur(18px) saturate(180%);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.9), 0 8px 22px -10px rgba(30,48,94,.22);
+  white-space:nowrap}
+.pill .dot{width:7px;height:7px;border-radius:50%;flex:none}
+.pill.ok{background:rgba(12,163,12,.10);color:var(--good-ink)}   .pill.ok .dot{background:var(--good)}
+.pill.tight{background:rgba(250,178,25,.16);color:var(--warn-ink)} .pill.tight .dot{background:var(--warn)}
+.pill.over{background:rgba(208,59,59,.11);color:var(--crit-ink)}  .pill.over .dot{background:var(--crit)}
+.pill.mute{background:rgba(255,255,255,.6);color:var(--ink-2);font-family:var(--mono);font-size:11.5px}
+.pill.mute .dot{background:var(--ink-3)}
+.pill.flash{animation:flash .5s var(--ease)}          /* trigger: limiting joint changed */
+@keyframes flash{0%{transform:scale(1)}35%{transform:scale(1.06)}100%{transform:scale(1)}}
+
+.gbtn{display:inline-flex;align-items:center;gap:7px;padding:7px 14px;border-radius:var(--r-pill);
+  font-size:12.5px;font-weight:500;color:var(--ink);cursor:pointer;
+  background:linear-gradient(180deg,rgba(255,255,255,.78),rgba(255,255,255,.56));
+  backdrop-filter:blur(18px) saturate(180%);-webkit-backdrop-filter:blur(18px) saturate(180%);
+  border:1px solid rgba(255,255,255,.75);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.95), 0 8px 22px -10px rgba(30,48,94,.22);
+  transition:transform .18s var(--ease), box-shadow .18s var(--ease), background .18s}
+.gbtn:hover{background:linear-gradient(180deg,rgba(255,255,255,.92),rgba(255,255,255,.7));
+  box-shadow:inset 0 1px 0 #fff, 0 12px 28px -10px rgba(30,48,94,.28)}
+.gbtn:active{transform:scale(.97)}                    /* trigger: press */
+.gbtn.on{background:rgba(30,48,94,.90);color:#fff;border-color:rgba(30,48,94,.9)}
+.gbtn:disabled{opacity:.42;cursor:default;transform:none}
+.gbtn svg{width:14px;height:14px;flex:none}
+
+/* ---------- bottom dock: the always-on readout ---------- */
+.dock{
+  position:fixed; left:50%; bottom:16px; z-index:38; --dx:-50%; --dy:0px;
+  transform:translate(var(--dx), var(--dy));
+  border-radius:var(--r-panel); padding:5px; display:flex; gap:2px; max-width:min(96vw,940px);
+  overflow-x:auto; scrollbar-width:none;
+  transition:transform .5s var(--ease), opacity .3s var(--ease);
+}
+.dock::-webkit-scrollbar{display:none}
+body.params-open .dock{--dx:calc(-50% - 176px)}
+/* it steps out of the way of dense content, and comes back the moment you
+   scroll up looking for it (trigger: scroll direction) */
+body.dock-away .dock{--dy:calc(100% + 26px);opacity:0;pointer-events:none}
+@media (max-width:900px){ body.params-open .dock{--dx:-50%} }
+.stat{padding:9px 16px 10px;border-radius:13px;min-width:132px;position:relative;
+  transition:background .2s}
+.stat + .stat::before{content:"";position:absolute;left:0;top:14px;bottom:14px;width:1px;
+  background:var(--hair)}
+.stat:hover{background:rgba(255,255,255,.5)}
+.stat .k{font-size:9.5px;text-transform:uppercase;letter-spacing:.1em;color:var(--ink-3);
+  font-weight:600;white-space:nowrap}
+.stat .v{font-size:21px;font-weight:600;letter-spacing:-.025em;line-height:1.25;white-space:nowrap}
+.stat .v small{font-size:11.5px;font-weight:500;color:var(--ink-2);letter-spacing:0;margin-left:1px}
+.stat .m{font-size:10.5px;color:var(--ink-3);white-space:nowrap;
+  overflow:hidden;text-overflow:ellipsis;max-width:190px}
+.stat.ok .v{color:var(--good-ink)} .stat.tight .v{color:var(--warn-ink)} .stat.over .v{color:var(--crit-ink)}
+
+/* ---------- hover card over the 3D: live per-part numbers ---------- */
+.partcard{
+  position:fixed;z-index:44;pointer-events:none;padding:11px 13px;border-radius:14px;
+  min-width:186px;max-width:250px;opacity:0;transform:translateY(4px) scale(.98);
+  transition:opacity .16s var(--ease), transform .16s var(--ease);
+}
+.partcard.on{opacity:1;transform:none}               /* trigger: hover on the 3D */
+.partcard h5{font-size:12.5px;font-weight:600;margin:0 0 1px}
+.partcard .sub{font-size:10.5px;color:var(--ink-3);letter-spacing:.05em;text-transform:uppercase;
+  font-weight:600;margin-bottom:8px}
+.partcard dl{display:grid;grid-template-columns:auto 1fr;gap:3px 12px;margin:0;font-size:11.5px}
+.partcard dt{color:var(--ink-3)}
+.partcard dd{margin:0;text-align:right;font-family:var(--mono);font-size:11px}
+.partcard .act{margin-top:9px;padding-top:8px;border-top:1px solid var(--hair);
+  font-size:10.5px;color:var(--ink-3)}
+
+/* ---------- stage affordances ---------- */
+.stagehint{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(var(--dock-h) + 30px);
+  z-index:36;display:flex;gap:8px;align-items:center;opacity:0;transition:opacity .3s;
+  pointer-events:none}
+.stagehint.on{opacity:1;pointer-events:auto}          /* trigger: analysis tab at scroll top */
+.scrollcue{display:inline-flex;align-items:center;gap:8px;padding:8px 15px;border-radius:var(--r-pill);
+  font-size:12px;color:var(--ink-2);cursor:pointer;font-weight:500}
+.scrollcue svg{width:12px;height:12px}
+.toast{position:fixed;left:50%;transform:translate(-50%,10px);top:calc(var(--topbar-h) + 12px);
+  z-index:60;padding:8px 16px;border-radius:var(--r-pill);font-size:12px;font-weight:500;
+  opacity:0;transition:opacity .25s var(--ease),transform .25s var(--ease);pointer-events:none}
+.toast.on{opacity:1;transform:translate(-50%,0)}      /* trigger: an action that changed a mode */
+
+/* ---------- parameters panel: summoned, never resident ---------- */
+.scrim{position:fixed;inset:0;z-index:44;background:rgba(30,48,94,.10);opacity:0;
+  pointer-events:none;transition:opacity .4s var(--ease)}
+body.params-open .scrim{opacity:1;pointer-events:auto}
+/* the drawer sits under the chrome: floating controls must never be covered */
+.params{
+  position:fixed;top:calc(var(--topbar-h) + 6px);right:8px;bottom:8px;width:352px;z-index:46;
+  border-radius:var(--r-panel);display:flex;flex-direction:column;overflow:hidden;
+  transform:translateX(calc(100% + 16px));transition:transform .5s var(--ease);
+}
+body.params-open .params{transform:none}              /* trigger: click Parameters */
+.params > header{padding:15px 18px 13px;display:flex;align-items:center;gap:10px;
+  border-bottom:1px solid var(--hair)}
+.params > header h3{font-size:13.5px}
+.params > header .sub{font-size:10.5px;color:var(--ink-3);letter-spacing:.09em;
+  text-transform:uppercase;font-weight:600}
+.iconx{margin-left:auto;width:28px;height:28px;border-radius:50%;border:1px solid var(--hair);
+  background:rgba(255,255,255,.5);cursor:pointer;display:grid;place-items:center;color:var(--ink-2);
+  font-size:15px;line-height:1;padding:0;transition:background .18s}
+.iconx:hover{background:#fff;color:var(--ink)}
+.railbody{overflow-y:auto;flex:1;padding-bottom:12px;overscroll-behavior:contain}
+.params > footer{border-top:1px solid var(--hair);padding:11px 14px;display:flex;gap:8px}
+@media (max-width:900px){ .params{width:auto;left:8px} }
+
+/* ---------- control groups ---------- */
+.group{border-bottom:1px solid var(--hair)}
+.group > summary{list-style:none;cursor:pointer;padding:12px 18px;display:flex;align-items:center;
+  gap:8px;font-size:10.5px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--ink-2);user-select:none;transition:background .16s}
+.group > summary::-webkit-details-marker{display:none}
+.group > summary:hover{background:rgba(255,255,255,.55)}
+.group.flash > summary{background:rgba(42,120,214,.11)}   /* trigger: opened from the 3D */
+.chev{width:7px;height:7px;border-right:1.6px solid var(--ink-3);border-bottom:1.6px solid var(--ink-3);
+  transform:rotate(-45deg);transition:transform .28s var(--ease);margin-left:auto}
+.group[open] > summary .chev{transform:rotate(45deg)}
+.groupbody{padding:2px 18px 16px;display:grid;gap:12px}
+.f{display:grid;grid-template-columns:1fr auto;gap:4px 8px;align-items:center}
+.f > label{font-size:12px;color:var(--ink-2);grid-column:1}
+.f .num{grid-column:2;display:flex;align-items:center;gap:5px}
+.f input[type=number]{width:64px;padding:4px 7px;text-align:right;border:1px solid var(--hair-2);
+  border-radius:8px;background:rgba(255,255,255,.65);font-family:var(--mono);font-size:12px;
+  transition:border-color .16s, box-shadow .16s, background .16s}
+.f input[type=number]:hover{background:#fff}
+.f input[type=number]:focus{border-color:var(--accent);outline:none;background:#fff;
+  box-shadow:0 0 0 3px rgba(42,120,214,.14)}
+.f .unit{font-size:10px;color:var(--ink-3);width:32px;font-family:var(--mono)}
+.f input[type=range]{grid-column:1/-1;width:100%;height:18px;-webkit-appearance:none;appearance:none;
+  background:none;margin:0}
+input[type=range]::-webkit-slider-runnable-track{height:4px;background:rgba(30,48,94,.13);border-radius:2px}
+input[type=range]::-moz-range-track{height:4px;background:rgba(30,48,94,.13);border-radius:2px}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:15px;height:15px;border-radius:50%;
+  background:#fff;border:1px solid rgba(30,48,94,.2);margin-top:-5.5px;cursor:grab;
+  box-shadow:0 1px 3px rgba(30,48,94,.25), inset 0 1px 0 #fff;transition:transform .16s var(--ease)}
+input[type=range]:active::-webkit-slider-thumb{transform:scale(1.18);cursor:grabbing}
+input[type=range]::-moz-range-thumb{width:13px;height:13px;border-radius:50%;background:#fff;
+  border:1px solid rgba(30,48,94,.2);cursor:grab;box-shadow:0 1px 3px rgba(30,48,94,.25)}
+.f select{grid-column:2;width:136px;padding:4px 7px;border:1px solid var(--hair-2);border-radius:8px;
+  background:rgba(255,255,255,.65);font-size:11.5px}
+.f.wide select{grid-column:1/-1;width:100%}
+.f.lit input[type=number]{border-color:var(--accent);box-shadow:0 0 0 3px rgba(42,120,214,.16)}
+.subhead{font-size:9.5px;text-transform:uppercase;letter-spacing:.1em;color:var(--ink-3);
+  font-weight:600;margin-top:6px;padding-bottom:4px;border-bottom:1px solid var(--hair)}
+.note{font-size:11px;color:var(--ink-3);line-height:1.5}
+
+.btn{border:1px solid var(--hair-2);background:rgba(255,255,255,.6);border-radius:var(--r-pill);
+  padding:6px 13px;font-size:12px;font-weight:500;cursor:pointer;color:var(--ink-2);
+  transition:background .16s,color .16s,transform .16s var(--ease)}
+.btn:hover{background:#fff;color:var(--ink)}
+.btn:active{transform:scale(.97)}
+.btn.primary{background:var(--ink);border-color:var(--ink);color:#fff}
+.btn.primary:hover{background:#16244a;color:#fff}
+.btn:disabled{opacity:.42;cursor:default;transform:none}
+.btn.sm{padding:4px 11px;font-size:11.5px}
+
+/* ---------- scroll surface: sheets rise over the stage ---------- */
+/* The scroller's own box covers the stage even where a child sets
+   pointer-events:none, so the container is transparent to the pointer and
+   only the sheets themselves take input. Without this the 3D never sees a
+   pointer event on the analysis tab. */
+.scroller{position:relative;z-index:20;pointer-events:none}
+.sheet{pointer-events:auto}
+.panel[hidden]{display:none!important}
+.stagespace{height:100vh}
+.sheet{
+  position:relative;border-radius:var(--r-panel) var(--r-panel) 0 0;
+  padding:26px 26px 120px;display:grid;gap:16px;
+  background:linear-gradient(180deg, rgba(255,252,248,.62) 0%, rgba(255,252,248,.93) 90px, rgba(255,252,248,.97) 100%);
+  backdrop-filter:blur(26px) saturate(170%);-webkit-backdrop-filter:blur(26px) saturate(170%);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.9), 0 -18px 50px -24px rgba(30,48,94,.22);
+  border-top:1px solid rgba(255,255,255,.75);
+}
+.sheet.tall{min-height:calc(100vh - var(--topbar-h) - 8px)}
+.panel:not(#panel-analysis) .sheet{margin-top:calc(var(--topbar-h) + 8px)}
+.sheethead{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:2px}
+.sheethead h2{font-size:19px;letter-spacing:-.025em}
+.sheethead .sub{font-size:12px;color:var(--ink-3);margin-left:auto}
+.grabber{width:38px;height:4px;border-radius:2px;background:var(--hair-2);margin:-12px auto 12px}
 
 /* ---------- cards ---------- */
-.card{background:var(--surface);border:1px solid var(--rule);border-radius:var(--r);box-shadow:var(--shadow)}
-.card > header{padding:13px 16px 11px;border-bottom:1px solid var(--rule);display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.card{background:rgba(255,255,255,.62);border:1px solid rgba(255,255,255,.8);
+  border-radius:var(--r-panel);box-shadow:0 1px 2px rgba(30,48,94,.04), 0 10px 30px -18px rgba(30,48,94,.20);
+  overflow:hidden}
+.card > header{padding:14px 17px 12px;border-bottom:1px solid var(--hair);display:flex;
+  align-items:baseline;gap:10px;flex-wrap:wrap}
 .card > header h3{font-size:13px}
 .card .sub{font-size:11.5px;color:var(--ink-3);margin-left:auto}
-.pad{padding:16px}
+.pad{padding:17px}
 .grid2{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(410px,1fr));align-items:start}
-.grid3{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}
-
-/* ---------- controls ---------- */
-.group{border-bottom:1px solid var(--rule)}
-.group > summary{list-style:none;cursor:pointer;padding:11px 16px;display:flex;align-items:center;gap:8px;font-size:11.5px;font-weight:600;letter-spacing:.075em;text-transform:uppercase;color:var(--ink-2);user-select:none}
-.group > summary::-webkit-details-marker{display:none}
-.group > summary:hover{background:var(--inset)}
-.chev{width:8px;height:8px;border-right:1.5px solid var(--ink-3);border-bottom:1.5px solid var(--ink-3);transform:rotate(-45deg);transition:transform .16s;margin-left:auto}
-.group[open] > .chev,.group[open] > summary .chev{transform:rotate(45deg)}
-.groupbody{padding:2px 16px 15px;display:grid;gap:11px}
-.f{display:grid;grid-template-columns:1fr auto;gap:3px 8px;align-items:center}
-.f > label{font-size:12px;color:var(--ink-2);grid-column:1}
-.f .num{grid-column:2;display:flex;align-items:center;gap:4px}
-.f input[type=number]{width:66px;padding:3px 6px;text-align:right;border:1px solid var(--rule-2);border-radius:4px;background:var(--surface);font-family:var(--mono);font-size:12px;font-variant-numeric:tabular-nums}
-.f input[type=number]:focus{border-color:var(--accent);outline:none;box-shadow:0 0 0 2px var(--accent-wash)}
-.f .unit{font-size:10.5px;color:var(--ink-3);width:34px;font-family:var(--mono)}
-.f input[type=range]{grid-column:1/-1;width:100%;height:16px;-webkit-appearance:none;appearance:none;background:none;margin:0}
-input[type=range]::-webkit-slider-runnable-track{height:3px;background:var(--rule);border-radius:2px}
-input[type=range]::-moz-range-track{height:3px;background:var(--rule);border-radius:2px}
-input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:13px;height:13px;border-radius:50%;background:var(--surface);border:2px solid var(--accent);margin-top:-5px;cursor:pointer}
-input[type=range]::-moz-range-thumb{width:11px;height:11px;border-radius:50%;background:var(--surface);border:2px solid var(--accent);cursor:pointer}
-.f select{grid-column:2;width:132px;padding:3px 5px;border:1px solid var(--rule-2);border-radius:4px;background:var(--surface);font-size:11.5px}
-.f.wide select{grid-column:1/-1;width:100%}
-.subhead{font-size:10.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-3);font-weight:600;margin-top:5px;padding-bottom:3px;border-bottom:1px solid var(--rule)}
-.note{font-size:11px;color:var(--ink-3);line-height:1.45}
-
-.btn{border:1px solid var(--rule-2);background:var(--surface);border-radius:5px;padding:6px 12px;font-size:12px;font-weight:500;cursor:pointer;color:var(--ink-2)}
-.btn:hover{background:var(--inset);color:var(--ink)}
-.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
-.btn.primary:hover{background:var(--accent-deep);color:#fff}
-.btn:disabled{opacity:.45;cursor:default}
-.btn.sm{padding:3px 9px;font-size:11.5px}
-
-/* ---------- verdict / chips ---------- */
-.chip{display:inline-flex;align-items:center;gap:6px;padding:4px 11px 4px 9px;border-radius:20px;font-size:12px;font-weight:500;border:1px solid}
-.chip .dot{width:7px;height:7px;border-radius:50%;flex:none}
-.chip.ok{background:var(--good-wash);border-color:#bfe3bf;color:var(--good-ink)} .chip.ok .dot{background:var(--good)}
-.chip.tight{background:var(--warn-wash);border-color:#ecd6a4;color:var(--warn-ink)} .chip.tight .dot{background:var(--warn)}
-.chip.over{background:var(--crit-wash);border-color:#eec2c2;color:var(--crit-ink)} .chip.over .dot{background:var(--crit)}
-.chip.mono{font-family:var(--mono);background:var(--inset);border-color:var(--rule);color:var(--ink-2)}
-.chip.mono .dot{background:var(--ink-3)}
-
-/* ---------- stat tiles ---------- */
-.tiles{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(190px,1fr))}
-.tile{background:var(--surface);border:1px solid var(--rule);border-radius:var(--r);padding:13px 15px 14px;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:2px}
-.tile .k{font-size:10.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-3);font-weight:600}
-.tile .v{font-size:27px;font-weight:600;letter-spacing:-.02em;line-height:1.12}
-.tile .v small{font-size:14px;font-weight:500;color:var(--ink-2);letter-spacing:0}
-.tile .m{font-size:11.5px;color:var(--ink-3)}
-.tile.state-ok .v{color:var(--good-ink)} .tile.state-tight .v{color:var(--warn-ink)} .tile.state-over .v{color:var(--crit-ink)}
+.tiles{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(180px,1fr))}
+.tile{background:rgba(255,255,255,.62);border:1px solid rgba(255,255,255,.8);border-radius:var(--r-inner);
+  padding:13px 15px 14px;display:flex;flex-direction:column;gap:2px;
+  box-shadow:0 6px 20px -14px rgba(30,48,94,.22)}
+.tile .k{font-size:9.5px;text-transform:uppercase;letter-spacing:.1em;color:var(--ink-3);font-weight:600}
+.tile .v{font-size:25px;font-weight:600;letter-spacing:-.025em;line-height:1.15}
+.tile .v small{font-size:13px;font-weight:500;color:var(--ink-2);letter-spacing:0}
+.tile .m{font-size:11px;color:var(--ink-3)}
+.tile.state-ok .v{color:var(--good-ink)} .tile.state-tight .v{color:var(--warn-ink)}
+.tile.state-over .v{color:var(--crit-ink)}
 
 /* ---------- tables ---------- */
 table{border-collapse:collapse;width:100%;font-size:12px}
-th{text-align:right;font-weight:600;font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-3);padding:0 10px 7px;border-bottom:1px solid var(--rule);white-space:nowrap}
+th{text-align:right;font-weight:600;font-size:9.5px;text-transform:uppercase;letter-spacing:.08em;
+  color:var(--ink-3);padding:0 10px 8px;border-bottom:1px solid var(--hair);white-space:nowrap}
 th:first-child,td:first-child{text-align:left;padding-left:0}
 th:last-child,td:last-child{padding-right:0}
-td{text-align:right;padding:6px 10px;border-bottom:1px solid var(--grid);font-variant-numeric:tabular-nums;font-family:var(--mono);font-size:11.5px}
+td{text-align:right;padding:6px 10px;border-bottom:1px solid var(--wash);font-family:var(--mono);font-size:11.5px}
 td.lbl{font-family:var(--sans);font-size:12px;color:var(--ink)}
 tr:last-child td{border-bottom:0}
-tbody tr:hover{background:var(--inset)}
+tbody tr{transition:background .12s}
+tbody tr:hover{background:rgba(255,255,255,.7)}
 .tbl-wrap{overflow-x:auto}
 
 /* ---------- torque bars ---------- */
-.tbar{display:grid;grid-template-columns:78px 1fr 118px;gap:12px;align-items:center;padding:9px 0;border-bottom:1px solid var(--grid)}
+.tbar{display:grid;grid-template-columns:80px 1fr 122px;gap:12px;align-items:center;padding:10px 0;
+  border-bottom:1px solid var(--wash)}
 .tbar:last-child{border-bottom:0}
 .tbar .jn{font-size:12.5px;font-weight:500}
-.tbar .jn em{display:block;font-style:normal;font-size:10.5px;color:var(--ink-3);font-family:var(--mono)}
-.track{position:relative;height:22px;background:var(--inset);border-radius:3px;border:1px solid var(--rule)}
-.fill{position:absolute;left:0;top:0;bottom:0;border-radius:2px 0 0 2px;transition:width .25s ease}
+.tbar .jn em{display:block;font-style:normal;font-size:10px;color:var(--ink-3);font-family:var(--mono)}
+.track{position:relative;height:22px;background:rgba(30,48,94,.055);border-radius:var(--r-pill);
+  overflow:visible}
+.fill{position:absolute;left:0;top:0;bottom:0;border-radius:var(--r-pill);
+  transition:width .5s var(--ease), background-color .3s;      /* trigger: parameter change */
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.4)}
 .fill.ok{background:var(--good)} .fill.tight{background:var(--warn)} .fill.over{background:var(--crit)}
-.limit{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--ink);opacity:.62}
-.limit::after{content:attr(data-l);position:absolute;top:-13px;left:50%;transform:translateX(-50%);font-size:9px;font-family:var(--mono);color:var(--ink-2);white-space:nowrap}
-.tbar .val{text-align:right;font-family:var(--mono);font-size:12px;font-variant-numeric:tabular-nums}
-.tbar .val em{font-style:normal;color:var(--ink-3);font-size:10.5px;display:block}
+.limit{position:absolute;top:-3px;bottom:-3px;width:1.5px;background:var(--ink);opacity:.5;border-radius:1px}
+.limit::after{content:attr(data-l);position:absolute;top:-13px;left:50%;transform:translateX(-50%);
+  font-size:9px;font-family:var(--mono);color:var(--ink-3);white-space:nowrap}
+.tbar .val{text-align:right;font-family:var(--mono);font-size:12px}
+.tbar .val em{font-style:normal;color:var(--ink-3);font-size:10px;display:block}
 
 /* ---------- viz ---------- */
 canvas{display:block;width:100%}
 .viz{position:relative}
-.legend{display:flex;flex-wrap:wrap;gap:6px 15px;padding:9px 16px 0;font-size:11px;color:var(--ink-2)}
+.legend{display:flex;flex-wrap:wrap;gap:6px 15px;padding:10px 17px 0;font-size:11px;color:var(--ink-2)}
 .legend span{display:inline-flex;align-items:center;gap:6px}
-.sw{width:11px;height:11px;border-radius:2px;flex:none;border:1px solid rgba(15,34,48,.12)}
+.sw{width:11px;height:11px;border-radius:3px;flex:none;border:1px solid rgba(30,48,94,.12)}
 .sw.line{height:2px;border-radius:1px;border:0}
-.tip{position:absolute;pointer-events:none;background:var(--ink);color:#fff;font-size:11px;padding:6px 9px;border-radius:5px;font-family:var(--mono);line-height:1.5;opacity:0;transition:opacity .1s;z-index:5;white-space:pre;box-shadow:0 4px 14px rgba(15,34,48,.28)}
-.tip.on{opacity:1}
+.tip{position:absolute;pointer-events:none;background:rgba(30,48,94,.95);color:#fff;font-size:11px;
+  padding:7px 10px;border-radius:9px;font-family:var(--mono);line-height:1.5;opacity:0;
+  transition:opacity .12s;z-index:5;white-space:pre;box-shadow:0 6px 20px rgba(30,48,94,.3);
+  backdrop-filter:blur(8px)}
+.tip.on{opacity:1}                                    /* trigger: pointer over a mark */
 .viewctl{position:absolute;right:11px;top:11px;display:flex;gap:5px}
-.iconbtn{width:26px;height:26px;border-radius:5px;border:1px solid var(--rule);background:rgba(255,255,255,.9);cursor:pointer;color:var(--ink-2);font-size:12px;display:grid;place-items:center;padding:0}
-.iconbtn:hover{background:var(--inset);color:var(--ink)}
+.iconbtn{width:28px;height:28px;border-radius:50%;border:1px solid rgba(255,255,255,.7);
+  background:rgba(255,255,255,.62);backdrop-filter:blur(14px);cursor:pointer;color:var(--ink-2);
+  font-size:12px;display:grid;place-items:center;padding:0;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.9), 0 4px 12px -6px rgba(30,48,94,.3);
+  transition:background .16s, transform .16s var(--ease)}
+.iconbtn:hover{background:#fff;color:var(--ink)}
+.iconbtn:active{transform:scale(.92)}
+.savebtn{position:absolute;right:12px;bottom:12px;z-index:2;border:1px solid rgba(255,255,255,.7);
+  background:rgba(255,255,255,.66);backdrop-filter:blur(14px);border-radius:var(--r-pill);
+  padding:4px 11px;font-size:11px;font-weight:500;color:var(--ink-2);cursor:pointer;
+  font-family:var(--sans);opacity:0;transition:opacity .18s, background .16s;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.9), 0 4px 12px -6px rgba(30,48,94,.3)}
+.viz:hover .savebtn,.savebtn:focus-visible{opacity:1}  /* trigger: hover the view */
+.savebtn:hover{background:#fff;color:var(--ink)}
+
+/* ---------- stage controls floating over the 3D ---------- */
+.stagectl{position:fixed;right:16px;top:calc(var(--topbar-h) + 10px);z-index:36;display:flex;
+  flex-direction:column;gap:6px;padding:5px;border-radius:var(--r-pill)}
+.posebar,.stagectl{opacity:1;transition:opacity .3s var(--ease), transform .55s var(--ease)}
+body.stage-away .posebar,body.stage-away .stagectl{opacity:0;pointer-events:none}
+body.params-open .stagectl{transform:translateX(-360px)}
+.stagectl{transition:transform .55s var(--ease)}
+@media (max-width:900px){ body.params-open .stagectl{transform:none} }
+
+/* ---------- pose control strip ---------- */
+.posebar{position:fixed;left:16px;top:calc(var(--topbar-h) + 10px);z-index:36;
+  border-radius:var(--r-panel);padding:12px 14px;width:216px}
+.posebar h4{font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--ink-3);
+  font-weight:600;margin-bottom:9px;display:flex;align-items:center;gap:7px}
+.posebar .row{display:grid;grid-template-columns:1fr auto;gap:2px 8px;align-items:center;
+  font-size:11.5px;margin-bottom:7px}
+.posebar .row b{font-family:var(--mono);font-size:11px;font-weight:450;color:var(--ink-2)}
+.posebar input[type=range]{grid-column:1/-1}
+.posebar .hint{font-size:10.5px;color:var(--ink-3);line-height:1.45;margin-top:2px}
+.swrow{display:flex;align-items:center;gap:9px;font-size:12px;cursor:pointer;
+  padding:2px 0 9px;border-bottom:1px solid var(--hair);margin-bottom:10px}
+.sw-toggle{width:34px;height:20px;border-radius:var(--r-pill);background:rgba(30,48,94,.16);
+  position:relative;flex:none;transition:background .28s var(--ease)}
+.sw-toggle::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;
+  background:#fff;box-shadow:0 1px 3px rgba(30,48,94,.3);transition:transform .28s var(--ease)}
+.swrow input{position:absolute;opacity:0;width:0;height:0}
+.swrow input:checked + .sw-toggle{background:var(--ink)}
+.swrow input:checked + .sw-toggle::after{transform:translateX(14px)}   /* trigger: click */
+.swrow input:focus-visible + .sw-toggle{outline:2px solid var(--accent);outline-offset:2px}
 
 /* ---------- equations ---------- */
-.eq{font-family:var(--serif);font-size:15px;line-height:1.8;padding:11px 14px;background:var(--inset);border-left:2px solid var(--accent);border-radius:0 5px 5px 0;overflow-x:auto}
-.v{font-style:italic}
-.eq sub{font-size:.68em;font-style:normal;font-family:var(--sans)}
-.eq sup{font-size:.68em}
-.eqblock{display:grid;gap:9px;margin:0 0 20px}
+.eq{font-family:var(--mono);font-size:12px;line-height:1.85;padding:12px 15px;
+  background:rgba(30,48,94,.04);border-left:2px solid var(--accent);border-radius:0 10px 10px 0;
+  overflow-x:auto;white-space:pre-wrap}
+.eq sub{font-size:.72em} .eq sup{font-size:.72em}
+.eqblock{display:grid;gap:9px;margin:0 0 22px}
 .eqblock h4{font-size:12.5px}
 .eqblock p{margin:0;font-size:12.5px;color:var(--ink-2);max-width:68ch}
 .deflist{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;font-size:12px;color:var(--ink-2);margin-top:2px}
-.deflist dt{font-family:var(--serif);font-style:italic;text-align:right;color:var(--ink)}
+.deflist dt{font-family:var(--mono);font-size:11.5px;text-align:right;color:var(--ink)}
 .deflist dd{margin:0}
 .assume{font-size:12px;color:var(--ink-2);padding-left:17px;margin:0}
-.assume li{margin-bottom:5px;max-width:70ch}
+.assume li{margin-bottom:6px;max-width:70ch}
 
 /* ---------- recommendations ---------- */
-.rec{display:flex;gap:11px;padding:12px 0;border-bottom:1px solid var(--grid);align-items:flex-start}
+.rec{display:flex;gap:12px;padding:13px 0;border-bottom:1px solid var(--wash);align-items:flex-start}
 .rec:last-child{border-bottom:0}
-.rec .ico{width:19px;height:19px;border-radius:50%;flex:none;display:grid;place-items:center;font-size:11px;font-weight:700;margin-top:1px;color:#fff}
-.rec.crit .ico{background:var(--crit)} .rec.warn .ico{background:var(--warn);color:#5a3a00} .rec.info .ico{background:var(--accent)}
+.rec .ico{width:19px;height:19px;border-radius:50%;flex:none;display:grid;place-items:center;
+  font-size:11px;font-weight:700;margin-top:1px;color:#fff}
+.rec.crit .ico{background:var(--crit)} .rec.warn .ico{background:var(--warn);color:#5a3a00}
+.rec.info .ico{background:var(--accent)}
 .rec h4{font-size:12.5px;margin-bottom:2px}
 .rec p{margin:0;font-size:12px;color:var(--ink-2);max-width:78ch}
-.rec b{font-family:var(--mono);font-weight:500;font-size:11.5px;background:var(--inset);padding:1px 4px;border-radius:3px;border:1px solid var(--rule)}
+.rec b{font-family:var(--mono);font-weight:450;font-size:11.5px;background:rgba(30,48,94,.06);
+  padding:1px 5px;border-radius:5px}
 
-/* ---------- progress ---------- */
-.prog{height:4px;background:var(--rule);border-radius:2px;overflow:hidden;flex:1}
-.prog i{display:block;height:100%;background:var(--accent);width:0;transition:width .1s}
-.runrow{display:flex;align-items:center;gap:12px}
-
-/* ---------- misc ---------- */
-.kv{display:grid;grid-template-columns:auto 1fr;gap:3px 14px;font-size:12px}
+/* ---------- progress + misc ---------- */
+.prog{height:4px;background:rgba(30,48,94,.10);border-radius:2px;overflow:hidden;flex:1}
+.prog i{display:block;height:100%;background:var(--accent);width:0;transition:width .12s linear}
+.runrow{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;font-size:12px}
 .kv dt{color:var(--ink-3)} .kv dd{margin:0;font-family:var(--mono);font-size:11.5px;text-align:right}
-.split{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-.bind{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-family:var(--mono);background:var(--crit-wash);color:var(--crit-ink);border:1px solid #eec2c2;padding:2px 8px;border-radius:4px}
-.bind.soft{background:var(--warn-wash);color:var(--warn-ink);border-color:#ecd6a4}
-details.insp{border:1px solid var(--rule);border-radius:6px;margin-bottom:9px;background:var(--surface)}
-details.insp > summary{cursor:pointer;padding:9px 13px;font-size:12.5px;font-weight:500;list-style:none;display:flex;align-items:center;gap:8px}
+.bind{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-family:var(--mono);
+  background:rgba(208,59,59,.09);color:var(--crit-ink);border:1px solid rgba(208,59,59,.2);
+  padding:2px 9px;border-radius:var(--r-pill)}
+.bind.soft{background:rgba(250,178,25,.14);color:var(--warn-ink);border-color:rgba(250,178,25,.3)}
+details.insp{border:1px solid var(--hair);border-radius:var(--r-inner);margin-bottom:9px;
+  background:rgba(255,255,255,.5)}
+details.insp > summary{cursor:pointer;padding:10px 14px;font-size:12.5px;font-weight:500;
+  list-style:none;display:flex;align-items:center;gap:8px;transition:background .16s}
 details.insp > summary::-webkit-details-marker{display:none}
-details.insp > summary:hover{background:var(--inset)}
-details.insp[open] > summary{border-bottom:1px solid var(--rule)}
-details.insp .body{padding:13px}
-.tag{font-family:var(--mono);font-size:10.5px;color:var(--ink-3);background:var(--inset);border:1px solid var(--rule);padding:1px 6px;border-radius:3px;margin-left:auto}
+details.insp > summary:hover{background:rgba(255,255,255,.7)}
+details.insp[open] > summary{border-bottom:1px solid var(--hair)}
+details.insp .body{padding:14px}
+.tag{font-family:var(--mono);font-size:10px;color:var(--ink-3);background:rgba(30,48,94,.05);
+  border:1px solid var(--hair);padding:1px 7px;border-radius:var(--r-pill);margin-left:auto}
+
 /* ---------- export dialog ---------- */
-.backdrop{position:fixed;inset:0;background:rgba(15,34,48,.34);z-index:60;display:grid;place-items:center;padding:20px}
+.backdrop{position:fixed;inset:0;background:rgba(30,48,94,.20);z-index:60;display:grid;
+  place-items:center;padding:20px;backdrop-filter:blur(3px)}
 .backdrop[hidden]{display:none!important}
-.modal{background:var(--surface);border-radius:10px;border:1px solid var(--rule);width:min(520px,100%);
-  max-height:88vh;overflow-y:auto;box-shadow:0 20px 60px -18px rgba(15,34,48,.42)}
-.modal header{padding:16px 20px 13px;border-bottom:1px solid var(--rule);display:flex;align-items:baseline;gap:10px}
+.modal{border-radius:var(--r-panel);width:min(520px,100%);max-height:88vh;overflow-y:auto}
+.modal header{padding:17px 21px 14px;border-bottom:1px solid var(--hair);display:flex;
+  align-items:baseline;gap:10px}
 .modal header h3{font-size:14px}
-.modal .close{margin-left:auto;background:none;border:0;font-size:19px;line-height:1;color:var(--ink-3);cursor:pointer;padding:0 2px}
-.modal .close:hover{color:var(--ink)}
-.modal .body{padding:16px 20px}
-.modal footer{padding:13px 20px 16px;border-top:1px solid var(--rule);display:flex;gap:9px;align-items:center}
-.opt{display:flex;gap:10px;align-items:flex-start;padding:7px 0;cursor:pointer}
-.opt input{width:15px;height:15px;accent-color:var(--accent);margin:2px 0 0;flex:none;cursor:pointer}
+.modal .body{padding:17px 21px}
+.modal footer{padding:14px 21px 17px;border-top:1px solid var(--hair);display:flex;gap:9px;align-items:center}
+.opt{display:flex;gap:11px;align-items:flex-start;padding:8px 0;cursor:pointer}
+.opt input{width:15px;height:15px;accent-color:var(--ink);margin:2px 0 0;flex:none;cursor:pointer}
 .opt span{font-size:12.5px;line-height:1.45}
 .opt em{display:block;font-style:normal;font-size:11.5px;color:var(--ink-3)}
 .opt.off{opacity:.45;cursor:default}
-.savebtn{position:absolute;right:11px;bottom:11px;z-index:2;border:1px solid var(--rule);
-  background:rgba(255,255,255,.92);border-radius:5px;padding:3px 9px;font-size:11px;font-weight:500;
-  color:var(--ink-2);cursor:pointer;font-family:var(--sans);opacity:0;transition:opacity .14s}
-.viz:hover .savebtn,.savebtn:focus-visible{opacity:1}
-.savebtn:hover{background:var(--inset);color:var(--ink)}
 .exportmsg{font-size:11.5px;margin-left:auto;text-align:right;line-height:1.4}
 .exportmsg.err{color:var(--crit-ink)} .exportmsg.ok{color:var(--good-ink)} .exportmsg.busy{color:var(--ink-3)}
-@media (max-width:980px){
-  .app{grid-template-columns:1fr}
-  .rail{position:static;height:auto;border-right:0;border-bottom:1px solid var(--rule)}
-  .railbody{max-height:none}
-  .content{padding:18px 15px 70px}
-  .topbar{padding:0 15px}
+
+@media (max-width:900px){
+  .posebar{display:none}
+  .sheet{padding:20px 15px 130px}
+  .brand span{display:none}
+  .topbar{gap:8px;padding:0 10px}
+  .tabwrap{order:3;width:100%;margin:0;overflow-x:auto}
+  .topbar{height:auto;flex-wrap:wrap;padding-bottom:6px}
+  :root{--topbar-h:96px}
 }
-@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{transition-duration:.01ms!important;animation-duration:.01ms!important}
+}
 </style>
 
-<div class="app">
-  <!-- ============ CONTROL RAIL ============ -->
-  <aside class="rail">
-    <div class="railhead">
-      <svg class="mark" viewBox="0 0 32 32" fill="none" aria-hidden="true">
-        <path d="M4 28h9" stroke="#0f2230" stroke-width="2" stroke-linecap="round"/>
-        <path d="M8.5 28V19" stroke="#0f2230" stroke-width="2" stroke-linecap="round"/>
-        <path d="M8.5 19 19 13.5" stroke="#2a78d6" stroke-width="2" stroke-linecap="round"/>
-        <path d="M19 13.5 27 18" stroke="#2a78d6" stroke-width="2" stroke-linecap="round"/>
-        <circle cx="8.5" cy="19" r="2.6" fill="#fff" stroke="#0f2230" stroke-width="1.6"/>
-        <circle cx="19" cy="13.5" r="2.6" fill="#fff" stroke="#0f2230" stroke-width="1.6"/>
-        <circle cx="27" cy="18" r="2.2" fill="#2a78d6"/>
-        <path d="M4 6.5h24" stroke="#c7d3db" stroke-width="1" stroke-dasharray="2 3"/>
-      </svg>
-      <div>
-        <div class="brandname">4&#8209;DOF Arm Design Bench</div>
-        <div class="brandsub">Static &amp; torque budget</div>
-      </div>
-    </div>
+<!-- ============ STAGE: the 3D arm is the ground layer, always present ======== -->
+<canvas id="three"></canvas>
+<div class="partcard glass" id="partCard" aria-hidden="true"></div>
+<div class="toast glass" id="toast"></div>
 
-    <div class="railbody" id="rail"></div>
-
-    <div class="railfoot">
-      <button class="btn sm" id="btnReset">Reset defaults</button>
-      <button class="btn sm" id="btnCopy">Copy report</button>
-    </div>
-  </aside>
-
-  <!-- ============ MAIN ============ -->
-  <div class="main">
-    <div class="topbar">
-      <nav class="tabs" role="tablist" aria-label="Views">
-        <button class="tab" role="tab" data-tab="analysis" aria-selected="true">Analysis</button>
-        <button class="tab" role="tab" data-tab="optimize" aria-selected="false">Optimizer</button>
-        <button class="tab" role="tab" data-tab="sweep" aria-selected="false">Parameter sweep</button>
-        <button class="tab" role="tab" data-tab="equations" aria-selected="false">Equations</button>
-        <button class="tab" role="tab" data-tab="inspector" aria-selected="false">Inspector</button>
-      </nav>
-      <div id="verdict"></div>
-      <button class="btn" id="btnExport" style="margin-left:4px">Export</button>
-    </div>
-
-    <div class="content">
-      <!-- ---------- ANALYSIS ---------- -->
-      <section class="panel" role="tabpanel" aria-label="Analysis" id="panel-analysis">
-        <div class="tiles" id="tiles"></div>
-
-        <div class="grid2">
-          <div class="card">
-            <header>
-              <h3>Side elevation</h3>
-              <span class="sub" id="poseLabel"></span>
-            </header>
-            <div class="viz"><svg id="side" viewBox="0 0 720 392" style="width:100%;height:auto;display:block"></svg><button class="savebtn" data-png="side" data-name="side-elevation">Save PNG</button></div>
-          </div>
-
-          <div class="card">
-            <header>
-              <h3>3D preview</h3>
-              <span class="sub">drag to orbit &middot; scroll to zoom</span>
-            </header>
-            <div class="viz">
-              <canvas id="three" height="430"></canvas>
-              <div class="viewctl">
-                <button class="iconbtn" id="v3dIso" title="Isometric view">◪</button>
-                <button class="iconbtn" id="v3dTop" title="Top view">◎</button>
-                <button class="iconbtn" id="v3dFront" title="Front view">▭</button>
-              </div>
-              <button class="savebtn" data-png="three" data-name="3d-preview">Save PNG</button>
-            </div>
-            <div class="legend">
-              <span><i class="sw" style="background:#7d919e"></i>Structure</span>
-              <span><i class="sw" style="background:#2a78d6"></i>Servo</span>
-              <span><i class="sw" style="background:#eb6834"></i>Payload</span>
-              <span><i class="sw" style="background:#0f2230"></i>Centre of mass</span>
-            </div>
-          </div>
-        </div>
-
-        <div class="card">
-          <header>
-            <h3>Joint torque budget</h3>
-            <span class="sub" id="torqueSub"></span>
-          </header>
-          <div class="pad" id="torqueBars"></div>
-          <div class="pad" style="border-top:1px solid var(--rule);padding-top:0">
-            <details class="insp"><summary>Joint table <span class="tag">table view</span></summary>
-              <div class="body tbl-wrap" id="jointTable"></div>
-            </details>
-          </div>
-        </div>
-
-        <div class="grid2">
-          <div class="card">
-            <header>
-              <h3>Reach envelope</h3>
-              <span class="sub">side plane, swept through joint limits</span>
-            </header>
-            <div class="viz"><canvas id="env" height="360"></canvas><button class="savebtn" data-png="env" data-name="reach-envelope">Save PNG</button></div>
-            <div class="legend">
-              <span><i class="sw" style="background:#e8eef6"></i>Geometrically reachable</span>
-              <span><i class="sw" style="background:#a8c9ef"></i>Torque-feasible with payload</span>
-              <span><i class="sw line" style="background:#0f2230"></i>Current pose</span>
-            </div>
-            <div class="pad" style="padding-top:10px" id="envStats"></div>
-          </div>
-
-          <div class="card">
-            <header>
-              <h3>Payload vs. maximum reach</h3>
-              <span class="sub">limit curve at current geometry ratios</span>
-            </header>
-            <div class="viz"><svg id="prChart" viewBox="0 0 560 320" style="width:100%;height:auto;display:block"></svg><div class="tip" id="prTip"></div><button class="savebtn" data-png="prChart" data-name="payload-reach"></button></div>
-            <div class="legend">
-              <span><i class="sw line" style="background:#2a78d6"></i>Max feasible reach</span>
-              <span><i class="sw line" style="background:#0f2230;opacity:.45"></i>Current design</span>
-            </div>
-            <div class="pad" style="padding-top:8px">
-              <details class="insp"><summary>Curve data <span class="tag">table view</span></summary>
-                <div class="body tbl-wrap" id="prTable"></div>
-              </details>
-            </div>
-          </div>
-        </div>
-
-        <div class="grid2">
-          <div class="card">
-            <header><h3>Mass budget</h3><span class="sub" id="massSub"></span></header>
-            <div class="pad" id="massBreak"></div>
-          </div>
-          <div class="card">
-            <header><h3>Design review</h3><span class="sub" id="recCount"></span></header>
-            <div class="pad" id="recs"></div>
-          </div>
-        </div>
-      </section>
-
-      <!-- ---------- OPTIMIZER ---------- -->
-      <section class="panel" role="tabpanel" aria-label="Optimize" id="panel-optimize" hidden>
-        <div class="card">
-          <header><h3>Optimisation run</h3><span class="sub" id="optSub">grid search with iterative box refinement</span></header>
-          <div class="pad" id="optControls"></div>
-        </div>
-        <div id="optResult"></div>
-      </section>
-
-      <!-- ---------- SWEEP ---------- -->
-      <section class="panel" role="tabpanel" aria-label="Sweep" id="panel-sweep" hidden>
-        <div class="card">
-          <header><h3>Parameter sweep</h3><span class="sub" id="sweepSub"></span></header>
-          <div class="pad" id="sweepControls"></div>
-        </div>
-        <div id="sweepResult"></div>
-      </section>
-
-      <!-- ---------- EQUATIONS ---------- -->
-      <section class="panel" role="tabpanel" aria-label="Equations" id="panel-equations" hidden>
-        <div id="eqBody"></div>
-      </section>
-
-      <!-- ---------- INSPECTOR ---------- -->
-      <section class="panel" role="tabpanel" aria-label="Inspector" id="panel-inspector" hidden>
-        <div id="inspBody"></div>
-      </section>
-    </div>
+<!-- ============ FLOATING CHROME ============ -->
+<header class="topbar">
+  <div class="brand">
+    <svg viewBox="0 0 32 32" fill="none" aria-hidden="true">
+      <path d="M4 28h9" stroke="#1E305E" stroke-width="2" stroke-linecap="round"/>
+      <path d="M8.5 28V19" stroke="#1E305E" stroke-width="2" stroke-linecap="round"/>
+      <path d="M8.5 19 19 13.5" stroke="#2a78d6" stroke-width="2" stroke-linecap="round"/>
+      <path d="M19 13.5 27 18" stroke="#2a78d6" stroke-width="2" stroke-linecap="round"/>
+      <circle cx="8.5" cy="19" r="2.6" fill="#FFFCF8" stroke="#1E305E" stroke-width="1.6"/>
+      <circle cx="19" cy="13.5" r="2.6" fill="#FFFCF8" stroke="#1E305E" stroke-width="1.6"/>
+      <circle cx="27" cy="18" r="2.2" fill="#2a78d6"/>
+    </svg>
+    <div><b>4&#8209;DOF Arm Design Bench</b><span>Static &amp; torque budget</span></div>
   </div>
+
+  <div class="tabwrap glass">
+    <nav class="tabs" role="tablist" aria-label="Views">
+      <i class="glide" id="tabGlide"></i>
+      <button class="tab" role="tab" data-tab="analysis" aria-selected="true">Analysis</button>
+      <button class="tab" role="tab" data-tab="optimize" aria-selected="false">Optimiser</button>
+      <button class="tab" role="tab" data-tab="sweep" aria-selected="false">Sweep</button>
+      <button class="tab" role="tab" data-tab="equations" aria-selected="false">Equations</button>
+      <button class="tab" role="tab" data-tab="inspector" aria-selected="false">Inspector</button>
+    </nav>
+  </div>
+
+  <div class="topright">
+    <span id="verdict"></span>
+    <button class="gbtn" id="btnParams">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
+        <path d="M2 4.5h12M2 11.5h12"/><circle cx="6" cy="4.5" r="1.9" fill="#FFFCF8"/><circle cx="10.5" cy="11.5" r="1.9" fill="#FFFCF8"/>
+      </svg>Parameters</button>
+    <button class="gbtn" id="btnExport">Export</button>
+  </div>
+</header>
+
+<!-- pose control: direct manipulation lives on the 3D, this mirrors it -->
+<aside class="posebar glass" id="posebar">
+  <h4>Pose</h4>
+  <label class="swrow"><input type="checkbox" id="poseWorst"><span class="sw-toggle"></span>
+    <span>Worst case &mdash; fully extended</span></label>
+  <div id="poseRows"></div>
+  <p class="hint" id="poseHint"></p>
+</aside>
+
+<div class="stagectl glass" id="stagectl">
+  <button class="iconbtn" id="v3dIso" title="Isometric view">◪</button>
+  <button class="iconbtn" id="v3dTop" title="Top view">◎</button>
+  <button class="iconbtn" id="v3dFront" title="Front view">▭</button>
+  <button class="iconbtn" data-png="three" data-name="3d-preview" title="Save this view as PNG">↓</button>
 </div>
 
+<div class="stagehint" id="stageHint">
+  <button class="scrollcue glass" id="scrollCue">
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M4 6l4 4 4-4"/></svg>
+    <span id="scrollCueLabel">Full analysis</span>
+  </button>
+</div>
+
+<div class="dock glass" id="tiles"></div>
+
+<!-- ============ PARAMETERS: summoned, never resident ============ -->
+<div class="scrim" id="paramScrim"></div>
+<aside class="params glass-deep" id="paramPanel" aria-label="Parameters">
+  <header>
+    <div><h3>Parameters</h3><div class="sub">the whole design</div></div>
+    <button class="iconx" id="paramClose" aria-label="Close parameters">&times;</button>
+  </header>
+  <div class="railbody" id="rail"></div>
+  <footer>
+    <button class="btn sm" id="btnReset">Reset defaults</button>
+    <button class="btn sm" id="btnCopy">Copy report</button>
+  </footer>
+</aside>
+
+<!-- ============ SHEETS ============ -->
+<main class="scroller">
+  <section class="panel" role="tabpanel" aria-label="Analysis" id="panel-analysis">
+    <div class="stagespace"></div>
+    <div class="sheet">
+      <div class="grabber"></div>
+      <div class="sheethead"><h2>Analysis</h2>
+        <span class="sub" id="poseLabel"></span></div>
+
+      <div class="card">
+        <header><h3>Joint torque budget</h3><span class="sub" id="torqueSub"></span></header>
+        <div class="pad" id="torqueBars"></div>
+        <div class="pad" style="border-top:1px solid var(--hair);padding-top:0">
+          <details class="insp"><summary>Joint table <span class="tag">table view</span></summary>
+            <div class="body tbl-wrap" id="jointTable"></div></details>
+        </div>
+      </div>
+
+      <div class="grid2">
+        <div class="card">
+          <header><h3>Side elevation</h3><span class="sub">dimensioned drawing</span></header>
+          <div class="viz"><svg id="side" viewBox="0 0 720 392" style="width:100%;height:auto;display:block"></svg>
+            <button class="savebtn" data-png="side" data-name="side-elevation">Save PNG</button></div>
+        </div>
+        <div class="card">
+          <header><h3>Reach envelope</h3><span class="sub">swept through joint limits</span></header>
+          <div class="viz"><canvas id="env" height="360"></canvas>
+            <button class="savebtn" data-png="env" data-name="reach-envelope">Save PNG</button></div>
+          <div class="legend">
+            <span><i class="sw" style="background:#e8eef6"></i>Geometrically reachable</span>
+            <span><i class="sw" style="background:#a8c9ef"></i>Torque-feasible with payload</span>
+            <span><i class="sw line" style="background:#1E305E"></i>Current pose</span>
+          </div>
+          <div class="pad" style="padding-top:10px" id="envStats"></div>
+        </div>
+      </div>
+
+      <div class="grid2">
+        <div class="card">
+          <header><h3>Payload vs. maximum reach</h3><span class="sub">at current geometry ratios</span></header>
+          <div class="viz"><svg id="prChart" viewBox="0 0 560 320" style="width:100%;height:auto;display:block"></svg>
+            <div class="tip" id="prTip"></div>
+            <button class="savebtn" data-png="prChart" data-name="payload-reach"></button></div>
+          <div class="legend">
+            <span><i class="sw line" style="background:#2a78d6"></i>Max feasible reach</span>
+            <span><i class="sw line" style="background:#1E305E;opacity:.45"></i>Current design</span>
+          </div>
+          <div class="pad" style="padding-top:8px">
+            <details class="insp"><summary>Curve data <span class="tag">table view</span></summary>
+              <div class="body tbl-wrap" id="prTable"></div></details>
+          </div>
+        </div>
+        <div class="card">
+          <header><h3>Mass budget</h3><span class="sub" id="massSub"></span></header>
+          <div class="pad" id="massBreak"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <header><h3>Design review</h3><span class="sub" id="recCount"></span></header>
+        <div class="pad" id="recs"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel" role="tabpanel" aria-label="Optimiser" id="panel-optimize" hidden>
+    <div class="sheet tall">
+      <div class="sheethead"><h2>Optimiser</h2>
+        <span class="sub" id="optSub">grid search with iterative box refinement</span></div>
+      <div class="card"><div class="pad" id="optControls"></div></div>
+      <div id="optResult"></div>
+    </div>
+  </section>
+
+  <section class="panel" role="tabpanel" aria-label="Parameter sweep" id="panel-sweep" hidden>
+    <div class="sheet tall">
+      <div class="sheethead"><h2>Parameter sweep</h2><span class="sub" id="sweepSub"></span></div>
+      <div class="card"><div class="pad" id="sweepControls"></div></div>
+      <div id="sweepResult"></div>
+    </div>
+  </section>
+
+  <section class="panel" role="tabpanel" aria-label="Equations" id="panel-equations" hidden>
+    <div class="sheet tall">
+      <div class="sheethead"><h2>Equations</h2><span class="sub">every quantity the bench computes</span></div>
+      <div id="eqBody"></div>
+    </div>
+  </section>
+
+  <section class="panel" role="tabpanel" aria-label="Inspector" id="panel-inspector" hidden>
+    <div class="sheet tall">
+      <div class="sheethead"><h2>Inspector</h2><span class="sub">every intermediate value</span></div>
+      <div id="inspBody"></div>
+    </div>
+  </section>
+</main>
+
 <div class="backdrop" id="exportModal" hidden>
-  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="exTitle">
+  <div class="modal glass-deep" role="dialog" aria-modal="true" aria-labelledby="exTitle">
     <header><h3 id="exTitle">Export design report</h3>
-      <button class="close" id="exClose" aria-label="Close">&times;</button></header>
+      <button class="iconx" id="exClose" aria-label="Close">&times;</button></header>
     <div class="body">
-      <p class="note" style="margin:0 0 10px">A multi-page PDF of the current design — parameters,
+      <p class="note" style="margin:0 0 10px">A multi-page PDF of the current design &mdash; parameters,
         calculated results, and the drawings exactly as they stand now.</p>
       <div id="exOpts"></div>
     </div>
@@ -746,11 +1017,6 @@ const CONTROLS = [
    {t:"num", key:"L1", label:"L₁ shoulder → elbow", unit:"mm", min:20, max:400, step:1, slider:true},
    {t:"num", key:"L2", label:"L₂ elbow → wrist", unit:"mm", min:20, max:400, step:1, slider:true},
    {t:"num", key:"L3", label:"L₃ wrist → TCP", unit:"mm", min:10, max:400, step:1, slider:true},
-   {t:"head", text:"Pose"},
-   {t:"check", key:"worst", label:"Worst case — fully extended, horizontal"},
-   {t:"num", key:"q1", label:"θ₁ shoulder", unit:"°", min:-30, max:150, step:1, slider:true, dep:"pose"},
-   {t:"num", key:"q2", label:"θ₂ elbow", unit:"°", min:-150, max:30, step:1, slider:true, dep:"pose"},
-   {t:"num", key:"q3", label:"θ₃ wrist", unit:"°", min:-110, max:110, step:1, slider:true, dep:"pose"},
  ]},
  {title:"Structure & material", open:false, items:[
    {t:"sel", key:"material", label:"Material", opts:"material", wide:true},
@@ -845,14 +1111,16 @@ function buildControl(it){
   if (it.slider){
     rng = el("input"); rng.type="range"; rng.min=it.min; rng.max=it.max; rng.step=it.step;
     rng.value = P[it.key]; rng.setAttribute("aria-label", it.label); f.append(rng);
-    rng.addEventListener("input", ()=>{ P[it.key]=+rng.value; inp.value=rng.value; onChange(it.key); });
+    rng.addEventListener("input", ()=>{ P[it.key]=+rng.value; inp.value=rng.value; onChange(it.key, true); });
+    rng.addEventListener("change", ()=>{ P[it.key]=+rng.value; onChange(it.key); });
   }
   inp.addEventListener("input", ()=>{
     const v = parseFloat(inp.value); if (!isFinite(v)) return;
     P[it.key] = Math.min(it.max, Math.max(it.min, v));
     if (rng) rng.value = P[it.key];
-    onChange(it.key);
+    onChange(it.key, true);
   });
+  inp.addEventListener("change", ()=>onChange(it.key));
   return f;
 }
 
@@ -892,15 +1160,19 @@ function onSelect(key, val){
   onChange(key);
 }
 /* if a torque/mass is edited by hand, the preset becomes Custom */
-function onChange(key){
+function onChange(key, light){
   const m = key.match(/^(tau|m)(Base|Sh|El|Wr)$/);
   if (m){ const pk = "srv"+m[2], s = SERVOS[P[pk]];
     if (s && s.tau!==null && (P["tau"+m[2]]!==s.tau || P["m"+m[2]]!==s.mass)) P[pk] = "custom"; }
-  scheduleRender();
+  scheduleRender(light);
 }
 
-let raf = 0;
-function scheduleRender(){ if (raf) return; raf = requestAnimationFrame(()=>{ raf=0; render(); }); }
+let raf = 0, rafLight = true;
+function scheduleRender(light){
+  rafLight = rafLight && !!light;
+  if (raf) return;
+  raf = requestAnimationFrame(()=>{ raf=0; const l=rafLight; rafLight=true; render({light:l}); });
+}
 
 /* =====================================================================
    STATE CLASSIFICATION
@@ -962,55 +1234,88 @@ function requiredStall(res, key){
 /* =====================================================================
    MAIN RENDER
    ===================================================================== */
-function render(){
+function render(opts){
+  const light = !!(opts && opts.light);
   _renderSeq++;
   R = solve(P);
   syncRail();
   renderVerdict(R);
-  renderTiles(R);
+  renderTiles(R, !light);
   renderTorque(R);
   renderJointTable(R);
   renderMass(R);
-  renderRecs(R);
   drawSide(R);
   draw3D(R);
+  if (light) return;                 /* the rest is too heavy for a drag frame */
+  renderRecs(R);
   drawEnvelope(R);
   drawPayloadReach(R);
   if (activeTab==="inspector") renderInspector(R);
   if (activeTab==="optimize")  refreshOptStatic();
 }
 
+let _lastPeak = null;
 function renderVerdict(res){
   const st = designState(res);
   const j = res.joints[res.peak];
-  const cls = {ok:"ok", tight:"tight", over:"over"}[st];
   const word = {ok:"Within all limits", tight:"Below target margin", over:"Over limit"}[st];
+  const changed = _lastPeak !== null && _lastPeak !== res.peak;
+  _lastPeak = res.peak;
   $("#verdict").innerHTML =
-    '<span class="chip '+cls+'"><i class="dot"></i>'+word+'</span> ' +
-    '<span class="chip mono"><i class="dot"></i>'+j.name+' '+fx(j.util,0)+'%</span>';
+    '<span class="pill '+st+(changed?" flash":"")+'"><i class="dot"></i>'+word+
+    ' · '+j.name.replace(" (yaw)","")+' '+fx(j.util,0)+'%</span>';
   $("#poseLabel").textContent = res.useWorst
     ? "worst case — fully extended, horizontal"
     : "θ = "+fx(P.q1,0)+"° / "+fx(P.q2,0)+"° / "+fx(P.q3,0)+"°";
 }
 
-function renderTiles(res){
-  const st = designState(res);
+const _tween = {};
+function tweenTo(el, key, target, dec){
+  const from = _tween[key];
+  _tween[key] = target;
+  if (from===undefined || !isFinite(from) || Math.abs(target-from) < 1e-9){
+    el.firstChild.nodeValue = fx(target, dec); return;
+  }
+  const t0 = performance.now(), dur = 420;
+  const step = now=>{
+    const k = Math.min(1, (now-t0)/dur), e = 1-Math.pow(1-k,3);
+    if (_tween[key] !== target) return;               // a newer value superseded this
+    el.firstChild.nodeValue = fx(from + (target-from)*e, dec);
+    if (k < 1) requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+}
+function renderTiles(res, animate){
   const j = res.joints[res.peak];
   const maxPay = maxFeasiblePayload();
   const deflOK = res.deflection.mm <= P.defMax;
-  const tiles = [
-    {k:"Reach", v:fx(res.reach*1000,0), u:"mm", m:"L₁+L₂+L₃ = "+fx(res.reachMax*1000,0)+" mm", s:""},
-    {k:"Peak servo load", v:fx(j.util,0), u:"%", m:j.name+" · SF "+fx(j.sf,2)+"×", s:jointState(j)},
-    {k:"Payload capacity", v:fx(maxPay,0), u:"g", m:"at target SF "+fx(P.sfMin,2)+"× · now "+fx(res.payload_g,0)+" g",
-     s: res.payload_g<=maxPay ? "ok":"over"},
-    {k:"Total mass", v:fx(res.mTot*1000,0), u:"g", m:"moving mass "+fx(res.mArm*1000,0)+" g", s:""},
-    {k:"Tip deflection", v:fx(res.deflection.mm,2), u:"mm", m:"limit "+fx(P.defMax,2)+" mm", s: deflOK?"ok":"over"},
+  const stats = [
+    {id:"reach", k:"Reach", v:res.reach*1000, d:0, u:"mm",
+     m:"L₁+L₂+L₃ = "+fx(res.reachMax*1000,0)+" mm", s:""},
+    {id:"peak", k:"Peak servo load", v:j.util, d:0, u:"%",
+     m:j.name.replace(" (yaw)","")+" · SF "+fx(j.sf,2)+"×", s:jointState(j)},
+    {id:"cap", k:"Payload capacity", v:maxPay, d:0, u:"g",
+     m:"at SF "+fx(P.sfMin,2)+"× · now "+fx(res.payload_g,0)+" g", s:res.payload_g<=maxPay?"ok":"over"},
+    {id:"mass", k:"Total mass", v:res.mTot*1000, d:0, u:"g",
+     m:"moving "+fx(res.mArm*1000,0)+" g", s:""},
+    {id:"defl", k:"Tip deflection", v:res.deflection.mm, d:2, u:"mm",
+     m:"limit "+fx(P.defMax,2)+" mm", s:deflOK?"ok":"over"},
   ];
-  $("#tiles").innerHTML = tiles.map(t=>
-    '<div class="tile'+(t.s?" state-"+t.s:"")+'">'+
-      '<div class="k">'+t.k+'</div>'+
-      '<div class="v">'+t.v+' <small>'+t.u+'</small></div>'+
-      '<div class="m">'+t.m+'</div></div>').join("");
+  const host = $("#tiles");
+  if (host.childElementCount !== stats.length){
+    host.innerHTML = stats.map(t=>'<div class="stat" data-id="'+t.id+'">'+
+      '<div class="k">'+t.k+'</div><div class="v">0 <small>'+t.u+'</small></div>'+
+      '<div class="m"></div></div>').join("");
+    Object.keys(_tween).forEach(k=>delete _tween[k]);
+  }
+  stats.forEach(t=>{
+    const el = host.querySelector('.stat[data-id="'+t.id+'"]');
+    el.className = "stat" + (t.s ? " "+t.s : "");
+    const v = el.querySelector(".v");
+    if (animate) tweenTo(v, t.id, t.v, t.d);
+    else { v.firstChild.nodeValue = fx(t.v, t.d); _tween[t.id] = t.v; }
+    el.querySelector(".m").textContent = t.m;
+  });
 }
 
 function renderTorque(res){
@@ -1095,14 +1400,37 @@ function renderMass(res){
    TABS
    ===================================================================== */
 let activeTab = "analysis";
+function moveGlide(){
+  const on = document.querySelector('.tab[aria-selected="true"]'), gl = $("#tabGlide");
+  if (!on || !gl) return;
+  gl.style.width = on.offsetWidth + "px";
+  gl.style.transform = "translateX(" + on.offsetLeft + "px)";
+}
+let _lastScrollY = 0;
+function syncStageHint(){
+  const onStage = activeTab === "analysis", y = scrollY;
+  $("#stageHint").classList.toggle("on", onStage && y < 140);
+  /* the pose bar and view buttons only make sense while the arm is visible */
+  document.body.classList.toggle("stage-away", !onStage || y > innerHeight*0.5);
+  const dy = y - _lastScrollY;
+  if (y < 90) document.body.classList.remove("dock-away");
+  else if (dy > 8) document.body.classList.add("dock-away");
+  else if (dy < -8) document.body.classList.remove("dock-away");
+  if (Math.abs(dy) > 3) _lastScrollY = y;
+}
 function setTab(name){
+  const first = activeTab === name;
   activeTab = name;
   $$(".tab").forEach(t=>t.setAttribute("aria-selected", String(t.dataset.tab===name)));
   $$(".panel").forEach(p=>p.hidden = (p.id !== "panel-"+name));
+  moveGlide();
+  if (!first) scrollTo({top:0, behavior:"instant"});
+  syncStageHint();
   if (name==="inspector") renderInspector(R);
   if (name==="equations") renderEquations();
   if (name==="optimize")  refreshOptStatic();
-  if (name==="analysis")  { draw3D(R); drawEnvelope(R); }
+  if (name==="sweep")     buildSweepControls();
+  if (name==="analysis")  { drawEnvelope(R); drawPayloadReach(R); }
 }
 </script>
 
@@ -1271,23 +1599,50 @@ function drawSide(res){
 <script>
 "use strict";
 /* =====================================================================
-   3D PREVIEW  -  orthographic painter's-algorithm renderer (no library)
-   world axes: x forward, y left, z up.  Base yaw rotates about z.
+   3D STAGE  -  orthographic painter's-algorithm renderer (no library)
+   world axes: x forward, y left, z up.  The base joint rotates about z.
+   Every quad carries a part id, so the same geometry that draws the arm
+   also answers "what is under the cursor" - hover, select and drag all
+   read from it. No separate picking pass, no colour buffer.
    ===================================================================== */
-const cam = {az: -38*D2R, el: 22*D2R, zoom: 1, yaw: 25*D2R};
+const cam = {az: -38*D2R, el: 20*D2R, zoom: 1, yaw: 22*D2R};
 const EXPORT = {scale: 0};                 // >0 while capturing for export
 const outDpr = () => EXPORT.scale || Math.min(devicePixelRatio||1, 2);
+
+const PARTS = {
+  "servo:base":{name:"Base servo",     kind:"servo", jk:"base", group:"Servos & margins", key:"tauBase"},
+  "servo:sh":  {name:"Shoulder servo", kind:"servo", jk:"sh",   group:"Servos & margins", key:"tauSh"},
+  "servo:el":  {name:"Elbow servo",    kind:"servo", jk:"el",   group:"Servos & margins", key:"tauEl"},
+  "servo:wr":  {name:"Wrist servo",    kind:"servo", jk:"wr",   group:"Servos & margins", key:"tauWr"},
+  "link:0":    {name:"Link 1 — upper arm", kind:"link", i:0, group:"Structure & material", key:"L1"},
+  "link:1":    {name:"Link 2 — forearm",   kind:"link", i:1, group:"Structure & material", key:"L2"},
+  "link:2":    {name:"Link 3 — wrist",     kind:"link", i:2, group:"Structure & material", key:"L3"},
+  "column":    {name:"Column",         kind:"column", group:"Geometry", key:"h0"},
+  "plate":     {name:"Base plate",     kind:"plate",  group:"Loads", key:"mPlate"},
+  "ee":        {name:"End effector",   kind:"ee",     group:"Loads", key:"mEE"},
+  "payload":   {name:"Payload",        kind:"payload",group:"Loads", key:"payload"},
+};
+const STAGE = {quads:[], hover:null, sel:null, drag:null, w:0, h:0};
+
 function draw3D(res){
   if (!res) return;
   const cv = $("#three"), dpr = outDpr();
-  /* match the side elevation's aspect so the two cards line up */
-  const cssW = cv.clientWidth || 620;
-  const cssH = Math.max(290, Math.min(470, Math.round(cssW*392/720)));
-  cv.style.height = cssH+"px";
-  cv.width = cssW*dpr; cv.height = cssH*dpr;
+  const exporting = EXPORT.scale > 0;
+  const cssW = exporting ? 900 : (window.innerWidth || 1200);
+  const cssH = exporting ? 560 : (window.innerHeight || 800);
+  cv.width = Math.round(cssW*dpr); cv.height = Math.round(cssH*dpr);
+  if (!exporting){ cv.style.width = cssW+"px"; cv.style.height = cssH+"px"; }
   const g = cv.getContext("2d"); g.setTransform(dpr,0,0,dpr,0,0);
+  STAGE.w = cssW; STAGE.h = cssH;
+
+  /* warm ground: a soft pool of light under the arm, nothing decorative */
   g.clearRect(0,0,cssW,cssH);
-  g.fillStyle = "#fbfcfd"; g.fillRect(0,0,cssW,cssH);
+  g.fillStyle = "#FFFCF8"; g.fillRect(0,0,cssW,cssH);
+  const vg = g.createRadialGradient(cssW*0.5, cssH*0.60, 0, cssW*0.5, cssH*0.60, Math.max(cssW,cssH)*0.62);
+  vg.addColorStop(0, "rgba(255,255,255,.95)");
+  vg.addColorStop(0.55, "rgba(255,252,248,0)");
+  vg.addColorStop(1, "rgba(30,48,94,.045)");
+  g.fillStyle = vg; g.fillRect(0,0,cssW,cssH);
 
   const N = res.N, ang = res.ang, ps = cam.yaw;
   const Rmax = res.reachMax*1000;
@@ -1297,44 +1652,19 @@ function draw3D(res){
   const eye   = [ca*ce, sa*ce, se];
   const dot = (a,b)=>a[0]*b[0]+a[1]*b[1]+a[2]*b[2];
 
-  /* fit the scene to the canvas: project the extremes at unit scale first */
-  const fit = [];
-  for (let a=0;a<360;a+=30) fit.push([Rmax*Math.cos(a*D2R), Rmax*Math.sin(a*D2R), 0]);
-  const yawv = [Math.cos(cam.yaw), Math.sin(cam.yaw), 0];
-  res.N.forEach(n=>fit.push([yawv[0]*n.r*1000, yawv[1]*n.r*1000, n.z*1000 + 30]));
-  fit.push([0,0,0]);
-  let ux0=1e9,ux1=-1e9,uy0=1e9,uy1=-1e9;
-  fit.forEach(p=>{ const a=dot(p,right), b=dot(p,up);
-    if(a<ux0)ux0=a; if(a>ux1)ux1=a; if(b<uy0)uy0=b; if(b>uy1)uy1=b; });
-  const padPx = 26;
-  const s = Math.min((cssW-2*padPx)/Math.max(ux1-ux0,1), (cssH-2*padPx-16)/Math.max(uy1-uy0,1)) * cam.zoom;
-  const cx = cssW/2 - (ux0+ux1)/2*s, cy = (cssH-16)/2 + (uy0+uy1)/2*s;
-  const proj = p => [cx + dot(p,right)*s, cy - dot(p,up)*s];
   const depth = p => dot(p,eye);
-  const LIGHT = (()=>{ const v=[0.35,0.45,0.82], n=Math.hypot(v[0],v[1],v[2]); return v.map(x=>x/n); })();
+  const LIGHT = (()=>{ const v=[0.30,0.42,0.86], n=Math.hypot(v[0],v[1],v[2]); return v.map(x=>x/n); })();
 
-  /* -- ground grid + working circle -- */
-  const gstep = 50, gext = Math.ceil(Rmax/gstep+1)*gstep;
-  g.lineWidth = 1;
-  for (let i=-gext;i<=gext;i+=gstep){
-    g.strokeStyle = (i===0) ? "#c7d3db" : "#e8eef2";
-    line3(g,[i,-gext,0],[i,gext,0]); line3(g,[-gext,i,0],[gext,i,0]);
-  }
-  g.strokeStyle = "#cde2fb"; g.lineWidth = 1.6; g.setLineDash([6,4]);
-  g.beginPath();
-  for (let a=0;a<=360;a+=4){ const t=a*D2R, p=proj([Rmax*Math.cos(t), Rmax*Math.sin(t), 0]);
-    a?g.lineTo(p[0],p[1]):g.moveTo(p[0],p[1]); }
-  g.stroke(); g.setLineDash([]);
-
-  /* -- solids -- */
+  /* ---- pass 1: build the solids in world space; nothing here needs a scale -- */
   const quads = [];
-  const uYaw = [Math.cos(ps), Math.sin(ps), 0];          // in-plane horizontal
-  const wOut = [-Math.sin(ps), Math.cos(ps), 0];         // out-of-plane
+  const uYaw = [Math.cos(ps), Math.sin(ps), 0];
+  const wOut = [-Math.sin(ps), Math.cos(ps), 0];
   const pt = (r,z)=>[uYaw[0]*r, uYaw[1]*r, z];
 
-  addCyl(quads, [0,0,0], P.footR, 10, "#c7d3db");
+  addCyl(quads, [0,0,0], P.footR, 11, "#cfd6e2", "plate");
   const colW = (P.section==="round"?P.hh1:P.w1);
-  addBox(quads, [0,0,P.h0/2], [0,0,1], uYaw, wOut, P.h0, colW, colW, "#dbe3e9");
+  addBox(quads, [0,0,P.h0/2], [0,0,1], uYaw, wOut, P.h0, colW, colW, "#dfe4ec", "column");
+  addCyl(quads, [0,0,11], colW*1.15, 24, "#2a78d6", "servo:base");
 
   const dims = [[P.w1,P.hh1],[P.w2,P.hh2],[P.w3,P.hh3]];
   for (let i=0;i<3;i++){
@@ -1344,13 +1674,13 @@ function draw3D(res){
     const A = pt(N[i].r*1000, N[i].z*1000), B = pt(N[i+1].r*1000, N[i+1].z*1000);
     const mid = [(A[0]+B[0])/2,(A[1]+B[1])/2,(A[2]+B[2])/2];
     const wd = (P.section==="round"?dims[i][1]:dims[i][0]);
-    addBox(quads, mid, u, v, wOut, [P.L1,P.L2,P.L3][i], dims[i][1], wd, "#9aabb6");
+    addBox(quads, mid, u, v, wOut, [P.L1,P.L2,P.L3][i], dims[i][1], wd, "#aab4c6", "link:"+i);
   }
-  [[0,P.mSh],[1,P.mEl],[2,P.mWr]].forEach(([i])=>{
-    const a = ang[Math.min(i,2)];
+  ["sh","el","wr"].forEach((jk,i)=>{
+    const a = ang[i];
     const u = [uYaw[0]*Math.cos(a), uYaw[1]*Math.cos(a), Math.sin(a)];
     const v = [-uYaw[0]*Math.sin(a), -uYaw[1]*Math.sin(a), Math.cos(a)];
-    addBox(quads, pt(N[i].r*1000, N[i].z*1000), u, v, wOut, 40, 20, 21, "#2a78d6");
+    addBox(quads, pt(N[i].r*1000, N[i].z*1000), u, v, wOut, 40, 20, 21, "#2a78d6", "servo:"+jk);
   });
   { const a = ang[2];
     const u = [uYaw[0]*Math.cos(a), uYaw[1]*Math.cos(a), Math.sin(a)];
@@ -1358,80 +1688,110 @@ function draw3D(res){
     const T = pt(N[3].r*1000, N[3].z*1000);
     [-1,1].forEach(sgn=>{
       const c = [T[0]+v[0]*sgn*10+u[0]*9, T[1]+v[1]*sgn*10+u[1]*9, T[2]+v[2]*sgn*10+u[2]*9];
-      addBox(quads, c, u, v, wOut, 22, 4, 12, "#4b6070");
+      addBox(quads, c, u, v, wOut, 22, 4, 12, "#7c879b", "ee");
     });
     if (res.payload_g>0){
       const pr = Math.max(6, Math.cbrt(res.payload_g)*3.2);
       const c = [T[0]+u[0]*(18+pr), T[1]+u[1]*(18+pr), T[2]+u[2]*(18+pr)];
-      addBox(quads, c, u, v, wOut, pr*1.7, pr*1.7, pr*1.7, "#eb6834");
+      addBox(quads, c, u, v, wOut, pr*1.7, pr*1.7, pr*1.7, "#eb6834", "payload");
     }
   }
 
+  /* ---- pass 2: frame the actual silhouette, not just the joint centres ---- */
+  const insT = exporting ? 14 : 92, insB = exporting ? 14 : 132, insX = exporting ? 14 : 64;
+  let ux0=1e9,ux1=-1e9,uy0=1e9,uy1=-1e9;
+  const grow = p => { const a=dot(p,right), b=dot(p,up);
+    if(a<ux0)ux0=a; if(a>ux1)ux1=a; if(b<uy0)uy0=b; if(b>uy1)uy1=b; };
+  quads.forEach(q=>q.p.forEach(grow));
+  const availW = cssW-2*insX, availH = cssH-insT-insB;
+  const s = Math.min(availW/Math.max(ux1-ux0,1), availH/Math.max(uy1-uy0,1)) * 0.86 * cam.zoom;
+  const cx = cssW/2 - (ux0+ux1)/2*s, cy = insT + availH/2 + (uy0+uy1)/2*s;
+  const proj = p => [cx + dot(p,right)*s, cy - dot(p,up)*s];
+  STAGE.proj = proj; STAGE.right = right; STAGE.up = up; STAGE.eye = eye; STAGE.s = s;
+
+  /* ground grid + the circle the base sweeps */
+  const gstep = 50, gext = Math.ceil(Rmax/gstep+1)*gstep;
+  g.lineWidth = 1;
+  for (let i=-gext;i<=gext;i+=gstep){
+    g.strokeStyle = (i===0) ? "rgba(30,48,94,.12)" : "rgba(30,48,94,.05)";
+    line3(g,[i,-gext,0],[i,gext,0]); line3(g,[-gext,i,0],[gext,i,0]);
+  }
+  g.strokeStyle = "rgba(42,120,214,.26)"; g.lineWidth = 1.3; g.setLineDash([7,5]);
+  g.beginPath();
+  for (let a=0;a<=360;a+=4){ const t=a*D2R, p=proj([Rmax*Math.cos(t), Rmax*Math.sin(t), 0]);
+    a?g.lineTo(p[0],p[1]):g.moveTo(p[0],p[1]); }
+  g.stroke(); g.setLineDash([]);
+
+  /* contact shadow under the base */
+  const sh = proj([0,0,0]);
+  const sg = g.createRadialGradient(sh[0], sh[1], 0, sh[0], sh[1], Math.max(8,P.footR*s*1.9));
+  sg.addColorStop(0,"rgba(30,48,94,.15)"); sg.addColorStop(1,"rgba(30,48,94,0)");
+  g.save(); g.translate(sh[0],sh[1]); g.scale(1, Math.max(0.16, Math.sin(cam.el)));
+  g.translate(-sh[0],-sh[1]); g.fillStyle=sg;
+  g.beginPath(); g.arc(sh[0],sh[1],Math.max(8,P.footR*s*1.9),0,7); g.fill(); g.restore();
+
   quads.sort((a,b)=>a.d-b.d);
+  const hov = STAGE.hover, sel = STAGE.sel;
   quads.forEach(q=>{
-    const sh = 0.58 + 0.42*Math.max(0, dot(q.n, LIGHT));
-    g.fillStyle = shade(q.c, sh);
-    g.strokeStyle = shade(q.c, sh*0.66); g.lineWidth = 0.7;
+    const lit = (q.part===hov), picked = (q.part===sel);
+    const shd = 0.60 + 0.40*Math.max(0, dot(q.n, LIGHT));
+    g.fillStyle = shade(q.c, shd * (lit?1.12:1));
+    g.strokeStyle = lit ? "rgba(30,48,94,.75)" : picked ? "rgba(42,120,214,.85)" : shade(q.c, shd*0.62);
+    g.lineWidth = (lit||picked) ? 1.4 : 0.7;
     g.beginPath();
-    q.p.forEach((v,i)=>{ const pp = proj(v); i?g.lineTo(pp[0],pp[1]):g.moveTo(pp[0],pp[1]); });
+    q.s = q.p.map(v=>proj(v));
+    q.s.forEach((pp,i)=>{ i?g.lineTo(pp[0],pp[1]):g.moveTo(pp[0],pp[1]); });
     g.closePath(); g.fill(); g.stroke();
   });
+  STAGE.quads = quads;
 
-  /* -- centre of mass marker -- */
+  /* centre of mass: the one annotation that always earns its place */
   const cP = proj(pt(res.com.r*1000, res.com.z*1000));
   const gP = proj(pt(res.com.r*1000, 0));
-  g.strokeStyle = "rgba(15,34,48,.45)"; g.setLineDash([3,3]); g.lineWidth = 1;
+  g.strokeStyle = "rgba(30,48,94,.34)"; g.setLineDash([3,4]); g.lineWidth = 1;
   g.beginPath(); g.moveTo(cP[0],cP[1]); g.lineTo(gP[0],gP[1]); g.stroke(); g.setLineDash([]);
   comMark(g, cP[0], cP[1], 8);
-  g.fillStyle = "#0f2230"; g.font = "500 10px var(--mono), monospace"; g.textAlign = "center";
+  g.fillStyle = "rgba(30,48,94,.62)"; g.font = "500 10px var(--mono), monospace"; g.textAlign = "center";
   g.fillText("CoM", cP[0], cP[1]-13);
-
-  /* -- footer readout -- */
-  g.textAlign = "left"; g.fillStyle = "#7d919e"; g.font = "10.5px var(--mono), monospace";
-  g.fillText("yaw ψ "+fx(ps/D2R,0)+"°   reach "+fx(res.reach*1000,0)+" mm   mass "+fx(res.mTot*1000,0)+" g", 12, cssH-12);
+  STAGE.comScreen = cP;
 
   function line3(gg,a,b){ const p1=proj(a),p2=proj(b);
     gg.beginPath(); gg.moveTo(p1[0],p1[1]); gg.lineTo(p2[0],p2[1]); gg.stroke(); }
-  function addBox(list, c, u, v, w, lu, lv, lw, col){
-    const hu=lu/2, hv=lv/2, hw=lw/2;
-    const V=[];
+  function addBox(list, c, u, v, w, lu, lv, lw, col, part){
+    const hu=lu/2, hv=lv/2, hw=lw/2, V=[];
     for (const su of [-1,1]) for (const sv of [-1,1]) for (const sw of [-1,1])
       V.push([c[0]+u[0]*su*hu+v[0]*sv*hv+w[0]*sw*hw,
               c[1]+u[1]*su*hu+v[1]*sv*hv+w[1]*sw*hw,
               c[2]+u[2]*su*hu+v[2]*sv*hv+w[2]*sw*hw]);
-    // index order: (su,sv,sw) -> su*4+sv*2+sw with -1->0
     const I=(a,b,cc)=>((a?4:0)+(b?2:0)+(cc?1:0));
-    const faces=[
-      [[I(1,0,0),I(1,1,0),I(1,1,1),I(1,0,1)], u],
-      [[I(0,0,0),I(0,0,1),I(0,1,1),I(0,1,0)], [-u[0],-u[1],-u[2]]],
-      [[I(0,1,0),I(0,1,1),I(1,1,1),I(1,1,0)], v],
-      [[I(0,0,0),I(1,0,0),I(1,0,1),I(0,0,1)], [-v[0],-v[1],-v[2]]],
-      [[I(0,0,1),I(1,0,1),I(1,1,1),I(0,1,1)], w],
-      [[I(0,0,0),I(0,1,0),I(1,1,0),I(1,0,0)], [-w[0],-w[1],-w[2]]],
-    ];
-    faces.forEach(([idx,n])=>{
-      const p = idx.map(i=>V[i]);
-      const d = p.reduce((a,q)=>a+depth(q),0)/4;
+    [[[I(1,0,0),I(1,1,0),I(1,1,1),I(1,0,1)], u],
+     [[I(0,0,0),I(0,0,1),I(0,1,1),I(0,1,0)], [-u[0],-u[1],-u[2]]],
+     [[I(0,1,0),I(0,1,1),I(1,1,1),I(1,1,0)], v],
+     [[I(0,0,0),I(1,0,0),I(1,0,1),I(0,0,1)], [-v[0],-v[1],-v[2]]],
+     [[I(0,0,1),I(1,0,1),I(1,1,1),I(0,1,1)], w],
+     [[I(0,0,0),I(0,1,0),I(1,1,0),I(1,0,0)], [-w[0],-w[1],-w[2]]]
+    ].forEach(([idx,n])=>{
       if (dot(n, eye) <= 0) return;                   // back-face cull
-      list.push({p, n, c:col, d});
+      const p = idx.map(i=>V[i]);
+      list.push({p, n, c:col, part, d:p.reduce((a,q)=>a+depth(q),0)/4});
     });
   }
-  function addCyl(list, c, r, h, col){
-    const K = 26, top=[], bot=[];
+  function addCyl(list, c, r, h, col, part){
+    const K = 30, top=[], bot=[];
     for (let i=0;i<K;i++){ const t=i/K*2*Math.PI;
       top.push([c[0]+r*Math.cos(t), c[1]+r*Math.sin(t), c[2]+h]);
       bot.push([c[0]+r*Math.cos(t), c[1]+r*Math.sin(t), c[2]]); }
     for (let i=0;i<K;i++){ const j=(i+1)%K;
       const n=[Math.cos((i+0.5)/K*2*Math.PI), Math.sin((i+0.5)/K*2*Math.PI), 0];
       if (dot(n,eye)>0){ const p=[bot[i],bot[j],top[j],top[i]];
-        list.push({p,n,c:col,d:p.reduce((a,q)=>a+depth(q),0)/4}); } }
-    list.push({p:top, n:[0,0,1], c:col, d:top.reduce((a,q)=>a+depth(q),0)/K});
+        list.push({p,n,c:col,part,d:p.reduce((a,q)=>a+depth(q),0)/4}); } }
+    list.push({p:top, n:[0,0,1], c:col, part, d:top.reduce((a,q)=>a+depth(q),0)/K});
   }
   function comMark(gg,x,y,r){
     gg.save(); gg.translate(x,y);
-    gg.fillStyle="#fff"; gg.strokeStyle="#0f2230"; gg.lineWidth=1.2;
+    gg.fillStyle="#FFFCF8"; gg.strokeStyle="#1E305E"; gg.lineWidth=1.2;
     gg.beginPath(); gg.arc(0,0,r,0,2*Math.PI); gg.fill(); gg.stroke();
-    gg.fillStyle="#0f2230";
+    gg.fillStyle="#1E305E";
     gg.beginPath(); gg.moveTo(0,0); gg.arc(0,0,r,Math.PI,1.5*Math.PI); gg.closePath(); gg.fill();
     gg.beginPath(); gg.moveTo(0,0); gg.arc(0,0,r,0,0.5*Math.PI); gg.closePath(); gg.fill();
     gg.restore();
@@ -1439,25 +1799,296 @@ function draw3D(res){
 }
 function shade(hex, f){
   const n = parseInt(hex.slice(1),16);
-  const r = Math.min(255,Math.round((n>>16)*f)), gg = Math.min(255,Math.round(((n>>8)&255)*f)), b = Math.min(255,Math.round((n&255)*f));
+  const r = Math.min(255,Math.round((n>>16)*f)), gg = Math.min(255,Math.round(((n>>8)&255)*f)),
+        b = Math.min(255,Math.round((n&255)*f));
   return "rgb("+r+","+gg+","+b+")";
 }
-(function bind3D(){
-  const cv = $("#three"); let drag = null;
-  cv.addEventListener("pointerdown", e=>{ drag={x:e.clientX,y:e.clientY,az:cam.az,el:cam.el}; cv.setPointerCapture(e.pointerId); });
-  cv.addEventListener("pointermove", e=>{ if(!drag) return;
-    cam.az = drag.az - (e.clientX-drag.x)*0.008;
-    cam.el = Math.max(-0.2, Math.min(1.4, drag.el + (e.clientY-drag.y)*0.006));
-    draw3D(R); });
-  cv.addEventListener("pointerup", ()=>drag=null);
-  cv.addEventListener("pointercancel", ()=>drag=null);
-  cv.addEventListener("wheel", e=>{ e.preventDefault();
-    cam.zoom = Math.max(0.4, Math.min(3, cam.zoom*(e.deltaY>0?0.92:1.08))); draw3D(R); }, {passive:false});
-  cv.style.cursor = "grab";
-  $("#v3dIso").onclick   = ()=>{ cam.az=-38*D2R; cam.el=22*D2R; cam.zoom=1; draw3D(R); };
+
+/* ---------- picking: nearest quad whose polygon contains the point ---- */
+function pickPart(mx, my){
+  const q = STAGE.quads;
+  for (let i=q.length-1;i>=0;i--){          // sorted far -> near, so walk back
+    if (q[i].s && pointInPoly(mx, my, q[i].s)) return q[i].part;
+  }
+  return null;
+}
+function pointInPoly(x, y, poly){
+  let inside = false;
+  for (let i=0,j=poly.length-1;i<poly.length;j=i++){
+    const xi=poly[i][0], yi=poly[i][1], xj=poly[j][0], yj=poly[j][1];
+    if (((yi>y)!==(yj>y)) && (x < (xj-xi)*(y-yi)/(yj-yi)+xi)) inside = !inside;
+  }
+  return inside;
+}
+
+/* =====================================================================
+   DIRECT MANIPULATION
+   Drag a link and the joint at its proximal end follows the pointer, in
+   the arm's own working plane. The plane's two screen-space basis vectors
+   are taken from the live projection and inverted, so the arm tracks the
+   cursor exactly whatever the camera is doing.
+   Drag the base to swing the yaw axis. Drag empty space to orbit.
+   ===================================================================== */
+const DRAG_JOINT = {"link:0":0, "servo:sh":0, "link:1":1, "servo:el":1,
+                    "link:2":2, "servo:wr":2, "ee":2, "payload":2};
+const JOINT_LIM = [["limShMin","limShMax"], ["limElMin","limElMax"], ["limWrMin","limWrMax"]];
+
+function armPlaneBasis(node){
+  const ps = cam.yaw, u = [Math.cos(ps), Math.sin(ps), 0];
+  const o  = STAGE.proj(node);
+  const e1 = STAGE.proj([node[0]+u[0]*100, node[1]+u[1]*100, node[2]]);
+  const e2 = STAGE.proj([node[0], node[1], node[2]+100]);
+  return {o, e1:[e1[0]-o[0], e1[1]-o[1]], e2:[e2[0]-o[0], e2[1]-o[1]]};
+}
+/** screen point -> absolute angle in the arm plane, measured at `node` */
+function angleAt(node, mx, my){
+  const B = armPlaneBasis(node);
+  const det = B.e1[0]*B.e2[1] - B.e1[1]*B.e2[0];
+  if (Math.abs(det) < 1e-6) return null;               // plane seen edge-on
+  const dx = mx-B.o[0], dy = my-B.o[1];
+  const a = ( dx*B.e2[1] - dy*B.e2[0]) / det;
+  const b = (-dx*B.e1[1] + dy*B.e1[0]) / det;
+  if (Math.hypot(a,b) < 1e-4) return null;
+  return Math.atan2(b, a) / D2R;
+}
+function applyJointDrag(j, mx, my){
+  const node = (()=>{ const ps=cam.yaw, n=R.N[j];
+    return [Math.cos(ps)*n.r*1000, Math.sin(ps)*n.r*1000, n.z*1000]; })();
+  const abs = angleAt(node, mx, my);
+  if (abs===null) return false;
+  const lim = JOINT_LIM[j], lo = P[lim[0]], hi = P[lim[1]];
+  let rel;
+  if (j===0) rel = abs;
+  else if (j===1) rel = abs - P.q1;
+  else rel = abs - P.q1 - P.q2;
+  while (rel > 180) rel -= 360; while (rel < -180) rel += 360;
+  P["q"+(j+1)] = Math.max(lo, Math.min(hi, rel));
+  return true;
+}
+
+let toastT = 0;
+function showToast(msg){
+  const t = $("#toast"); t.textContent = msg; t.classList.add("on");
+  clearTimeout(toastT); toastT = setTimeout(()=>t.classList.remove("on"), 2600);
+}
+
+/* ---------- the hover card: live numbers for whatever is under the cursor ---- */
+function partInfo(part){
+  if (!part || !R) return null;
+  const d = PARTS[part]; if (!d) return null;
+  const K = KGCM_PER_NM, rows = [];
+  let title = d.name, sub = "", act = "";
+  if (d.kind==="servo"){
+    const j = R.joints[d.jk], model = SERVOS[P["srv"+({base:"Base",sh:"Sh",el:"El",wr:"Wr"})[d.jk]]];
+    sub = (model && model.tau ? model.name : "Custom") + " · " + fx(j.tStall*KGCM_PER_NM,1) + " kg·cm";
+    rows.push(["Required", fx(j.tReq*K,2)+" kg·cm"]);
+    rows.push(["Usable", fx(j.tAllow*K,2)+" kg·cm"]);
+    rows.push(["Utilisation", fx(j.util,0)+" %"]);
+    rows.push(["Safety factor", fx(j.sf,2)+"×"]);
+    rows.push(["Mass", fx(P["m"+({base:"Base",sh:"Sh",el:"El",wr:"Wr"})[d.jk]],0)+" g"]);
+    act = d.jk==="base" ? "Click to change the servo" : "Click to change · drag to pose";
+  } else if (d.kind==="link"){
+    const l = R.links[d.i];
+    sub = l.sec.label + " · " + MATERIALS[P.material].name;
+    rows.push(["Length", fx(l.len,0)+" mm"]);
+    rows.push(["Mass", fx(l.m*1000,1)+" g"]);
+    rows.push(["A effective", fx(l.sec.A_eff,0)+" mm²"]);
+    rows.push(["I effective", fx(l.sec.I_eff,0)+" mm⁴"]);
+    rows.push(["Root stress", fx(l.sigmaMPa,2)+" MPa"]);
+    rows.push(["Material SF", fx(l.sfMat,0)+"×"]);
+    act = "Click to change · drag to pose";
+  } else if (d.kind==="column"){
+    sub = "Fixed structure";
+    rows.push(["Height", fx(P.h0,0)+" mm"]);
+    rows.push(["Mass", fx(R.column.m*1000,1)+" g"]);
+    rows.push(["Root moment", fx(R.column.M_root,3)+" N·m"]);
+    rows.push(["Material SF", fx(R.column.sfMat,0)+"×"]);
+    act = "Click to change the height";
+  } else if (d.kind==="plate"){
+    sub = "Fixed mass · not carried by any joint";
+    rows.push(["Mass", fx(P.mPlate,0)+" g"]);
+    rows.push(["Support radius", fx(P.footR,0)+" mm"]);
+    rows.push(["CoM overhang", fx(R.tipping.rCom*1000,0)+" mm"]);
+    rows.push(["Tipping factor", P.bolted?"bolted":fx(R.tipping.sf,2)+"×"]);
+    act = "Click to change · drag to swing the yaw axis";
+  } else if (d.kind==="ee"){
+    sub = "Gripper at the tool centre point";
+    rows.push(["Mass", fx(P.mEE,0)+" g"]);
+    rows.push(["Reach", fx(R.reach*1000,0)+" mm"]);
+    rows.push(["Wrist load", fx(R.joints.wr.util,0)+" %"]);
+    act = "Click to change · drag to pose";
+  } else if (d.kind==="payload"){
+    const cap = maxFeasiblePayload();
+    sub = "At the tool centre point";
+    rows.push(["Mass", fx(R.payload_g,0)+" g"]);
+    rows.push(["Capacity here", fx(cap,0)+" g"]);
+    rows.push(["Shoulder load", fx(R.joints.sh.util,0)+" %"]);
+    act = "Click to change · drag to pose";
+  }
+  return {title, sub, rows, act};
+}
+function showPartCard(part, mx, my){
+  const info = partInfo(part), el = $("#partCard");
+  if (!info){ el.classList.remove("on"); return; }
+  el.innerHTML = '<h5>'+info.title+'</h5><div class="sub">'+info.sub+'</div>'+
+    '<dl>'+info.rows.map(r=>'<dt>'+r[0]+'</dt><dd>'+r[1]+'</dd>').join("")+'</dl>'+
+    (info.act?'<div class="act">'+info.act+'</div>':'');
+  el.classList.add("on");
+  const w = el.offsetWidth || 210, h = el.offsetHeight || 150;
+  el.style.left = Math.min(innerWidth - w - 12, mx + 18) + "px";
+  el.style.top  = Math.max(10, Math.min(innerHeight - h - 12, my - h/2)) + "px";
+}
+
+/* ---------- clicking a part opens the control that governs it ---------- */
+function openParamsFor(part){
+  const d = PARTS[part]; if (!d) return;
+  document.body.classList.add("params-open");
+  requestAnimationFrame(()=>{
+    const groups = Array.from(document.querySelectorAll("details.group"));
+    const g = groups.find(x=>x.querySelector("summary").textContent.trim().indexOf(d.group)===0);
+    if (g){
+      groups.forEach(x=>{ if (x!==g) x.open = false; });
+      g.open = true;
+      g.classList.add("flash");
+      setTimeout(()=>g.classList.remove("flash"), 1400);
+      const f = document.querySelector('.f[data-key="'+d.key+'"]');
+      if (f){
+        f.classList.add("lit"); setTimeout(()=>f.classList.remove("lit"), 1600);
+        f.scrollIntoView({block:"center", behavior:"smooth"});
+        const inp = f.querySelector("input[type=number]"); if (inp) inp.focus({preventScroll:true});
+      } else g.scrollIntoView({block:"start", behavior:"smooth"});
+    }
+    draw3D(R);
+  });
+}
+
+(function stageInteraction(){
+  const cv = $("#three");
+  let mode = null, start = null;
+
+  cv.addEventListener("pointerdown", e=>{
+    const b = cv.getBoundingClientRect(), mx = e.clientX-b.left, my = e.clientY-b.top;
+    const part = pickPart(mx, my);
+    const j = part!=null ? DRAG_JOINT[part] : undefined;
+    if (j!==undefined){
+      mode = {kind:"joint", j, armed:false}; STAGE.sel = part;
+    } else if (part==="plate" || part==="column"){
+      mode = {kind:"yaw", yaw0:cam.yaw, x0:e.clientX}; STAGE.sel = part;
+    } else {
+      mode = {kind:"orbit", az:cam.az, el:cam.el, x0:e.clientX, y0:e.clientY};
+      STAGE.sel = null;
+    }
+    start = {mx,my};
+    cv.setPointerCapture(e.pointerId);
+    cv.classList.add("grabbing");
+    $("#partCard").classList.remove("on");
+    e.preventDefault();
+  });
+
+  cv.addEventListener("pointermove", e=>{
+    const b = cv.getBoundingClientRect(), mx = e.clientX-b.left, my = e.clientY-b.top;
+    if (!mode){
+      const part = pickPart(mx, my);
+      cv.classList.toggle("pickable", part!=null && part!=="plate");
+      if (part !== STAGE.hover){ STAGE.hover = part; draw3D(R); }
+      if (part) showPartCard(part, e.clientX, e.clientY);
+      else $("#partCard").classList.remove("on");
+      return;
+    }
+    if (mode.kind==="orbit"){
+      cam.az = mode.az - (e.clientX-mode.x0)*0.008;
+      cam.el = Math.max(-0.15, Math.min(1.45, mode.el + (e.clientY-mode.y0)*0.006));
+      draw3D(R);
+    } else if (mode.kind==="yaw"){
+      cam.yaw = mode.yaw0 - (e.clientX-mode.x0)*0.010;
+      draw3D(R); syncPose();
+    } else if (mode.kind==="joint"){
+      if (!mode.armed){
+        if (Math.hypot(mx-start.mx, my-start.my) < 4) return;   // still a click
+        mode.armed = true;
+        if (P.worst){                                  // posing implies leaving worst case
+          P.worst = 0; syncPose();
+          showToast("Worst case off — the arm follows your pointer now");
+        }
+      }
+      if (applyJointDrag(mode.j, mx, my)){ render({light:true}); syncPose(); }
+    }
+  });
+
+  const end = ()=>{
+    if (mode && mode.kind==="joint" && mode.armed) render();   // full recompute once, on release
+    mode = null; cv.classList.remove("grabbing");
+  };
+  cv.addEventListener("pointerup", e=>{
+    if (mode && start){
+      const b = cv.getBoundingClientRect();
+      const moved = Math.hypot(e.clientX-b.left-start.mx, e.clientY-b.top-start.my);
+      if (moved < 4){                                  // a click, not a drag
+        const part = pickPart(e.clientX-b.left, e.clientY-b.top);
+        if (part) openParamsFor(part);
+      }
+    }
+    end();
+  });
+  cv.addEventListener("pointercancel", end);
+  cv.addEventListener("pointerleave", ()=>{
+    if (!mode){ $("#partCard").classList.remove("on");
+      if (STAGE.hover){ STAGE.hover = null; draw3D(R); } }
+  });
+  /* The stage fills the viewport, so a plain wheel has to scroll the page —
+     otherwise the analysis below is unreachable. Zoom is the pinch gesture,
+     which browsers deliver as a wheel event with ctrlKey set. */
+  cv.addEventListener("wheel", e=>{
+    if (!e.ctrlKey && !e.metaKey) return;             // let the page scroll
+    e.preventDefault();
+    cam.zoom = Math.max(0.45, Math.min(3.2, cam.zoom*(e.deltaY>0?0.92:1.08)));
+    draw3D(R);
+  }, {passive:false});
+
+  $("#v3dIso").onclick   = ()=>{ cam.az=-38*D2R; cam.el=20*D2R; cam.zoom=1; draw3D(R); };
   $("#v3dTop").onclick   = ()=>{ cam.az=-90*D2R; cam.el=88*D2R; cam.zoom=1; draw3D(R); };
   $("#v3dFront").onclick = ()=>{ cam.az=-90*D2R; cam.el=2*D2R;  cam.zoom=1; draw3D(R); };
 })();
+
+/* ---------- pose bar: mirrors what dragging the model does ---------- */
+const POSE_ROWS = [["q1","θ₁ shoulder","limShMin","limShMax"],
+                   ["q2","θ₂ elbow","limElMin","limElMax"],
+                   ["q3","θ₃ wrist","limWrMin","limWrMax"]];
+function buildPose(){
+  $("#poseRows").innerHTML = POSE_ROWS.map(([k,lab])=>
+    '<div class="row" data-pk="'+k+'"><span>'+lab+'</span><b id="pv_'+k+'"></b>'+
+    '<input type="range" id="pr_'+k+'" aria-label="'+lab+'"></div>').join("");
+  POSE_ROWS.forEach(([k,lab,lo,hi])=>{
+    const r = $("#pr_"+k);
+    r.addEventListener("input", ()=>{
+      if (P.worst){ P.worst = 0; }
+      P[k] = +r.value; syncPose(); render({light:true});
+    });
+    r.addEventListener("change", ()=>render());
+  });
+  $("#poseWorst").addEventListener("change", e=>{
+    P.worst = e.target.checked ? 1 : 0; syncPose(); render();
+  });
+  syncPose();
+}
+function syncPose(){
+  const worst = !!P.worst;
+  $("#poseWorst").checked = worst;
+  POSE_ROWS.forEach(([k,lab,lo,hi])=>{
+    const r = $("#pr_"+k), v = $("#pv_"+k), row = document.querySelector('.row[data-pk="'+k+'"]');
+    r.min = P[lo]; r.max = P[hi]; r.step = 1;
+    if (document.activeElement !== r) r.value = P[k];
+    v.textContent = (worst ? 0 : P[k]).toFixed(0) + "°";
+    row.style.opacity = worst ? .4 : 1;
+    r.disabled = worst;
+  });
+  $("#poseHint").textContent = worst
+    ? "Every moment arm is at its maximum. Switch off to pose the arm by dragging it."
+    : "Drag a link to pose it, the base to swing yaw (ψ " + fx(cam.yaw/D2R,0) +
+      "°), empty space to orbit. Pinch to zoom.";
+  const f = document.querySelector('.f[data-key="worst"]');
+  if (f){ const c = f.querySelector("input[type=checkbox]"); if (c) c.checked = worst; }
+}
 </script>
 
 <script>
@@ -2783,8 +3414,11 @@ async function captureViews(want){
   /* SVGs read their own markup, so they need the panel only for layout-free cloning */
   if (want.side) shots.side = await svgToPNG($("#side"), 2.6).catch(()=>null);
   if (want.pr)   shots.pr   = await svgToPNG($("#prChart"), 2.6).catch(()=>null);
-  /* restore the on-screen rendering at the real layout width */
-  if (!$("#panel-analysis").hidden){ draw3D(R); drawEnvelope(R); }
+  /* restore the on-screen rendering. The stage is full-viewport and always
+     live, so it is restored unconditionally; the envelope needs its card to
+     have a width, so it waits for the analysis panel to be visible. */
+  draw3D(R);
+  if (!$("#panel-analysis").hidden) drawEnvelope(R);
   if (SW.n && $("#swMain") && !$("#panel-sweep").hidden){
     ["#swMain","#swUtil"].forEach(sel=>{ const cv=$(sel); if (cv && cv._probe) scatter(cv, cv._probe.o); });
   }
@@ -3404,21 +4038,42 @@ function buildReport(){
 }
 
 /* ---------- boot ---------- */
+function openParams(){ document.body.classList.add("params-open"); requestAnimationFrame(()=>draw3D(R)); }
+function closeParams(){ document.body.classList.remove("params-open");
+  setTimeout(()=>draw3D(R), 60); setTimeout(()=>draw3D(R), 560); }
+function toggleParams(){ document.body.classList.contains("params-open") ? closeParams() : openParams(); }
+
 (function init(){
   buildRail();
-  $$(".tab").forEach(t=>t.onclick = ()=>{
-    setTab(t.dataset.tab);
-    if (t.dataset.tab==="sweep") buildSweepControls();
+  buildPose();
+  $$(".tab").forEach(t=>t.onclick = ()=>setTab(t.dataset.tab));
+  $("#btnParams").onclick = toggleParams;
+  $("#paramClose").onclick = closeParams;
+  $("#paramScrim").onclick = closeParams;
+  $("#scrollCue").onclick = ()=>{
+    const sheet = document.querySelector("#panel-analysis .sheet");
+    if (sheet) scrollTo({top: sheet.offsetTop - 8, behavior:"smooth"});
+  };
+  addEventListener("scroll", syncStageHint, {passive:true});
+  addEventListener("keydown", e=>{
+    if (e.key === "Escape"){
+      if (!$("#exportModal").hidden) return;          // the dialog handles its own Escape
+      if (document.body.classList.contains("params-open")) closeParams();
+    }
+    if ((e.key === "p" || e.key === "P") && !/^(INPUT|SELECT|TEXTAREA)$/.test(document.activeElement.tagName)){
+      toggleParams();
+    }
   });
-  $("#btnReset").onclick = ()=>{ P = Object.assign({}, DEFAULTS); buildRail(); render(); };
+  $("#btnReset").onclick = ()=>{ P = Object.assign({}, DEFAULTS); buildRail(); syncPose(); render(); };
   $("#btnExport").onclick = openExport;
   $("#exClose").onclick = closeExport;
   $("#exCancel").onclick = closeExport;
   $("#exRun").onclick = runExport;
   $("#exportModal").addEventListener("click", e=>{ if (e.target.id==="exportModal") closeExport(); });
   addEventListener("keydown", e=>{ if (e.key==="Escape" && !$("#exportModal").hidden) closeExport(); });
-  $$(".savebtn").forEach(b=>{ if (!b.textContent.trim()) b.textContent = "Save PNG";
-                              b.onclick = ()=>savePNG(b); });
+  $$("[data-png]").forEach(b=>{ if (b.classList.contains("savebtn") && !b.textContent.trim())
+                                  b.textContent = "Save PNG";
+                                b.onclick = ()=>savePNG(b); });
   $("#btnCopy").onclick = async (e)=>{
     const b = e.currentTarget, old = b.textContent;
     try { await navigator.clipboard.writeText(buildReport()); b.textContent = "Copied"; }
@@ -3426,8 +4081,14 @@ function buildReport(){
     setTimeout(()=>b.textContent = old, 1600);
   };
   let rt = 0;
-  addEventListener("resize", ()=>{ clearTimeout(rt); rt = setTimeout(()=>{
-    if (R){ draw3D(R); drawEnvelope(R); } }, 160); });
+  addEventListener("resize", ()=>{
+    if (R) draw3D(R);                                  // the stage is full-viewport: track it live
+    moveGlide();
+    clearTimeout(rt); rt = setTimeout(()=>{
+      if (R && !$("#panel-analysis").hidden){ drawEnvelope(R); drawPayloadReach(R); } }, 200);
+  });
   render();
+  moveGlide(); syncStageHint(); syncPose();
+  document.fonts && document.fonts.ready.then(moveGlide);
 })();
 </script>
