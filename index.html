@@ -34,6 +34,10 @@
   --crit:#d03b3b;   --crit-ink:#9d1f1f;
   --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a; --s4:#eda100; --s5:#8f9bb3;
 
+  /* aliases for the previous token names, still referenced by drawing code */
+  --rule:rgba(30,48,94,.10); --rule-2:rgba(30,48,94,.20); --grid:rgba(30,48,94,.055);
+  --inset:rgba(30,48,94,.045); --surface:#ffffff;
+  --spring:cubic-bezier(.34,1.45,.52,1);
   --r-panel:18px; --r-pill:999px; --r-inner:11px;
   --sans:"Instrument Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
   --mono:"IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
@@ -158,7 +162,12 @@ body.params-open .dock{--dx:calc(-50% - 176px)}
 body.dock-away .dock{--dy:calc(100% + 26px);opacity:0;pointer-events:none}
 @media (max-width:900px){ body.params-open .dock{--dx:-50%} }
 .stat{padding:9px 16px 10px;border-radius:13px;min-width:132px;position:relative;
-  transition:background .2s}
+  transition:background .2s, transform .5s var(--spring);animation:drift 6.5s ease-in-out infinite}
+.stat:nth-child(2){animation-delay:-1.3s} .stat:nth-child(3){animation-delay:-2.6s}
+.stat:nth-child(4){animation-delay:-3.9s} .stat:nth-child(5){animation-delay:-5.2s}
+.stat:hover{transform:translateY(-3px)}
+@keyframes drift{0%,100%{transform:translateY(0)}50%{transform:translateY(-2.5px)}}
+@media (prefers-reduced-motion:reduce){ .stat{animation:none} }
 .stat + .stat::before{content:"";position:absolute;left:0;top:14px;bottom:14px;width:1px;
   background:var(--hair)}
 .stat:hover{background:rgba(255,255,255,.5)}
@@ -186,6 +195,13 @@ body.dock-away .dock{--dy:calc(100% + 26px);opacity:0;pointer-events:none}
 .partcard .act{margin-top:9px;padding-top:8px;border-top:1px solid var(--hair);
   font-size:10.5px;color:var(--ink-3)}
 
+.ringtip{position:fixed;z-index:43;pointer-events:none;padding:9px 12px 10px;border-radius:13px;
+  opacity:0;transform:translate(-50%,6px) scale(.97);transition:opacity .18s var(--ease), transform .3s var(--spring)}
+.ringtip.on{opacity:1;transform:translate(-50%,0)}    /* trigger: hover the ring */
+.ringtip .k{font-size:9.5px;text-transform:uppercase;letter-spacing:.1em;color:var(--ink-3);font-weight:600}
+.ringtip .v{font-size:19px;font-weight:600;letter-spacing:-.02em;line-height:1.2}
+.ringtip .v small{font-size:11px;font-weight:500;color:var(--ink-2)}
+.ringtip .m{font-size:10.5px;color:var(--ink-3)}
 /* ---------- stage affordances ---------- */
 .stagehint{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(var(--dock-h) + 30px);
   z-index:36;display:flex;gap:8px;align-items:center;opacity:0;transition:opacity .3s;
@@ -284,11 +300,11 @@ input[type=range]::-moz-range-thumb{width:13px;height:13px;border-radius:50%;bac
 .stagespace{height:100vh}
 .sheet{
   position:relative;border-radius:var(--r-panel) var(--r-panel) 0 0;
-  padding:26px 26px 120px;display:grid;gap:16px;
-  background:linear-gradient(180deg, rgba(255,252,248,.62) 0%, rgba(255,252,248,.93) 90px, rgba(255,252,248,.97) 100%);
-  backdrop-filter:blur(26px) saturate(170%);-webkit-backdrop-filter:blur(26px) saturate(170%);
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.9), 0 -18px 50px -24px rgba(30,48,94,.22);
-  border-top:1px solid rgba(255,255,255,.75);
+  padding:26px 26px 120px;display:grid;gap:16px;align-content:start;
+  background:linear-gradient(180deg, rgba(255,252,248,.30) 0%, rgba(255,252,248,.60) 120px, rgba(255,252,248,.66) 100%);
+  backdrop-filter:blur(26px) saturate(160%);-webkit-backdrop-filter:blur(26px) saturate(160%);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.7), 0 -18px 50px -24px rgba(30,48,94,.22);
+  border-top:1px solid rgba(255,255,255,.55);
 }
 .sheet.tall{min-height:calc(100vh - var(--topbar-h) - 8px)}
 .panel:not(#panel-analysis) .sheet{margin-top:calc(var(--topbar-h) + 8px)}
@@ -298,13 +314,39 @@ input[type=range]::-moz-range-thumb{width:13px;height:13px;border-radius:50%;bac
 .grabber{width:38px;height:4px;border-radius:2px;background:var(--hair-2);margin:-12px auto 12px}
 
 /* ---------- cards ---------- */
-.card{background:rgba(255,255,255,.62);border:1px solid rgba(255,255,255,.8);
-  border-radius:var(--r-panel);box-shadow:0 1px 2px rgba(30,48,94,.04), 0 10px 30px -18px rgba(30,48,94,.20);
-  overflow:hidden}
-.card > header{padding:14px 17px 12px;border-bottom:1px solid var(--hair);display:flex;
+.card{--ac:var(--accent);position:relative;
+  background:rgba(255,255,255,.50);border:1px solid rgba(255,255,255,.72);
+  border-radius:var(--r-panel);overflow:hidden;
+  box-shadow:0 1px 2px rgba(30,48,94,.04), 0 12px 32px -20px rgba(30,48,94,.22);
+  transition:transform .55s var(--spring), box-shadow .45s var(--ease), border-color .3s;
+  opacity:0;transform:translateY(22px) scale(.985)}
+.card.in{opacity:1;transform:none}                    /* trigger: scrolled into view */
+.card.in:hover{transform:translateY(-4px) scale(1.004);border-color:rgba(255,255,255,.95);
+  box-shadow:0 2px 4px rgba(30,48,94,.05), 0 26px 50px -22px rgba(30,48,94,.30),
+             0 0 0 1px color-mix(in srgb, var(--ac) 18%, transparent)}
+.card::before{content:"";position:absolute;inset:-1px -1px auto -1px;height:150px;pointer-events:none;
+  background:radial-gradient(420px 150px at 0% 0%, color-mix(in srgb, var(--ac) 16%, transparent), transparent 70%);
+  opacity:.9;transition:opacity .4s}
+.card:hover::before{opacity:1}
+.card > header{position:relative;padding:14px 17px 12px;border-bottom:1px solid var(--hair);display:flex;
   align-items:baseline;gap:10px;flex-wrap:wrap}
-.card > header h3{font-size:13px}
+.card > header h3{font-size:13px;display:flex;align-items:center;gap:8px}
+.card > header h3::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--ac);
+  box-shadow:0 0 0 3px color-mix(in srgb, var(--ac) 18%, transparent);flex:none;
+  transition:transform .5s var(--spring)}
+.card:hover > header h3::before{transform:scale(1.25)}
 .card .sub{font-size:11.5px;color:var(--ink-3);margin-left:auto}
+.reveal{grid-column:1/-1;flex-basis:100%;max-height:0;opacity:0;overflow:hidden;
+  font-size:11.5px;color:var(--ink-2);transition:max-height .5s var(--spring), opacity .35s var(--ease), margin .4s var(--ease);
+  margin-top:0}
+.card:hover .reveal,.card:focus-within .reveal{max-height:64px;opacity:1;margin-top:6px}   /* trigger: hover */
+.reveal b{font-family:var(--mono);font-weight:450;color:var(--ink);background:color-mix(in srgb, var(--ac) 10%, transparent);
+  padding:1px 6px;border-radius:5px}
+.card.ac-ok{--ac:var(--good)} .card.ac-tight{--ac:var(--warn)} .card.ac-over{--ac:var(--crit)}
+.card.ac-orange{--ac:var(--s2)} .card.ac-aqua{--ac:var(--s3)} .card.ac-ink{--ac:var(--ink)}
+.tile{transition:transform .5s var(--spring), box-shadow .4s var(--ease)}
+.tile:hover{transform:translateY(-3px);box-shadow:0 14px 28px -16px rgba(30,48,94,.3)}
+@media (prefers-reduced-motion:reduce){ .card{opacity:1;transform:none} }
 .pad{padding:17px}
 .grid2{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(410px,1fr));align-items:start}
 .tiles{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(180px,1fr))}
@@ -433,6 +475,10 @@ body.params-open .stagectl{transform:translateX(-360px)}
 .rec b{font-family:var(--mono);font-weight:450;font-size:11.5px;background:rgba(30,48,94,.06);
   padding:1px 5px;border-radius:5px}
 
+.viewtog{display:inline-flex;gap:2px;padding:3px;border-radius:var(--r-pill);background:rgba(30,48,94,.06);margin-left:10px}
+.vt{border:0;background:none;padding:4px 11px;border-radius:var(--r-pill);font-size:11px;font-weight:500;
+  color:var(--ink-2);cursor:pointer;transition:background .25s var(--spring),color .2s}
+.vt.on{background:#fff;color:var(--ink);box-shadow:0 1px 3px rgba(30,48,94,.18)}
 /* ---------- progress + misc ---------- */
 .prog{height:4px;background:rgba(30,48,94,.10);border-radius:2px;overflow:hidden;flex:1}
 .prog i{display:block;height:100%;background:var(--accent);width:0;transition:width .12s linear}
@@ -489,6 +535,7 @@ details.insp .body{padding:14px}
 <!-- ============ STAGE: the 3D arm is the ground layer, always present ======== -->
 <canvas id="three"></canvas>
 <div class="partcard glass" id="partCard" aria-hidden="true"></div>
+<div class="ringtip glass" id="ringTip" aria-hidden="true"></div>
 <div class="toast glass" id="toast"></div>
 
 <!-- ============ FLOATING CHROME ============ -->
@@ -576,8 +623,8 @@ details.insp .body{padding:14px}
       <div class="sheethead"><h2>Analysis</h2>
         <span class="sub" id="poseLabel"></span></div>
 
-      <div class="card">
-        <header><h3>Joint torque budget</h3><span class="sub" id="torqueSub"></span></header>
+      <div class="card" id="card-torque">
+        <header><h3>Joint torque budget</h3><span class="sub" id="torqueSub"></span><div class="reveal" id="rv-torque"></div></header>
         <div class="pad" id="torqueBars"></div>
         <div class="pad" style="border-top:1px solid var(--hair);padding-top:0">
           <details class="insp"><summary>Joint table <span class="tag">table view</span></summary>
@@ -586,13 +633,13 @@ details.insp .body{padding:14px}
       </div>
 
       <div class="grid2">
-        <div class="card">
-          <header><h3>Side elevation</h3><span class="sub">dimensioned drawing</span></header>
+        <div class="card ac-ink">
+          <header><h3>Side elevation</h3><span class="sub">dimensioned drawing</span><div class="reveal" id="rv-side"></div></header>
           <div class="viz"><svg id="side" viewBox="0 0 720 392" style="width:100%;height:auto;display:block"></svg>
             <button class="savebtn" data-png="side" data-name="side-elevation">Save PNG</button></div>
         </div>
         <div class="card">
-          <header><h3>Reach envelope</h3><span class="sub">swept through joint limits</span></header>
+          <header><h3>Reach envelope</h3><span class="sub">swept through joint limits</span><div class="reveal" id="rv-env"></div></header>
           <div class="viz"><canvas id="env" height="360"></canvas>
             <button class="savebtn" data-png="env" data-name="reach-envelope">Save PNG</button></div>
           <div class="legend">
@@ -606,7 +653,7 @@ details.insp .body{padding:14px}
 
       <div class="grid2">
         <div class="card">
-          <header><h3>Payload vs. maximum reach</h3><span class="sub">at current geometry ratios</span></header>
+          <header><h3>Payload vs. maximum reach</h3><span class="sub">at current geometry ratios</span><div class="reveal" id="rv-pr"></div></header>
           <div class="viz"><svg id="prChart" viewBox="0 0 560 320" style="width:100%;height:auto;display:block"></svg>
             <div class="tip" id="prTip"></div>
             <button class="savebtn" data-png="prChart" data-name="payload-reach"></button></div>
@@ -619,14 +666,14 @@ details.insp .body{padding:14px}
               <div class="body tbl-wrap" id="prTable"></div></details>
           </div>
         </div>
-        <div class="card">
-          <header><h3>Mass budget</h3><span class="sub" id="massSub"></span></header>
+        <div class="card ac-orange">
+          <header><h3>Mass budget</h3><span class="sub" id="massSub"></span><div class="reveal" id="rv-mass"></div></header>
           <div class="pad" id="massBreak"></div>
         </div>
       </div>
 
-      <div class="card">
-        <header><h3>Design review</h3><span class="sub" id="recCount"></span></header>
+      <div class="card" id="card-rec">
+        <header><h3>Design review</h3><span class="sub" id="recCount"></span><div class="reveal" id="rv-rec"></div></header>
         <div class="pad" id="recs"></div>
       </div>
     </div>
@@ -1234,6 +1281,19 @@ function requiredStall(res, key){
 /* =====================================================================
    MAIN RENDER
    ===================================================================== */
+const IO = ("IntersectionObserver" in window)
+  ? new IntersectionObserver(es=>es.forEach(en=>{ if (en.isIntersecting){ en.target.classList.add("in"); IO.unobserve(en.target); } }),
+                             {rootMargin:"0px 0px -6% 0px", threshold:0.06})
+  : null;
+/* cards rise into place the first time they scroll into view (trigger: scroll) */
+function observeCards(root){
+  $$((root||"")+" .card").forEach((c,i)=>{
+    if (c._io) return; c._io = true;
+    c.style.transitionDelay = ((i%4)*60)+"ms";
+    if (IO) IO.observe(c); else c.classList.add("in");
+  });
+}
+const setReveal = (id, html)=>{ const el = $(id); if (el) el.innerHTML = html; };
 function render(opts){
   const light = !!(opts && opts.light);
   _renderSeq++;
@@ -1246,14 +1306,35 @@ function render(opts){
   renderMass(R);
   drawSide(R);
   draw3D(R);
+  renderReveals(R);
   if (light) return;                 /* the rest is too heavy for a drag frame */
   renderRecs(R);
   drawEnvelope(R);
   drawPayloadReach(R);
+  observeCards();
   if (activeTab==="inspector") renderInspector(R);
   if (activeTab==="optimize")  refreshOptStatic();
 }
 
+function renderReveals(res){
+  const j = res.joints[res.peak], st = jointState(j), K = KGCM_PER_NM;
+  const tc = $("#card-torque"); if (tc) tc.className = "card ac-"+st + (tc.classList.contains("in")?" in":"");
+  setReveal("#rv-torque", "Limiting joint <b>"+j.name.replace(" (yaw)","")+"</b> at <b>"+fx(j.util,0)+"%</b> of usable torque · "+
+    "required "+fx(j.tReq*K,2)+" of "+fx(j.tAllow*K,2)+" kg·cm · SF <b>"+fx(j.sf,2)+"×</b>");
+  setReveal("#rv-side", "reach <b>"+fx(res.reach*1000,0)+" mm</b> · column h₀ "+fx(P.h0,0)+" mm · tip deflection <b>"+
+    fx(res.deflection.mm,2)+" mm</b> drawn exaggerated · CoM at r "+fx(res.com.r*1000,0)+" mm");
+  if (ENVSTATS) setReveal("#rv-env", "torque-feasible <b>"+fx(ENVSTATS.pct,0)+"%</b> of the geometric workspace · furthest feasible reach <b>"+
+    (ENVSTATS.maxR!=null?fx(ENVSTATS.maxR,0):"—")+" mm</b> · "+ENVSTATS.poses.toLocaleString()+" poses swept");
+  if (prData && prData.length) setReveal("#rv-pr", "unloaded <b>"+fx(prData[0].reach,0)+" mm</b> · at "+fx(res.payload_g,0)+" g <b>"+
+    fx(maxFeasibleReach(res.payload_g),0)+" mm</b> · capacity here <b>"+fx(maxFeasiblePayload(),0)+" g</b>");
+  const struct = res.el.filter(e=>e.cat==="structure").reduce((a,e)=>a+e.m,0), servo = res.el.filter(e=>e.cat==="servo").reduce((a,e)=>a+e.m,0);
+  setReveal("#rv-mass", "structure <b>"+fx(struct*1000,0)+" g</b> · servos <b>"+fx(servo*1000,0)+" g</b> · moving mass <b>"+
+    fx(res.mArm*1000,0)+" g</b> of "+fx(res.mTot*1000,0)+" g · CoM r "+fx(res.com.r*1000,0)+", z "+fx(res.com.z*1000,0)+" mm");
+  const rc = $("#card-rec");
+  if (rc){ const worst = RECS.some(r=>r.lvl==="crit")?"over":RECS.some(r=>r.lvl==="warn")?"tight":"ok";
+    rc.className = "card ac-"+worst + (rc.classList.contains("in")?" in":""); }
+  setReveal("#rv-rec", RECS.length ? RECS.slice(0,2).map(r=>"<b>"+r.title+"</b>").join(" · ") : "no findings");
+}
 let _lastPeak = null;
 function renderVerdict(res){
   const st = designState(res);
@@ -1431,6 +1512,7 @@ function setTab(name){
   if (name==="optimize")  refreshOptStatic();
   if (name==="sweep")     buildSweepControls();
   if (name==="analysis")  { drawEnvelope(R); drawPayloadReach(R); }
+  observeCards();
 }
 </script>
 
@@ -1622,7 +1704,8 @@ const PARTS = {
   "ee":        {name:"End effector",   kind:"ee",     group:"Loads", key:"mEE"},
   "payload":   {name:"Payload",        kind:"payload",group:"Loads", key:"payload"},
 };
-const STAGE = {quads:[], hover:null, sel:null, drag:null, w:0, h:0};
+const STAGE = {quads:[], hover:null, sel:null, drag:null, w:0, h:0, rings:{}};
+const RING  = {phase:0, hover:null};
 
 function draw3D(res){
   if (!res) return;
@@ -1655,45 +1738,58 @@ function draw3D(res){
   const depth = p => dot(p,eye);
   const LIGHT = (()=>{ const v=[0.30,0.42,0.86], n=Math.hypot(v[0],v[1],v[2]); return v.map(x=>x/n); })();
 
-  /* ---- pass 1: build the solids in world space; nothing here needs a scale -- */
-  const quads = [];
+  /* ---- pass 1: build the solids in world space; nothing here needs a scale.
+     Nothing intersects anything else: links stop short of each joint inside a
+     rounded knuckle, servos mount beside the knuckle on the output-shaft side,
+     the column ends under the shoulder knuckle. That is what lets a plain
+     painter's sort draw it correctly. ---- */
+  const quads = [], shadowPts = [];
   const uYaw = [Math.cos(ps), Math.sin(ps), 0];
   const wOut = [-Math.sin(ps), Math.cos(ps), 0];
+  const ZUP = [0,0,1];
   const pt = (r,z)=>[uYaw[0]*r, uYaw[1]*r, z];
-
-  addCyl(quads, [0,0,0], P.footR, 11, "#cfd6e2", "plate");
-  const colW = (P.section==="round"?P.hh1:P.w1);
-  addBox(quads, [0,0,P.h0/2], [0,0,1], uYaw, wOut, P.h0, colW, colW, "#dfe4ec", "column");
-  addCyl(quads, [0,0,11], colW*1.15, 24, "#2a78d6", "servo:base");
-
   const dims = [[P.w1,P.hh1],[P.w2,P.hh2],[P.w3,P.hh3]];
+  const linkW = i => (P.section==="round" ? dims[i][1] : dims[i][0]);
+  const linkH = i => dims[i][1];
+  /* knuckle radius must swallow the corners of the link box buried in it */
+  const kR   = [0,1,2].map(i => 0.64*Math.max(linkH(i), i>0?linkH(i-1):0) + 1);
+  const kLen = [0,1,2].map(i => Math.max(linkW(i), i>0?linkW(i-1):0) + 3);
+  const servoSide = [1,-1,1];                         // alternate sides, like a real arm
+
+  addCyl(quads, [0,0,0], P.footR, 11, "#cfd6e2", "plate", {skipBottom:true});
+  const colW = (P.section==="round"?P.hh1:P.w1);
+  addCyl(quads, [0,0,11], colW*1.15, 24, "#2a78d6", "servo:base", {skipBottom:true});
+  const colTop = Math.max(P.h0 - kR[0]*0.9, 40);
+  addBox(quads, [0,0,(35+colTop)/2], ZUP, uYaw, wOut, colTop-35, colW, colW, "#dfe4ec", "column", [0,1]);
+
+  const uv = i => { const a = ang[i];
+    return [[uYaw[0]*Math.cos(a), uYaw[1]*Math.cos(a), Math.sin(a)],
+            [-uYaw[0]*Math.sin(a), -uYaw[1]*Math.sin(a), Math.cos(a)]]; };
+  const node = i => pt(N[i].r*1000, N[i].z*1000);
+
   for (let i=0;i<3;i++){
-    const a = ang[i];
-    const u = [uYaw[0]*Math.cos(a), uYaw[1]*Math.cos(a), Math.sin(a)];
-    const v = [-uYaw[0]*Math.sin(a), -uYaw[1]*Math.sin(a), Math.cos(a)];
-    const A = pt(N[i].r*1000, N[i].z*1000), B = pt(N[i+1].r*1000, N[i+1].z*1000);
-    const mid = [(A[0]+B[0])/2,(A[1]+B[1])/2,(A[2]+B[2])/2];
-    const wd = (P.section==="round"?dims[i][1]:dims[i][0]);
-    addBox(quads, mid, u, v, wOut, [P.L1,P.L2,P.L3][i], dims[i][1], wd, "#aab4c6", "link:"+i);
+    const [u,v] = uv(i), A = node(i);
+    const s0 = kR[i]*0.55, s1 = [P.L1,P.L2,P.L3][i] - (i<2 ? kR[i+1]*0.55 : 0);
+    const mid = [A[0]+u[0]*(s0+s1)/2, A[1]+u[1]*(s0+s1)/2, A[2]+u[2]*(s0+s1)/2];
+    addBox(quads, mid, u, v, wOut, Math.max(2, s1-s0), linkH(i), linkW(i), "#aab4c6", "link:"+i, [0,1]);
   }
   ["sh","el","wr"].forEach((jk,i)=>{
-    const a = ang[i];
-    const u = [uYaw[0]*Math.cos(a), uYaw[1]*Math.cos(a), Math.sin(a)];
-    const v = [-uYaw[0]*Math.sin(a), -uYaw[1]*Math.sin(a), Math.cos(a)];
-    addBox(quads, pt(N[i].r*1000, N[i].z*1000), u, v, wOut, 40, 20, 21, "#2a78d6", "servo:"+jk);
+    const [u,v] = uv(i), c = node(i);
+    /* the knuckle: axis out of the plane, capped only on the side away from the servo */
+    addCylAxis(quads, c, wOut, uYaw, ZUP, kR[i], kLen[i], "#8e9ab0", "servo:"+jk, 0);
+    /* the servo body against the knuckle's shaft side; its hidden inner face is
+       not emitted and it sits a hair off the cap so the two never fight */
+    const off = servoSide[i]*(kLen[i]/2 + 14 + 0.6);
+    addBox(quads, [c[0]+wOut[0]*off, c[1]+wOut[1]*off, c[2]+wOut[2]*off], u, v, wOut, 40, 20, 28,
+           "#2a78d6", "servo:"+jk, [servoSide[i]>0 ? 5 : 4]);
   });
-  { const a = ang[2];
-    const u = [uYaw[0]*Math.cos(a), uYaw[1]*Math.cos(a), Math.sin(a)];
-    const v = [-uYaw[0]*Math.sin(a), -uYaw[1]*Math.sin(a), Math.cos(a)];
-    const T = pt(N[3].r*1000, N[3].z*1000);
-    [-1,1].forEach(sgn=>{
-      const c = [T[0]+v[0]*sgn*10+u[0]*9, T[1]+v[1]*sgn*10+u[1]*9, T[2]+v[2]*sgn*10+u[2]*9];
-      addBox(quads, c, u, v, wOut, 22, 4, 12, "#7c879b", "ee");
-    });
+  { const [u,v] = uv(2), T = node(3);
+    const at = (du,dv)=>[T[0]+u[0]*du+v[0]*dv, T[1]+u[1]*du+v[1]*dv, T[2]+u[2]*du+v[2]*dv];
+    addBox(quads, at(3,0), u, v, wOut, 6, 24, 14, "#6f7a8f", "ee", [1]);
+    [-1,1].forEach(sgn=> addBox(quads, at(17, sgn*10), u, v, wOut, 22, 4, 12, "#7c879b", "ee"));
     if (res.payload_g>0){
-      const pr = Math.max(6, Math.cbrt(res.payload_g)*3.2);
-      const c = [T[0]+u[0]*(18+pr), T[1]+u[1]*(18+pr), T[2]+u[2]*(18+pr)];
-      addBox(quads, c, u, v, wOut, pr*1.7, pr*1.7, pr*1.7, "#eb6834", "payload");
+      const pr = Math.max(6, Math.cbrt(res.payload_g)*3.2), side = pr*1.7;
+      addBox(quads, at(29 + side/2, 0), u, v, wOut, side, side, side, "#eb6834", "payload");
     }
   }
 
@@ -1709,39 +1805,84 @@ function draw3D(res){
   const proj = p => [cx + dot(p,right)*s, cy - dot(p,up)*s];
   STAGE.proj = proj; STAGE.right = right; STAGE.up = up; STAGE.eye = eye; STAGE.s = s;
 
-  /* ground grid + the circle the base sweeps */
-  const gstep = 50, gext = Math.ceil(Rmax/gstep+1)*gstep;
+  /* ---- floor: a pool of cool light with the grid living inside it ---- */
+  const floorR = Math.max(Rmax*2.3, P.footR*4, 420);
+  const o2 = proj([0,0,0]);
+  const tilt = Math.max(0.06, Math.abs(Math.sin(cam.el)));
+  g.save(); g.translate(o2[0], o2[1]); g.scale(1, tilt);
+  const fg = g.createRadialGradient(0,0,0, 0,0,floorR*s);
+  fg.addColorStop(0,   "rgba(96,124,168,.26)");
+  fg.addColorStop(0.55,"rgba(96,124,168,.14)");
+  fg.addColorStop(0.86,"rgba(96,124,168,.035)");
+  fg.addColorStop(1,   "rgba(96,124,168,0)");
+  g.fillStyle = fg; g.beginPath(); g.arc(0,0,floorR*s,0,7); g.fill();
+  g.restore();
+  g.save();
+  g.beginPath(); g.translate(o2[0], o2[1]); g.scale(1, tilt); g.arc(0,0,floorR*s*0.92,0,7);
+  g.setTransform(dpr,0,0,dpr,0,0); g.clip();
+  const gstep = 50, gext = Math.ceil(floorR/gstep)*gstep;
   g.lineWidth = 1;
   for (let i=-gext;i<=gext;i+=gstep){
-    g.strokeStyle = (i===0) ? "rgba(30,48,94,.12)" : "rgba(30,48,94,.05)";
+    g.strokeStyle = (i===0) ? "rgba(30,48,94,.14)" : "rgba(30,48,94,.065)";
     line3(g,[i,-gext,0],[i,gext,0]); line3(g,[-gext,i,0],[gext,i,0]);
   }
-  g.strokeStyle = "rgba(42,120,214,.26)"; g.lineWidth = 1.3; g.setLineDash([7,5]);
+  g.restore();
+
+  /* ---- soft shadows: every solid projected along the light onto the floor,
+          merged into one path so overlaps do not double-darken ---- */
+  const shadowOf = pts => {
+    const fl = pts.map(p=>{ const t = p[2]/LIGHT[2]; return [p[0]-LIGHT[0]*t*0.85, p[1]-LIGHT[1]*t*0.85]; });
+    return hull2(fl);
+  };
+  g.save();
   g.beginPath();
-  for (let a=0;a<=360;a+=4){ const t=a*D2R, p=proj([Rmax*Math.cos(t), Rmax*Math.sin(t), 0]);
-    a?g.lineTo(p[0],p[1]):g.moveTo(p[0],p[1]); }
-  g.stroke(); g.setLineDash([]);
-
-  /* contact shadow under the base */
+  const byPart = {};
+  quads.forEach(q=>{ (byPart[q.part] = byPart[q.part] || []).push(...q.p); });
+  Object.keys(byPart).forEach(k=>{
+    if (k==="plate") return;
+    const h = shadowOf(byPart[k]); if (h.length<3) return;
+    h.forEach((p,i)=>{ const sp = proj([p[0],p[1],0]); i?g.lineTo(sp[0],sp[1]):g.moveTo(sp[0],sp[1]); });
+    g.closePath();
+  });
+  g.shadowColor = "rgba(30,48,94,.30)"; g.shadowBlur = 34*dpr; g.shadowOffsetY = 3;
+  g.fillStyle = "rgba(30,48,94,.075)"; g.fill();
+  g.restore();
+  /* contact shadow under the base plate */
   const sh = proj([0,0,0]);
-  const sg = g.createRadialGradient(sh[0], sh[1], 0, sh[0], sh[1], Math.max(8,P.footR*s*1.9));
-  sg.addColorStop(0,"rgba(30,48,94,.15)"); sg.addColorStop(1,"rgba(30,48,94,0)");
-  g.save(); g.translate(sh[0],sh[1]); g.scale(1, Math.max(0.16, Math.sin(cam.el)));
+  const sg = g.createRadialGradient(sh[0], sh[1], 0, sh[0], sh[1], Math.max(8,P.footR*s*1.6));
+  sg.addColorStop(0,"rgba(30,48,94,.18)"); sg.addColorStop(1,"rgba(30,48,94,0)");
+  g.save(); g.translate(sh[0],sh[1]); g.scale(1, tilt);
   g.translate(-sh[0],-sh[1]); g.fillStyle=sg;
-  g.beginPath(); g.arc(sh[0],sh[1],Math.max(8,P.footR*s*1.9),0,7); g.fill(); g.restore();
+  g.beginPath(); g.arc(sh[0],sh[1],Math.max(8,P.footR*s*1.6),0,7); g.fill(); g.restore();
 
+  /* ---- the reach ring: L1+L2+L3 swept by the base, and the current TCP radius ---- */
+  drawRing(g, proj, Rmax, "max", RING.hover==="max");
+  const curR = res.reach*1000;
+  if (Math.abs(curR - Rmax) > 2) drawRing(g, proj, curR, "cur", RING.hover==="cur");
+
+  /* ---- solids, far to near ---- */
   quads.sort((a,b)=>a.d-b.d);
   const hov = STAGE.hover, sel = STAGE.sel;
   quads.forEach(q=>{
     const lit = (q.part===hov), picked = (q.part===sel);
-    const shd = 0.60 + 0.40*Math.max(0, dot(q.n, LIGHT));
-    g.fillStyle = shade(q.c, shd * (lit?1.12:1));
-    g.strokeStyle = lit ? "rgba(30,48,94,.75)" : picked ? "rgba(42,120,214,.85)" : shade(q.c, shd*0.62);
-    g.lineWidth = (lit||picked) ? 1.4 : 0.7;
-    g.beginPath();
+    let shd = 0.58 + 0.42*Math.max(0, dot(q.n, LIGHT));
+    const zc = q.p.reduce((a,p)=>a+p[2],0)/q.p.length;
+    shd *= 0.86 + 0.14*Math.min(1, zc/70);             /* a little occlusion near the floor */
+    if (lit) shd *= 1.1;
     q.s = q.p.map(v=>proj(v));
+    let top=1e9, bot=-1e9; q.s.forEach(p=>{ if(p[1]<top)top=p[1]; if(p[1]>bot)bot=p[1]; });
+    const grad = g.createLinearGradient(0, top, 0, Math.max(bot, top+1));
+    grad.addColorStop(0, shade(q.c, shd*1.05)); grad.addColorStop(1, shade(q.c, shd*0.93));
+    g.fillStyle = grad;
+    g.beginPath();
     q.s.forEach((pp,i)=>{ i?g.lineTo(pp[0],pp[1]):g.moveTo(pp[0],pp[1]); });
-    g.closePath(); g.fill(); g.stroke();
+    g.closePath(); g.fill();
+    if (q.facet && !(lit||picked)){                     /* seal the seam without drawing a rib */
+      g.strokeStyle = grad; g.lineWidth = 0.8; g.stroke();
+    } else {
+      g.strokeStyle = lit ? "rgba(30,48,94,.75)" : picked ? "rgba(42,120,214,.85)" : shade(q.c, shd*0.7);
+      g.lineWidth = (lit||picked) ? 1.4 : 0.55; g.stroke();
+    }
   });
   STAGE.quads = quads;
 
@@ -1757,7 +1898,7 @@ function draw3D(res){
 
   function line3(gg,a,b){ const p1=proj(a),p2=proj(b);
     gg.beginPath(); gg.moveTo(p1[0],p1[1]); gg.lineTo(p2[0],p2[1]); gg.stroke(); }
-  function addBox(list, c, u, v, w, lu, lv, lw, col, part){
+  function addBox(list, c, u, v, w, lu, lv, lw, col, part, skip){
     const hu=lu/2, hv=lv/2, hw=lw/2, V=[];
     for (const su of [-1,1]) for (const sv of [-1,1]) for (const sw of [-1,1])
       V.push([c[0]+u[0]*su*hu+v[0]*sv*hv+w[0]*sw*hw,
@@ -1770,22 +1911,65 @@ function draw3D(res){
      [[I(0,0,0),I(1,0,0),I(1,0,1),I(0,0,1)], [-v[0],-v[1],-v[2]]],
      [[I(0,0,1),I(1,0,1),I(1,1,1),I(0,1,1)], w],
      [[I(0,0,0),I(0,1,0),I(1,1,0),I(1,0,0)], [-w[0],-w[1],-w[2]]]
-    ].forEach(([idx,n])=>{
+    ].forEach(([idx,n],fi)=>{
+      if (skip && skip.indexOf(fi)>=0) return;        // a face buried in another solid
       if (dot(n, eye) <= 0) return;                   // back-face cull
       const p = idx.map(i=>V[i]);
       list.push({p, n, c:col, part, d:p.reduce((a,q)=>a+depth(q),0)/4});
     });
   }
-  function addCyl(list, c, r, h, col, part){
-    const K = 30, top=[], bot=[];
-    for (let i=0;i<K;i++){ const t=i/K*2*Math.PI;
-      top.push([c[0]+r*Math.cos(t), c[1]+r*Math.sin(t), c[2]+h]);
-      bot.push([c[0]+r*Math.cos(t), c[1]+r*Math.sin(t), c[2]]); }
-    for (let i=0;i<K;i++){ const j=(i+1)%K;
-      const n=[Math.cos((i+0.5)/K*2*Math.PI), Math.sin((i+0.5)/K*2*Math.PI), 0];
-      if (dot(n,eye)>0){ const p=[bot[i],bot[j],top[j],top[i]];
-        list.push({p,n,c:col,part,d:p.reduce((a,q)=>a+depth(q),0)/4}); } }
-    list.push({p:top, n:[0,0,1], c:col, part, d:top.reduce((a,q)=>a+depth(q),0)/K});
+  function addCyl(list, c, r, h, col, part, opt){
+    addCylAxis(list, [c[0],c[1],c[2]+h/2], ZUP, [1,0,0], [0,1,0], r, h, col, part, opt&&opt.skipBottom ? -1 : 0);
+  }
+  /* cylinder about an arbitrary axis; capSkip = +1/-1 leaves that end open */
+  function addCylAxis(list, c, ax, e1, e2, r, len, col, part, capSkip){
+    const K = 28, hl = len/2, A=[], B=[];
+    for (let i=0;i<K;i++){ const t=i/K*2*Math.PI, cs=Math.cos(t), sn=Math.sin(t);
+      const rad = [e1[0]*cs+e2[0]*sn, e1[1]*cs+e2[1]*sn, e1[2]*cs+e2[2]*sn];
+      A.push([c[0]+rad[0]*r-ax[0]*hl, c[1]+rad[1]*r-ax[1]*hl, c[2]+rad[2]*r-ax[2]*hl]);
+      B.push([c[0]+rad[0]*r+ax[0]*hl, c[1]+rad[1]*r+ax[1]*hl, c[2]+rad[2]*r+ax[2]*hl]); }
+    for (let i=0;i<K;i++){ const j=(i+1)%K, t=(i+0.5)/K*2*Math.PI, cs=Math.cos(t), sn=Math.sin(t);
+      const n=[e1[0]*cs+e2[0]*sn, e1[1]*cs+e2[1]*sn, e1[2]*cs+e2[2]*sn];
+      if (dot(n,eye)>0){ const p=[A[i],A[j],B[j],B[i]];
+        list.push({p,n,c:col,part,facet:true,d:p.reduce((a,q)=>a+depth(q),0)/4}); } }
+    if (capSkip!==1  && dot(ax,eye)>0)  list.push({p:B, n:ax, c:col, part, d:B.reduce((a,q)=>a+depth(q),0)/K});
+    if (capSkip!==-1 && dot(ax,eye)<0)  list.push({p:A.slice().reverse(), n:[-ax[0],-ax[1],-ax[2]], c:col, part,
+                                                   d:A.reduce((a,q)=>a+depth(q),0)/K});
+  }
+  function hull2(pts){
+    const P2 = pts.slice().sort((a,b)=>a[0]-b[0]||a[1]-b[1]);
+    if (P2.length<3) return P2;
+    const cross=(o,a,b)=>(a[0]-o[0])*(b[1]-o[1])-(a[1]-o[1])*(b[0]-o[0]);
+    const lo=[]; for (const p of P2){ while(lo.length>=2 && cross(lo[lo.length-2],lo[lo.length-1],p)<=0) lo.pop(); lo.push(p); }
+    const hi=[]; for (let i=P2.length-1;i>=0;i--){ const p=P2[i]; while(hi.length>=2 && cross(hi[hi.length-2],hi[hi.length-1],p)<=0) hi.pop(); hi.push(p); }
+    lo.pop(); hi.pop(); return lo.concat(hi);
+  }
+  function drawRing(gg, pr, radius, key, hot){
+    const pts = []; for (let a=0;a<=360;a+=3) pts.push(pr([radius*Math.cos(a*D2R), radius*Math.sin(a*D2R), 0]));
+    STAGE.rings = STAGE.rings || {}; STAGE.rings[key] = {pts, radius};
+    const isMax = key==="max";
+    /* the halo */
+    gg.save();
+    gg.beginPath(); pts.forEach((p,i)=>i?gg.lineTo(p[0],p[1]):gg.moveTo(p[0],p[1]));
+    gg.strokeStyle = isMax ? (hot ? "rgba(42,120,214,.30)" : "rgba(42,120,214,.13)") : "rgba(30,48,94,.10)";
+    gg.lineWidth = hot ? 16 : 10; gg.lineCap="round";
+    gg.shadowColor = "rgba(42,120,214,.35)"; gg.shadowBlur = (hot?18:10)*dpr; gg.stroke();
+    gg.restore();
+    /* the line itself; the dashes drift slowly while the stage is in view */
+    gg.save();
+    gg.beginPath(); pts.forEach((p,i)=>i?gg.lineTo(p[0],p[1]):gg.moveTo(p[0],p[1]));
+    if (isMax){ gg.setLineDash([9,7]); gg.lineDashOffset = -RING.phase; }
+    gg.strokeStyle = isMax ? (hot ? "rgba(42,120,214,.95)" : "rgba(42,120,214,.62)") : "rgba(30,48,94,.42)";
+    gg.lineWidth = hot ? 2 : 1.4; gg.stroke();
+    gg.restore();
+    /* a bright arc where the arm currently points, so the ring reads as its sweep */
+    if (isMax){
+      const a0 = cam.yaw/D2R;
+      gg.save(); gg.beginPath();
+      for (let a=a0-14;a<=a0+14;a+=2){ const p=pr([radius*Math.cos(a*D2R), radius*Math.sin(a*D2R), 0]);
+        a===a0-14?gg.moveTo(p[0],p[1]):gg.lineTo(p[0],p[1]); }
+      gg.strokeStyle="rgba(42,120,214,.95)"; gg.lineWidth=3; gg.lineCap="round"; gg.stroke(); gg.restore();
+    }
   }
   function comMark(gg,x,y,r){
     gg.save(); gg.translate(x,y);
@@ -1962,6 +2146,53 @@ function openParamsFor(part){
   });
 }
 
+/* distance from a point to the projected ring polylines */
+function ringHit(mx, my){
+  const order = ["cur","max"];
+  for (const key of order){
+    const r = STAGE.rings && STAGE.rings[key]; if (!r) continue;
+    let best = 1e9, at = null;
+    for (let i=1;i<r.pts.length;i++){
+      const a=r.pts[i-1], b=r.pts[i], dx=b[0]-a[0], dy=b[1]-a[1], L2=dx*dx+dy*dy||1;
+      let t=((mx-a[0])*dx+(my-a[1])*dy)/L2; t=Math.max(0,Math.min(1,t));
+      const px=a[0]+dx*t, py=a[1]+dy*t, d=Math.hypot(mx-px,my-py);
+      if (d<best){ best=d; at=[px,py]; }
+    }
+    if (best < 9) return {key, at, radius:r.radius};
+  }
+  return null;
+}
+function showRingTip(hit){
+  const el = $("#ringTip");
+  if (!hit){ el.classList.remove("on"); return; }
+  const isMax = hit.key==="max";
+  el.innerHTML = '<div class="k">'+(isMax?"Reach envelope":"Current reach")+'</div>'+
+    '<div class="v">'+fx(hit.radius,0)+' <small>mm radius</small></div>'+
+    '<div class="m">'+(isMax
+      ? "L₁+L₂+L₃ swept by the base — the farthest the tool centre can ever get"
+      : "tool-centre radius in this pose · yaw ψ "+fx(cam.yaw/D2R,0)+"°")+'</div>';
+  el.classList.add("on");
+  const w = el.offsetWidth || 220, h = el.offsetHeight || 70;
+  el.style.left = Math.max(w/2+8, Math.min(innerWidth-w/2-8, hit.at[0])) + "px";
+  el.style.top  = Math.max(8, hit.at[1] - h - 16) + "px";
+}
+/* the dashes on the reach ring drift while the stage is in view: the one
+   ambient motion on the page, by request, and throttled to ~24 fps */
+(function ringDrift(){
+  const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  let last = performance.now(), acc = 0;
+  function tick(now){
+    const dt = now - last; last = now; acc += dt;
+    if (!reduced && acc > 42 && !document.hidden && R && !EXPORT.scale &&
+        !document.body.classList.contains("stage-away") && !STAGE.busy){
+      RING.phase = (RING.phase + acc*0.018) % 16; acc = 0;
+      draw3D(R);
+    }
+    requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+})();
+
 (function stageInteraction(){
   const cv = $("#three");
   let mode = null, start = null;
@@ -1978,10 +2209,10 @@ function openParamsFor(part){
       mode = {kind:"orbit", az:cam.az, el:cam.el, x0:e.clientX, y0:e.clientY};
       STAGE.sel = null;
     }
-    start = {mx,my};
+    start = {mx,my}; STAGE.busy = true;
     cv.setPointerCapture(e.pointerId);
     cv.classList.add("grabbing");
-    $("#partCard").classList.remove("on");
+    $("#partCard").classList.remove("on"); showRingTip(null);
     e.preventDefault();
   });
 
@@ -1989,10 +2220,14 @@ function openParamsFor(part){
     const b = cv.getBoundingClientRect(), mx = e.clientX-b.left, my = e.clientY-b.top;
     if (!mode){
       const part = pickPart(mx, my);
+      const ring = part ? null : ringHit(mx, my);
       cv.classList.toggle("pickable", part!=null && part!=="plate");
-      if (part !== STAGE.hover){ STAGE.hover = part; draw3D(R); }
+      cv.style.cursor = ring ? "help" : "";
+      const rk = ring ? ring.key : null;
+      if (part !== STAGE.hover || rk !== RING.hover){ STAGE.hover = part; RING.hover = rk; draw3D(R); }
       if (part) showPartCard(part, e.clientX, e.clientY);
       else $("#partCard").classList.remove("on");
+      showRingTip(ring);
       return;
     }
     if (mode.kind==="orbit"){
@@ -2017,7 +2252,7 @@ function openParamsFor(part){
 
   const end = ()=>{
     if (mode && mode.kind==="joint" && mode.armed) render();   // full recompute once, on release
-    mode = null; cv.classList.remove("grabbing");
+    mode = null; STAGE.busy = false; cv.classList.remove("grabbing");
   };
   cv.addEventListener("pointerup", e=>{
     if (mode && start){
@@ -2032,8 +2267,8 @@ function openParamsFor(part){
   });
   cv.addEventListener("pointercancel", end);
   cv.addEventListener("pointerleave", ()=>{
-    if (!mode){ $("#partCard").classList.remove("on");
-      if (STAGE.hover){ STAGE.hover = null; draw3D(R); } }
+    if (!mode){ $("#partCard").classList.remove("on"); showRingTip(null);
+      if (STAGE.hover || RING.hover){ STAGE.hover = null; RING.hover = null; draw3D(R); } }
   });
   /* The stage fills the viewport, so a plain wheel has to scroll the page —
      otherwise the analysis below is unreachable. Zoom is the pinch gesture,
@@ -2447,15 +2682,15 @@ function refreshOptStatic(){
   c.innerHTML =
    '<div style="display:grid;gap:13px;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));align-items:end">'+
      '<div><div class="k" style="font-size:10.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-3);font-weight:600;margin-bottom:5px">Objective</div>'+
-       '<select id="optMode" style="width:100%;padding:5px;border:1px solid var(--rule-2);border-radius:4px;background:#fff">'+
+       '<select id="optMode" style="width:100%;padding:5px;border:1px solid var(--rule-2);border-radius:9px;background:rgba(255,255,255,.7)">'+
        '<option value="reach">Maximise reach at fixed payload</option>'+
        '<option value="payload">Maximise payload at fixed reach</option></select></div>'+
      '<div id="optPayWrap"><div class="k" style="font-size:10.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-3);font-weight:600;margin-bottom:5px">Payload</div>'+
-       '<div class="num"><input type="number" id="optPay" min="0" max="5000" step="5" style="flex:1;min-width:0;padding:5px;text-align:right;border:1px solid var(--rule-2);border-radius:4px;font-family:var(--mono)"><span class="unit">g</span></div></div>'+
+       '<div class="num"><input type="number" id="optPay" min="0" max="5000" step="5" style="flex:1;min-width:0;padding:5px;text-align:right;border:1px solid var(--rule-2);border-radius:9px;background:rgba(255,255,255,.7);font-family:var(--mono)"><span class="unit">g</span></div></div>'+
      '<div id="optTgtWrap"><div class="k" style="font-size:10.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-3);font-weight:600;margin-bottom:5px">Target reach</div>'+
-       '<div class="num"><input type="number" id="optTgt" min="30" max="1200" step="5" style="flex:1;min-width:0;padding:5px;text-align:right;border:1px solid var(--rule-2);border-radius:4px;font-family:var(--mono)"><span class="unit">mm</span></div></div>'+
+       '<div class="num"><input type="number" id="optTgt" min="30" max="1200" step="5" style="flex:1;min-width:0;padding:5px;text-align:right;border:1px solid var(--rule-2);border-radius:9px;background:rgba(255,255,255,.7);font-family:var(--mono)"><span class="unit">mm</span></div></div>'+
      '<div><div class="k" style="font-size:10.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-3);font-weight:600;margin-bottom:5px">Grid resolution</div>'+
-       '<select id="optRes" style="width:100%;padding:5px;border:1px solid var(--rule-2);border-radius:4px;background:#fff">'+
+       '<select id="optRes" style="width:100%;padding:5px;border:1px solid var(--rule-2);border-radius:9px;background:rgba(255,255,255,.7)">'+
        '<option value="1">Coarse — 14³ + refinement</option><option value="3" selected>Standard — 20³ + refinement</option>'+
        '<option value="5">Fine — 28³ + refinement</option></select></div>'+
      '<div class="runrow"><button class="btn primary" id="optRun">Run optimisation</button></div>'+
@@ -2613,11 +2848,12 @@ function renderOptResult(ms){
   const cur = solve(P, {worst:true});
   const rows = constraintRows(res);
   const bind = rows.filter(r=>r.ratio>95);
-  const seen = new Set();
-  const top = OPT.top.slice().sort((a,b2)=>b2.score-a.score).filter(c=>{
-    const key = Math.round(c.L1/12)+"|"+Math.round(c.L2/12)+"|"+Math.round(c.L3/12);
-    if (seen.has(key)) return false; seen.add(key); return true;
-  }).slice(0,10);
+  /* show genuinely different splits, not ten neighbours of the same optimum */
+  const top = [];
+  OPT.top.slice().sort((a,b2)=>b2.score-a.score).forEach(c=>{
+    if (top.length>=10) return;
+    if (top.every(t=>Math.max(Math.abs(t.L1-c.L1),Math.abs(t.L2-c.L2),Math.abs(t.L3-c.L3)) >= 10)) top.push(c);
+  });
   const gain = OPT.mode==="reach" ? (b.reach - (P.L1+P.L2+P.L3)) : (b.payload - P.payload);
   const tol = Math.max(1, (P.lMax-P.lMin)*0.01);
   const atBound = [["L₁",b.L1],["L₂",b.L2],["L₃",b.L3]].filter(([,v])=>
@@ -2669,6 +2905,7 @@ function renderOptResult(ms){
      '</div></div>'+
    '</div>';
 
+  observeCards("#optResult");
   $("#optApply").onclick = ()=>{
     P.L1 = Math.round(b.L1*10)/10; P.L2 = Math.round(b.L2*10)/10; P.L3 = Math.round(b.L3*10)/10;
     if (OPT.mode==="payload") P.payload = Math.round(b.payload);
@@ -2707,6 +2944,7 @@ const SW = {
   n:0, cap:400000, running:false, cancel:false,
   L1:null,L2:null,L3:null,PY:null,RE:null,UT:null,MS:null,FE:null,LIM:null,
 };
+const SWVIEW = {fit:true};
 const LIMNAMES = ["Shoulder torque","Elbow torque","Wrist torque","Base (yaw) torque",
                   "Link 1 stress","Link 2 stress","Link 3 stress","Tip deflection","Tipping"];
 
@@ -2725,7 +2963,7 @@ function buildSweepControls(){
       '<span style="font-size:10.5px;color:var(--ink-3);margin-left:auto">steps</span>'+inp(key+"n","")+
     '</div></div>';
   const inp = (k,ph)=>'<input type="number" id="sw_'+k+'" value="'+SW.cfg[k]+'" placeholder="'+ph+
-    '" style="width:60px;padding:4px 6px;text-align:right;border:1px solid var(--rule-2);border-radius:4px;font-family:var(--mono);font-size:12px">';
+    '" style="width:60px;padding:4px 6px;text-align:right;border:1px solid var(--rule-2);border-radius:9px;background:rgba(255,255,255,.7);font-family:var(--mono);font-size:12px">';
   host.innerHTML =
     '<div style="display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(258px,1fr))">'+
       row("l1","L₁ shoulder → elbow","mm")+row("l2","L₂ elbow → wrist","mm")+
@@ -2822,6 +3060,11 @@ function scatter(cv, o){
   xs.forEach(v=>{ g.beginPath(); g.moveTo(X(v),padT); g.lineTo(X(v),padT+ph); g.stroke(); });
 
   const idx = o.index;
+  g.save(); g.beginPath(); g.rect(padL-2, padT-2, pw+4, ph+4); g.clip();
+  if (o.limitLine!=null && o.limitLine>=o.ya && o.limitLine<=o.yb){
+    g.strokeStyle="rgba(208,59,59,.45)"; g.lineWidth=1; g.setLineDash([4,4]);
+    g.beginPath(); g.moveTo(padL,Y(o.limitLine)); g.lineTo(padL+pw,Y(o.limitLine)); g.stroke(); g.setLineDash([]);
+  }
   // infeasible first, receding
   g.fillStyle = "#d5dde3";
   for (let k=0;k<idx.length;k++){ const i=idx[k]; if (SW.FE[i]) continue;
@@ -2850,6 +3093,7 @@ function scatter(cv, o){
       front.forEach(i=>{ g.beginPath(); g.arc(X(o.x(i)),Y(o.y(i)),2.8,0,7); g.fill(); });
     }
   }
+  g.restore();
   // current design marker
   if (o.cx!==undefined){
     g.strokeStyle="#eb6834"; g.lineWidth=2;
@@ -2879,7 +3123,9 @@ function bindProbe(cv, tipEl){
     let best=-1, bd=1e9;
     const idx = pr.o.index;
     for (let k=0;k<idx.length;k++){ const i=idx[k];
-      const d = (pr.X(pr.o.x(i))-mx)**2 + (pr.Y(pr.o.y(i))-my)**2;
+      const xv = pr.o.x(i), yv = pr.o.y(i);
+      if (xv<pr.o.xa || xv>pr.o.xb || yv<pr.o.ya || yv>pr.o.yb) continue;
+      const d = (pr.X(xv)-mx)**2 + (pr.Y(yv)-my)**2;
       if (d<bd){ bd=d; best=i; } }
     if (best<0 || bd>900){ tipEl.classList.remove("on"); cv._sel=-1; return; }
     cv._sel = best;
@@ -2903,6 +3149,35 @@ function bindProbe(cv, tipEl){
   cv.style.cursor = "crosshair";
 }
 
+/** axis ranges: the feasible cloud with breathing room, or the whole search box */
+function sweepAxes(){
+  const full = {xa:0, xb:(SW.cfg.l1b+SW.cfg.l2b+SW.cfg.l3b)*1.02, ya:0, yb:Math.max(SW.cfg.pb,1)*1.05, ub:200};
+  if (!SWVIEW.fit || !SW.feasIdx || !SW.feasIdx.length) return full;
+  let x0=1e9,x1=-1e9,y1=-1e9,u1=0;
+  SW.feasIdx.forEach(i=>{ const x=SW.RE[i], y=SW.PY[i]; if(x<x0)x0=x; if(x>x1)x1=x; if(y>y1)y1=y; if(SW.UT[i]>u1)u1=SW.UT[i]; });
+  const cur = P.L1+P.L2+P.L3;
+  x0 = Math.min(x0, cur); x1 = Math.max(x1, cur); y1 = Math.max(y1, P.payload);
+  const px = Math.max(20, (x1-x0)*0.12), py = Math.max(10, y1*0.12);
+  return {xa:Math.max(0,x0-px), xb:x1+px, ya:0, yb:y1+py, ub:Math.min(200, Math.max(110, u1*1.25))};
+}
+function drawSweepCharts(){
+  const ax = sweepAxes(), curReach = P.L1+P.L2+P.L3;
+  const front = scatter($("#swMain"), {
+    height:400, index:SW.drawIdx, pareto:true,
+    x:i=>SW.RE[i], y:i=>SW.PY[i],
+    xa:ax.xa, xb:ax.xb, ya:ax.ya, yb:ax.yb,
+    xlab:"Reach L₁+L₂+L₃ (mm)", ylab:"Payload (g)",
+    cx:curReach, cy:P.payload });
+  bindProbe($("#swMain"), $("#swTip1"));
+  scatter($("#swUtil"), {
+    height:330, index:SW.drawIdx,
+    x:i=>SW.RE[i], y:i=>Math.min(SW.UT[i],ax.ub),
+    xa:ax.xa, xb:ax.xb, ya:0, yb:ax.ub, limitLine:100,
+    xlab:"Reach (mm)", ylab:"Tightest constraint (% of limit)",
+    cx:curReach, cy:Math.min(constraintRows(R)[0].ratio,ax.ub) });
+  bindProbe($("#swUtil"), $("#swTip2"));
+  return front;
+}
 function renderSweep(ms){
   const n = SW.n;
   const all = []; for (let i=0;i<n;i++) all.push(i);
@@ -2975,22 +3250,15 @@ function renderSweep(ms){
     '<div class="card"><header><h3>Top designs by reach</h3><span class="sub">feasible only · click to load</span></header>'+
       '<div class="pad tbl-wrap" id="swTopTable"></div></div>';
 
-  const front = scatter($("#swMain"), {
-    height:400, index:drawIdx, pareto:true,
-    x:i=>SW.RE[i], y:i=>SW.PY[i],
-    xa:0, xb:(SW.cfg.l1b+SW.cfg.l2b+SW.cfg.l3b)*1.02,
-    ya:0, yb:Math.max(SW.cfg.pb,1)*1.05,
-    xlab:"Reach L₁+L₂+L₃ (mm)", ylab:"Payload (g)",
-    cx:curReach, cy:P.payload });
-  bindProbe($("#swMain"), $("#swTip1"));
-
-  scatter($("#swUtil"), {
-    height:330, index:drawIdx,
-    x:i=>SW.RE[i], y:i=>Math.min(SW.UT[i],200),
-    xa:0, xb:(SW.cfg.l1b+SW.cfg.l2b+SW.cfg.l3b)*1.02, ya:0, yb:200,
-    xlab:"Reach (mm)", ylab:"Tightest constraint (% of limit)",
-    cx:curReach, cy:Math.min(constraintRows(R)[0].ratio,200) });
-  bindProbe($("#swUtil"), $("#swTip2"));
+  SW.drawIdx = drawIdx; SW.feasIdx = feas;
+  const front = drawSweepCharts();
+  const hdr = $("#swMain").closest(".card").querySelector("header");
+  const tog = el("div","viewtog");
+  tog.innerHTML = '<button class="vt'+(SWVIEW.fit?" on":"")+'" data-fit="1">Fit to results</button>'+
+                  '<button class="vt'+(SWVIEW.fit?"":" on")+'" data-fit="0">Full range</button>';
+  hdr.append(tog);
+  tog.querySelectorAll(".vt").forEach(b=>b.onclick=()=>{ SWVIEW.fit = b.dataset.fit==="1";
+    tog.querySelectorAll(".vt").forEach(x=>x.classList.toggle("on", x===b)); drawSweepCharts(); });
 
   $("#swFrontTable").innerHTML = front && front.length
     ? '<table><thead><tr><th>Reach</th><th>Payload</th><th>L₁</th><th>L₂</th><th>L₃</th><th>Moving mass</th><th>Margin used</th></tr></thead><tbody>'+
@@ -3008,6 +3276,7 @@ function renderSweep(ms){
       '</td><td>'+fx(SW.MS[i],0)+' g</td><td>'+fx(SW.UT[i],0)+'%</td><td>'+LIMNAMES[SW.LIM[i]]+'</td></tr>').join("")+
       '</tbody></table>'
     : '<p class="note">No feasible designs in this sweep. Shorten the link ranges or lighten the payload.</p>';
+  observeCards("#sweepResult");
   $$("#swTopTable tr[data-i]").forEach(tr=>tr.onclick = ()=>{
     const i = +tr.dataset.i;
     P.L1=Math.round(SW.L1[i]*10)/10; P.L2=Math.round(SW.L2[i]*10)/10;

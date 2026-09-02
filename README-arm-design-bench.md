@@ -19,6 +19,15 @@ never a second shadow language.
   pointer in the arm's own working plane; dragging the base swings the yaw axis; dragging
   empty space orbits the camera. Joint travel limits are respected. Grabbing the arm while
   worst case is on turns it off and says so.
+- **The stage.** The arm casts a soft shadow onto a pool of cool light; every solid is
+  projected along the light onto the floor and the footprints are merged into one path so
+  overlaps never double-darken. The dashed ring on the floor is the reach envelope —
+  L₁+L₂+L₃ swept by the base — with a bright arc where the arm currently points; a second,
+  solid ring marks the tool-centre radius in the current pose when it differs. Hover either
+  ring for its radius. Nothing in the model intersects anything else: links stop short of
+  each joint inside a rounded knuckle, servos mount beside the knuckle on the output-shaft
+  side, and the column ends under the shoulder — which is what lets a plain painter's sort
+  draw it correctly.
 - **Detail on demand.** The dock at the bottom carries five live readouts and nothing else.
   Scroll and the analysis sheet rises over the model through the glass; the pose panel and
   view buttons retire once the model is out of view, and the dock steps aside on the way
@@ -29,7 +38,13 @@ Design tokens: surface `#FFFCF8`, ink `#1E305E` — two UI colours, with every o
 coming from real content (the chart palette and the good/tight/over status states). Radius
 scale is `0` for the full-bleed stage, `18px` for panels and cards, `999px` for pills.
 Instrument Sans owns all UI text; IBM Plex Mono owns numbers and equations, exclusively.
-Every transition is triggered by hover, click, drag or scroll — nothing animates on its own.
+Cards carry an accent hue tied to their meaning (the torque card takes the limiting joint's
+status colour, the mass card the structure colour), rise into place the first time they
+scroll into view, lift on a spring when hovered, and unfold a one-line summary strip on
+hover. The sweep charts fit their axes to the feasible cloud by default, with a full-range
+toggle. Two ambient motions exist by request — the reach ring's dashes drift while the stage
+is in view, and the dock readouts float gently — and both respect `prefers-reduced-motion`.
+Everything else is triggered by hover, click, drag or scroll.
 
 ## What it does
 
