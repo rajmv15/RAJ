@@ -65,6 +65,34 @@ Everything else is triggered by hover, click, drag or scroll.
 - **PDF export** of the whole design as a 9-page engineering report, and one-click PNG
   export of any individual drawing or chart.
 
+## Saving and sharing a design
+
+The bench autosaves to `localStorage` and restores where you left off on reload —
+parameters, pose, camera, sweep ranges and the active tab. **Reset defaults** clears it.
+
+The **Designs** group at the top of the Parameters panel keeps up to twelve named
+snapshots in the same browser, each listed with its reach, payload and limiting joint.
+
+To move a design between machines or share it, use **Copy design code**: a snapshot stores
+only what *differs from the defaults*, so a code is a couple of hundred characters and stays
+forward-compatible — a parameter added in a later version simply takes its new default.
+`Copy report` appends the same code to the readable report, so one copy is both a document
+and a restorable snapshot. To load one, paste it into **Paste design**, or just press ⌘V
+anywhere on the page.
+
+Two things worth knowing:
+
+- Storage is per-browser and per-origin. Nothing is uploaded, and a design is not shared
+  with other viewers of the same page.
+- State deliberately does **not** go in the URL. The artifact frame runtime treats a present
+  `location.hash` as "do not restore scroll position", so encoding a design there would
+  silently break the viewer's scrolling — and inside the viewer the address bar is
+  `claude.ai` anyway, so such a link would not be copyable.
+
+Anything pasted in is treated as untrusted: every key is validated against `DEFAULTS`
+individually, and an unknown key, a wrong type, `NaN`/`Infinity`, an out-of-range number or
+a bogus material each fall back to the default rather than failing the load.
+
 ## Exporting
 
 The **Export** button in the top bar builds a multi-page A4 PDF of the design exactly as it

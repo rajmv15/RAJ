@@ -642,6 +642,32 @@ body.params-open .params{transform:none}              /* trigger: click Paramete
 .params > footer{border-top:1px solid var(--hair);padding:11px 14px;display:flex;gap:8px}
 @media (max-width:900px){ .params{width:auto;left:8px} }
 
+/* ---------- saved designs ---------- */
+.dsave{display:flex;gap:7px}
+.dsave input{flex:1;min-width:0;padding:5px 9px;border:1px solid var(--hair-2);border-radius:9px;
+  background:rgba(255,255,255,.65);font-size:12px;transition:border-color .16s,box-shadow .16s,background .16s}
+.dsave input:focus{border-color:var(--accent);outline:none;background:#fff;box-shadow:0 0 0 3px rgba(42,120,214,.14)}
+.dlist{display:grid;gap:5px}
+.dempty{margin:2px 0}
+.drow{display:flex;gap:6px;align-items:stretch}
+.dload{flex:1;min-width:0;text-align:left;border:1px solid var(--hair);background:rgba(255,255,255,.55);
+  border-radius:11px;padding:7px 11px;cursor:pointer;
+  transition:transform .4s var(--spring),background .16s,border-color .16s}
+.dload b{display:block;font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dload em{display:block;font-style:normal;font-size:10.5px;color:var(--ink-3);font-family:var(--mono);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dload:hover{background:#fff;border-color:rgba(42,120,214,.4);transform:translateY(-1px)}
+.ddel{flex:none;border:1px solid var(--hair);background:rgba(255,255,255,.5);border-radius:11px;
+  padding:0 10px;font-size:14px;line-height:1;color:var(--ink-3);cursor:pointer;
+  transition:background .16s,color .16s}
+.ddel:hover{background:#fff;color:var(--crit-ink)}
+.ddel.armed{font-size:11px;font-weight:600;color:#fff;background:var(--crit);border-color:var(--crit)}
+.dacts{display:flex;gap:6px;flex-wrap:wrap}
+.dpaste{display:grid;gap:7px}
+.dpaste textarea{width:100%;padding:8px 10px;border:1px solid var(--hair-2);border-radius:11px;
+  background:rgba(255,255,255,.7);font-family:var(--mono);font-size:11px;resize:vertical}
+.dpaste textarea:focus{border-color:var(--accent);outline:none;background:#fff;box-shadow:0 0 0 3px rgba(42,120,214,.14)}
+.dpaste-row{display:flex;gap:9px;align-items:center}
 /* ---------- control groups ---------- */
 .group{border-bottom:1px solid var(--hair)}
 .group > summary{list-style:none;cursor:pointer;padding:12px 18px;display:flex;align-items:center;
@@ -1516,14 +1542,25 @@ function optionsFor(kind){
 }
 
 function buildRail(){
-  const rail = $("#rail"); rail.innerHTML = "";
+  const rail = $("#rail");
+  /* loading a design rebuilds the rail, so carry the reader's place with it:
+     which groups were open, and where they had scrolled to */
+  const wasOpen = {}, scroll = rail.scrollTop;
+  rail.querySelectorAll("details.group").forEach(d=>{
+    const t = d.querySelector("summary"); if (t) wasOpen[t.textContent.trim()] = d.open; });
+  rail.innerHTML = "";
+  const dg = buildDesignsGroup();
+  if (wasOpen["Designs"]) dg.open = true;
+  rail.append(dg);
   CONTROLS.forEach(g=>{
-    const d = el("details","group"); if (g.open) d.open = true;
+    const d = el("details","group");
+    d.open = Object.prototype.hasOwnProperty.call(wasOpen, g.title) ? wasOpen[g.title] : !!g.open;
     const s = el("summary"); s.append(g.title); s.append(el("i","chev")); d.append(s);
     const body = el("div","groupbody");
     g.items.forEach(it=>body.append(buildControl(it)));
     d.append(body); rail.append(d);
   });
+  rail.scrollTop = scroll;
   syncRail();
 }
 
@@ -1710,6 +1747,7 @@ function render(opts){
   drawSide(R);
   draw3D(R);
   renderReveals(R);
+  saveSession();
   if (light) return;                 /* the rest is too heavy for a drag frame */
   renderRecs(R);
   drawEnvelope(R);
@@ -1910,6 +1948,7 @@ function setTab(name){
   moveGlide();
   if (!first) scrollTo({top:0, behavior:"instant"});
   syncStageHint();
+  if (typeof saveSession === "function") saveSession();
   if (name==="inspector") renderInspector(R);
   if (name==="equations") renderEquations();
   if (name==="optimize")  refreshOptStatic();
@@ -2656,6 +2695,7 @@ function showRingTip(hit){
   const end = ()=>{
     if (mode && mode.kind==="joint" && mode.armed) render();   // full recompute once, on release
     mode = null; STAGE.busy = false; cv.classList.remove("grabbing");
+    if (typeof saveSession === "function") saveSession();
   };
   cv.addEventListener("pointerup", e=>{
     if (mode && start){
@@ -2681,6 +2721,7 @@ function showRingTip(hit){
     e.preventDefault();
     cam.zoom = Math.max(0.45, Math.min(3.2, cam.zoom*(e.deltaY>0?0.92:1.08)));
     draw3D(R);
+    if (typeof saveSession === "function") saveSession();
   }, {passive:false});
 
   $("#v3dIso").onclick   = ()=>{ cam.az=-38*D2R; cam.el=20*D2R; cam.zoom=1; draw3D(R); };
@@ -4659,6 +4700,267 @@ async function savePNG(btn){
 <script>
 "use strict";
 /* =====================================================================
+   SESSION + PORTABLE DESIGNS
+   P is a flat object of primitives keyed 1:1 against DEFAULTS, so a design
+   serialises to JSON directly. A snapshot stores only what DIFFERS from the
+   defaults: codes stay short, and a key added in a later version simply takes
+   its new default instead of breaking an old code.
+
+   State stays out of the URL on purpose. The artifact frame runtime treats a
+   present location.hash as "do not restore scroll", so encoding the design
+   there would silently break the viewer's scrolling - and inside the viewer
+   the address bar is claude.ai anyway, so a hash link is not copyable.
+   ===================================================================== */
+const SNAP_V = 1;
+const TAB_IDS = ["analysis","optimize","sweep","equations","inspector"];
+const K_SESSION = "armbench.session.v1";
+const K_DESIGNS = "armbench.designs.v1";
+
+/* every accessor is guarded: localStorage itself throws in private mode,
+   under blocked-site-data settings, and during thumbnail capture */
+const store = {
+  get(k){ try { const s = localStorage.getItem(k); return s ? JSON.parse(s) : null; }
+          catch(e){ return null; } },
+  set(k,v){ try { localStorage.setItem(k, JSON.stringify(v)); return true; }
+            catch(e){ return false; } },
+  del(k){ try { localStorage.removeItem(k); } catch(e){} },
+};
+
+function b64e(str){
+  const bytes = new TextEncoder().encode(str);
+  let bin = ""; bytes.forEach(b=>bin += String.fromCharCode(b));
+  return btoa(bin).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");
+}
+function b64d(s){
+  let t = s.replace(/-/g,"+").replace(/_/g,"/");
+  while (t.length % 4) t += "=";
+  const bin = atob(t), bytes = new Uint8Array(bin.length);
+  for (let i=0;i<bin.length;i++) bytes[i] = bin.charCodeAt(i);
+  return new TextDecoder().decode(bytes);
+}
+
+/* key -> {min,max} taken from the control spec that already declares them */
+const LIMITS = (()=>{
+  const m = {};
+  CONTROLS.forEach(g=>g.items.forEach(it=>{
+    if (it.key && it.t==="num") m[it.key] = {min:it.min, max:it.max};
+  }));
+  return m;
+})();
+const ENUMS = {material:MATERIALS, section:SECTIONS,
+               srvBase:SERVOS, srvSh:SERVOS, srvEl:SERVOS, srvWr:SERVOS};
+
+function snapshot(){
+  const d = {};
+  Object.keys(DEFAULTS).forEach(k=>{ if (P[k] !== DEFAULTS[k]) d[k] = P[k]; });
+  return {v:SNAP_V, p:d, t:activeTab,
+          c:[cam.az, cam.el, cam.zoom, cam.yaw].map(x=>Math.round(x*1e4)/1e4),
+          sw:Object.assign({}, SW.cfg),
+          o:{mode:OPT.mode, payload:OPT.payload, target:OPT.target, res:OPT.res}};
+}
+
+/** Apply a snapshot. Pasted text is untrusted, so every key is checked
+ *  individually and anything that fails simply keeps its default. */
+function applySnapshot(s, opt){
+  opt = opt || {};
+  if (!s || typeof s !== "object" || s.v !== SNAP_V || !s.p || typeof s.p !== "object") return -1;
+  const next = Object.assign({}, DEFAULTS);
+  let n = 0;
+  Object.keys(s.p).forEach(k=>{
+    if (!Object.prototype.hasOwnProperty.call(DEFAULTS, k)) return;   // unknown key
+    const v = s.p[k], want = typeof DEFAULTS[k];
+    if (typeof v !== want) return;                                    // wrong type
+    if (want === "number"){
+      if (!isFinite(v)) return;                                       // NaN / Infinity
+      const L = LIMITS[k];
+      next[k] = L ? Math.min(L.max, Math.max(L.min, v)) : v;
+    } else if (ENUMS[k]){
+      if (!Object.prototype.hasOwnProperty.call(ENUMS[k], v)) return; // bogus enum
+      next[k] = v;
+    } else next[k] = v;
+    n++;
+  });
+  /* flags are 0/1; pose angles are bounded by the joint travel that came with
+     this same snapshot, so they are clamped after every key is in place */
+  ["worst","dynOn","bolted"].forEach(k=>{ next[k] = next[k] ? 1 : 0; });
+  [["q1","limShMin","limShMax"],["q2","limElMin","limElMax"],["q3","limWrMin","limWrMax"]]
+    .forEach(([q,lo,hi])=>{ next[q] = Math.min(next[hi], Math.max(next[lo], next[q])); });
+  P = next;
+
+  if (Array.isArray(s.c) && s.c.length===4 && s.c.every(x=>typeof x==="number" && isFinite(x))){
+    cam.az = s.c[0]; cam.el = Math.max(-0.15, Math.min(1.45, s.c[1]));
+    cam.zoom = Math.max(0.45, Math.min(3.2, s.c[2])); cam.yaw = s.c[3];
+  }
+  if (s.sw && typeof s.sw === "object"){
+    Object.keys(SW.cfg).forEach(k=>{
+      const v = s.sw[k];
+      if (typeof v === "number" && isFinite(v) && v > 0) SW.cfg[k] = v;
+    });
+  }
+  if (s.o && typeof s.o === "object"){
+    if (s.o.mode === "reach" || s.o.mode === "payload") OPT.mode = s.o.mode;
+    ["payload","target","res"].forEach(k=>{
+      if (typeof s.o[k] === "number" && isFinite(s.o[k]) && s.o[k] >= 0) OPT[k] = s.o[k]; });
+  }
+  if (!opt.keepTab && TAB_IDS.indexOf(s.t) >= 0) applySnapshot._tab = s.t;
+  return n;
+}
+
+const encodeDesign = () => "ARM1:" + b64e(JSON.stringify(snapshot()));
+/** pull a code out of anything - a bare code, or a whole pasted report */
+function decodeDesign(text){
+  const m = String(text||"").match(/ARM1:([A-Za-z0-9_-]{8,})/);
+  if (!m) return null;
+  try { return JSON.parse(b64d(m[1])); } catch(e){ return null; }
+}
+
+/* ---------- autosave ---------- */
+let _saveT = 0, _restoring = false;
+function saveSession(){
+  if (_restoring) return;
+  clearTimeout(_saveT);
+  _saveT = setTimeout(()=>store.set(K_SESSION, snapshot()), 500);
+}
+function loadSession(){
+  const s = store.get(K_SESSION);
+  if (!s) return false;
+  _restoring = true;
+  const n = applySnapshot(s);
+  _restoring = false;
+  return n > 0;
+}
+
+/* ---------- named designs ---------- */
+const listDesigns = () => { const d = store.get(K_DESIGNS); return Array.isArray(d) ? d : []; };
+function saveDesign(name){
+  const list = listDesigns();
+  const rec = {id:"d"+Date.now().toString(36), name:String(name||"").slice(0,40) || "Untitled",
+               ts:Date.now(), snap:snapshot(),
+               sum:{reach:Math.round(R.reach*1000), pay:Math.round(R.payload_g),
+                    peak:R.joints[R.peak].name.replace(" (yaw)",""), util:Math.round(R.joints[R.peak].util)}};
+  list.unshift(rec);
+  store.set(K_DESIGNS, list.slice(0,12));
+  return rec;
+}
+const deleteDesign = id => store.set(K_DESIGNS, listDesigns().filter(d=>d.id!==id));
+
+/* ---------- loading a design over the working one, with one-level undo ---- */
+let _undoSnap = null;
+function loadInto(snap, label){
+  const prev = snapshot();
+  const n = applySnapshot(snap, {keepTab:true});
+  if (n < 0){ showToast("That doesn’t look like a design code"); return false; }
+  _undoSnap = prev;
+  buildRail(); syncPose(); render(); draw3D(R);
+  showToast(label + " — " + n + " parameter" + (n===1?"":"s") + " restored");
+  return true;
+}
+function undoLoad(){
+  if (!_undoSnap) return;
+  const s = _undoSnap; _undoSnap = null;
+  applySnapshot(s, {keepTab:true});
+  buildRail(); syncPose(); render(); draw3D(R);
+  showToast("Reverted to the previous design");
+}
+
+/* ---------- the Designs group at the top of the parameters panel ---------- */
+function buildDesignsGroup(){
+  const d = el("details","group designs");
+  const s = el("summary"); s.append("Designs"); s.append(el("i","chev")); d.append(s);
+  const body = el("div","groupbody"); d.append(body);
+
+  const row = el("div","dsave");
+  row.innerHTML = '<input type="text" id="dName" placeholder="Name this design" maxlength="40">' +
+                  '<button class="btn sm" id="dSave">Save</button>';
+  body.append(row);
+
+  const list = el("div","dlist"); list.id = "dList"; body.append(list);
+
+  const acts = el("div","dacts");
+  acts.innerHTML = '<button class="btn sm" id="dCopy">Copy design code</button>' +
+                   '<button class="btn sm" id="dPaste">Paste design</button>' +
+                   '<button class="btn sm" id="dUndo">Undo load</button>';
+  body.append(acts);
+
+  const paste = el("div","dpaste"); paste.id = "dPasteWrap"; paste.hidden = true;
+  paste.innerHTML = '<textarea id="dPasteBox" rows="3" placeholder="Paste a design code or a full report here"></textarea>' +
+                    '<div class="dpaste-row"><button class="btn sm primary" id="dLoad">Load design</button>' +
+                    '<span class="note" id="dPasteMsg"></span></div>';
+  body.append(paste);
+  body.append(el("p","note","Saved in this browser only. The bench also remembers your last session automatically."));
+
+  queueMicrotask(()=>{
+    renderDesignList();
+    $("#dSave").onclick = ()=>{
+      const nm = $("#dName");
+      const rec = saveDesign(nm.value.trim() || ("Design " + (listDesigns().length + 1)));
+      nm.value = ""; renderDesignList(); showToast("Saved “" + rec.name + "”");
+    };
+    $("#dName").addEventListener("keydown", e=>{ if (e.key==="Enter") $("#dSave").click(); });
+    $("#dCopy").onclick = async ()=>{
+      const b = $("#dCopy"), old = b.textContent;
+      try { await navigator.clipboard.writeText(encodeDesign()); b.textContent = "Copied"; }
+      catch(err){ b.textContent = "Copy blocked"; }
+      setTimeout(()=>b.textContent = old, 1600);
+    };
+    $("#dPaste").onclick = ()=>{
+      const w = $("#dPasteWrap"); w.hidden = !w.hidden;
+      if (!w.hidden){ $("#dPasteMsg").textContent = ""; $("#dPasteBox").value = ""; $("#dPasteBox").focus(); }
+    };
+    $("#dLoad").onclick = ()=>{
+      const snap = decodeDesign($("#dPasteBox").value);
+      if (!snap){ $("#dPasteMsg").textContent = "No design code found in that text."; return; }
+      if (loadInto(snap, "Design loaded")) $("#dPasteWrap").hidden = true;
+    };
+    $("#dUndo").onclick = undoLoad;
+    syncDesignActions();
+  });
+  return d;
+}
+function syncDesignActions(){ const u = $("#dUndo"); if (u) u.disabled = !_undoSnap; }
+function renderDesignList(){
+  const host = $("#dList"); if (!host) return;
+  const list = listDesigns();
+  if (!list.length){ host.innerHTML = '<p class="note dempty">No saved designs yet.</p>'; return; }
+  host.innerHTML = list.map(d=>
+    '<div class="drow" data-id="'+d.id+'">' +
+      '<button class="dload" title="Load this design">' +
+        '<b>'+escapeHTML(d.name)+'</b>' +
+        '<em>'+(d.sum ? d.sum.reach+" mm · "+d.sum.pay+" g · "+escapeHTML(d.sum.peak)+" "+d.sum.util+"%" : "saved design")+'</em>' +
+      '</button>' +
+      '<button class="ddel" title="Delete">×</button>' +
+    '</div>').join("");
+  host.querySelectorAll(".drow").forEach(rowEl=>{
+    const rec = list.find(x=>x.id===rowEl.dataset.id);
+    rowEl.querySelector(".dload").onclick = ()=>{
+      if (loadInto(rec.snap, "Loaded “"+rec.name+"”")) syncDesignActions();
+    };
+    const del = rowEl.querySelector(".ddel");
+    del.onclick = ()=>{
+      if (del.dataset.armed){ deleteDesign(rec.id); renderDesignList(); return; }
+      del.dataset.armed = "1"; del.textContent = "Delete?"; del.classList.add("armed");
+      setTimeout(()=>{ if (del.isConnected && del.dataset.armed){
+        delete del.dataset.armed; del.textContent = "×"; del.classList.remove("armed"); } }, 3000);
+    };
+  });
+}
+function escapeHTML(t){ return String(t).replace(/[&<>"]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
+
+/* paste a code anywhere on the page and it loads */
+addEventListener("paste", e=>{
+  const t = e.target, tag = t && t.tagName;
+  if (tag === "INPUT" || tag === "TEXTAREA" || (t && t.isContentEditable)) return;
+  const text = e.clipboardData && e.clipboardData.getData("text");
+  const snap = text && decodeDesign(text);
+  if (!snap) return;
+  e.preventDefault();
+  if (loadInto(snap, "Design pasted")) syncDesignActions();
+});
+</script>
+
+<script>
+"use strict";
+/* =====================================================================
    REPORT + BOOT
    ===================================================================== */
 function buildReport(){
@@ -4706,6 +5008,10 @@ function buildReport(){
   L.push("");
   L.push("Constraint ledger (utilisation of each limit):");
   constraintRows(res).forEach(r=>L.push("  "+pad(r.name,22)+pad(fx(r.ratio,1)+"%",9)+r.detail));
+  L.push("");
+  L.push("──────────────────────────────────────────────────────────────");
+  L.push("DESIGN CODE — paste this back into the bench to restore this design");
+  L.push(encodeDesign());
   return L.join("\n");
 }
 
@@ -4716,6 +5022,7 @@ function closeParams(){ document.body.classList.remove("params-open");
 function toggleParams(){ document.body.classList.contains("params-open") ? closeParams() : openParams(); }
 
 (function init(){
+  const restored = loadSession();
   buildRail();
   buildPose();
   $$(".tab").forEach(t=>t.onclick = ()=>setTab(t.dataset.tab));
@@ -4736,7 +5043,12 @@ function toggleParams(){ document.body.classList.contains("params-open") ? close
       toggleParams();
     }
   });
-  $("#btnReset").onclick = ()=>{ P = Object.assign({}, DEFAULTS); buildRail(); syncPose(); render(); };
+  $("#btnReset").onclick = ()=>{
+    store.del(K_SESSION); _undoSnap = null;
+    P = Object.assign({}, DEFAULTS);
+    cam.az = -38*D2R; cam.el = 20*D2R; cam.zoom = 1; cam.yaw = 22*D2R;
+    buildRail(); syncPose(); render(); showToast("Reset to defaults");
+  };
   $("#btnExport").onclick = openExport;
   $("#exClose").onclick = closeExport;
   $("#exCancel").onclick = closeExport;
@@ -4760,7 +5072,9 @@ function toggleParams(){ document.body.classList.contains("params-open") ? close
       if (R && !$("#panel-analysis").hidden){ drawEnvelope(R); drawPayloadReach(R); } }, 200);
   });
   render();
+  if (applySnapshot._tab && applySnapshot._tab !== "analysis") setTab(applySnapshot._tab);
   moveGlide(); syncStageHint(); syncPose();
+  if (restored) setTimeout(()=>showToast("Restored your last session"), 400);
   document.fonts && document.fonts.ready.then(moveGlide);
 })();
 </script>
