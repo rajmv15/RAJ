@@ -16,10 +16,16 @@ never a second shadow language.
   required vs. usable torque, utilisation and safety factor; a link shows its section, mass,
   effective area and second moment, and root stress. Click a part to open the parameter that
   governs it, with the field highlighted.
-- **Drag to pose.** With worst case off, dragging a link rotates its joint to follow the
-  pointer in the arm's own working plane; dragging the base swings the yaw axis; dragging
-  empty space orbits the camera. Joint travel limits are respected. Grabbing the arm while
-  worst case is on turns it off and says so.
+- **Drag to pose.** Dragging a link rotates its joint to follow the pointer in the arm's own
+  working plane; dragging the gripper or payload moves the tool and the arm solves inverse
+  kinematics to follow (Shift-drag slides it across the floor plane, swinging the base);
+  dragging the base swings θ₀; dragging empty space orbits the camera. Each drag keeps the
+  offset it was grabbed at, so nothing snaps on grab; pointer moves are coalesced to one solve
+  per frame; the framing holds still while a hand is on the arm and glides to the new
+  silhouette afterwards; a flicked orbit carries on with inertia and the view presets glide.
+  Hovering or dragging a joint draws its protractor on the model — travel, zero reference
+  and current angle — turning amber at a stop. Grabbing the arm while worst case is on turns
+  it off and says so.
 - **The stage.** The arm casts a soft shadow onto a pool of cool light; every solid is
   projected along the light onto the floor and the footprints are merged into one path so
   overlaps never double-darken. The dashed ring on the floor is the reach envelope —
@@ -47,6 +53,26 @@ toggle. Two ambient motions exist by request — the reach ring's dashes drift w
 is in view, and the dock readouts float gently — and both respect `prefers-reduced-motion`.
 Everything else is triggered by hover, click, drag or scroll.
 
+## Kinematics
+
+The **Kinematics** tab drives the arm by angle or by target, with the arm kept in view beside
+the controls. Joint convention: θ₀ base yaw, θ₁ shoulder from horizontal, θ₂ and θ₃ relative
+to the previous link, positive raises; the tool centre point is the end of L₃. Standard DH
+rows `[θ₀, h₀, 0, 90°] [θ₁, 0, L₁, 0] [θ₂, 0, L₂, 0] [θ₃, 0, L₃, 0]`.
+
+- **Forward** — a slider and exact-value field per joint with its travel and live servo load,
+  pose presets that glide, the TCP position (x, y, z, r, pitch φ), elbow and wrist positions,
+  the DH table and the full T₀⁴ transform, and the worked FK equations with live numbers.
+- **Inverse** — type a target (x, y, z, φ) or let the pitch float; all four closed-form
+  branches (front/over-the-shoulder × elbow up/down) are listed with their joint angles,
+  limit violations or reach shortfall, and servo load. The closest in-limit branch in joint
+  space is what *Move* uses, so the arm never flips; any other valid branch is a click away.
+  *Move as I type* follows the fields live. A Cartesian jog pad (1/5/10/25 mm or °, hold to
+  repeat, arrow keys) steps the tool while holding its pitch, easing the pitch only when the
+  geometry demands it and saying so. The worked IK equations are shown for the branch in use.
+- φ is the tool's elevation above horizontal with its horizontal part pointing away from the
+  base, so a target means the same tool direction for both branch families.
+
 ## What it does
 
 - **Torque budget** for all four joints from a full moment summation, with servo
@@ -68,10 +94,18 @@ Everything else is triggered by hover, click, drag or scroll.
 ## Saving and sharing a design
 
 The bench autosaves to `localStorage` and restores where you left off on reload —
-parameters, pose, camera, sweep ranges and the active tab. **Reset defaults** clears it.
+parameters, pose (including θ₀), camera, sweep ranges, kinematics mode and the active tab. **Reset defaults** clears it.
 
-The **Designs** group at the top of the Parameters panel keeps up to twelve named
+The **Designs** group at the top of the Parameters panel keeps up to thirty named
 snapshots in the same browser, each listed with its reach, payload and limiting joint.
+
+**Download all (.json)** saves the working design plus every saved design to one file (also
+in the Export dialog as *Settings (.json)*); the ↓ beside a design saves just that one. Each
+entry carries its design code too, so the file is readable on its own. **Import file…** — or
+dropping the file anywhere on the page — merges a file back in without duplicating what is
+already there; a single snapshot or a design code in a text file loads directly. A file is
+treated exactly like pasted text: records are rebuilt field by field, ids minted fresh,
+unknown keys dropped, numbers clamped and the summary line recomputed by the solver.
 
 To move a design between machines or share it, use **Copy design code**: a snapshot stores
 only what *differs from the defaults*, so a code is a couple of hundred characters and stays
@@ -208,6 +242,16 @@ are pickable, the hover card reports live values, clicking a part opens the righ
 group, and dragging a link turns off worst case and drives the joint to its travel limit.
 Stage redraw measures 0.8 ms and a drag frame 6 ms, so posing the arm stays at full frame
 rate; the expensive envelope and limit-curve solves are deferred to pointer release.
+
+Kinematics was verified numerically before it touched the UI: FK against the static solver's
+own node positions and the DH product (agreement to 1e-9 mm over 2000 random poses), an IK →
+FK round trip over 4000 poses with every reachable branch landing on the target and the
+original pose always among them, unreachable targets reported as such, the free-pitch
+fallback, continuity over 400 random ±2 mm jog steps, and the base-axis singularity. In the
+browser: grabbing a joint or the tool moves nothing until the pointer does, the tool tracks
+the pointer to the pixel afterwards, Move lands on the target with pitch held, jog and arrow
+keys step exactly, and download → clear storage → import restores designs, rejects tampered
+keys and renders names as text.
 
 Export was verified end to end in a headless browser: the generated PDF was rendered page
 by page and checked for content, pagination and orphaned headings; the `downloads`

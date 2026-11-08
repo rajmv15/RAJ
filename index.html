@@ -647,7 +647,7 @@ body.params-open .params{transform:none}              /* trigger: click Paramete
 .dsave input{flex:1;min-width:0;padding:5px 9px;border:1px solid var(--hair-2);border-radius:9px;
   background:rgba(255,255,255,.65);font-size:12px;transition:border-color .16s,box-shadow .16s,background .16s}
 .dsave input:focus{border-color:var(--accent);outline:none;background:#fff;box-shadow:0 0 0 3px rgba(42,120,214,.14)}
-.dlist{display:grid;gap:5px}
+.dlist{display:grid;gap:5px;grid-template-columns:minmax(0,1fr)}
 .dempty{margin:2px 0}
 .drow{display:flex;gap:6px;align-items:stretch}
 .dload{flex:1;min-width:0;text-align:left;border:1px solid var(--hair);background:rgba(255,255,255,.55);
@@ -664,6 +664,11 @@ body.params-open .params{transform:none}              /* trigger: click Paramete
 .ddel.armed{font-size:11px;font-weight:600;color:#fff;background:var(--crit);border-color:var(--crit)}
 .dacts{display:flex;gap:6px;flex-wrap:wrap}
 #dPasteBox{font-family:var(--mono);font-size:11px}
+.ddl{flex:none;border:1px solid var(--hair);background:rgba(255,255,255,.5);border-radius:11px;
+  padding:0 9px;font-size:12px;line-height:1;color:var(--ink-3);cursor:pointer;transition:background .16s,color .16s}
+.ddl:hover{background:#fff;color:var(--accent-deep)}
+.dfiles{padding-top:2px}
+body.dropping .params{box-shadow:0 0 0 3px rgba(42,120,214,.35), 0 20px 60px -22px rgba(30,48,94,.28)}
 /* ---------- control groups ---------- */
 .group{border-bottom:1px solid var(--hair)}
 .group > summary{list-style:none;cursor:pointer;padding:12px 18px;display:flex;align-items:center;
@@ -675,7 +680,7 @@ body.params-open .params{transform:none}              /* trigger: click Paramete
 .chev{width:7px;height:7px;border-right:1.6px solid var(--ink-3);border-bottom:1.6px solid var(--ink-3);
   transform:rotate(-45deg);transition:transform .28s var(--ease);margin-left:auto}
 .group[open] > summary .chev{transform:rotate(45deg)}
-.groupbody{padding:2px 18px 16px;display:grid;gap:12px}
+.groupbody{padding:2px 18px 16px;display:grid;gap:12px;grid-template-columns:minmax(0,1fr)}
 .f{display:grid;grid-template-columns:1fr auto;gap:4px 8px;align-items:center}
 .f > label{font-size:12px;color:var(--ink-2);grid-column:1}
 .f .num{grid-column:2;display:flex;align-items:center;gap:5px}
@@ -943,6 +948,120 @@ details.insp .body{padding:14px}
 .exportmsg{font-size:11.5px;margin-left:auto;text-align:right;line-height:1.4}
 .exportmsg.err{color:var(--crit-ink)} .exportmsg.ok{color:var(--good-ink)} .exportmsg.busy{color:var(--ink-3)}
 
+/* ---------- kinematics: a floating panel beside the arm, never over it ---------- */
+.kpanel{position:fixed;left:12px;top:calc(var(--topbar-h) + 6px);bottom:12px;width:378px;z-index:37;
+  border-radius:var(--r-panel);display:flex;flex-direction:column;overflow:hidden;
+  transform:translateX(calc(-100% - 24px));opacity:0;pointer-events:none;
+  transition:transform .55s var(--ease), opacity .35s var(--ease)}
+body.kin .kpanel{transform:none;opacity:1;pointer-events:auto}      /* trigger: Kinematics tab */
+body.kin #three{transform:translateX(195px)}
+body.kin .posebar{opacity:0;pointer-events:none;transform:translateX(-24px)}
+body.kin .dock{--dx:calc(-50% + 195px);max-width:min(calc(100vw - 420px),940px)}
+body.kin.params-open #three{transform:translateX(-176px)}
+.kpanel > header{padding:13px 14px 12px 18px;display:flex;align-items:center;gap:10px;
+  border-bottom:1px solid var(--hair)}
+.kpanel > header h3{font-size:13.5px}
+.kpanel > header .sub{font-size:10.5px;color:var(--ink-3);letter-spacing:.09em;text-transform:uppercase;font-weight:600}
+.kseg{margin-left:auto;position:relative;display:flex;padding:3px;border-radius:var(--r-pill);background:rgba(30,48,94,.07)}
+.kseg button{position:relative;z-index:1;border:0;background:none;padding:5px 13px;border-radius:var(--r-pill);
+  font-size:11.5px;font-weight:500;color:var(--ink-2);cursor:pointer;transition:color .2s}
+.kseg button[aria-selected="true"]{color:var(--ink);font-weight:600}
+.kglide{position:absolute;top:3px;bottom:3px;left:0;border-radius:var(--r-pill);background:#fff;
+  box-shadow:0 1px 3px rgba(30,48,94,.18);transition:transform .45s var(--spring), width .45s var(--spring)}
+.kbody{overflow-y:auto;flex:1;overscroll-behavior:contain;padding:4px 0 14px}
+.kview{display:grid;gap:0;animation:kin-in .4s var(--ease)}
+.kview[hidden]{display:none}
+@keyframes kin-in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.ksec{padding:12px 18px 14px;border-bottom:1px solid var(--hair)}
+.ksec:last-child{border-bottom:0}
+.ksec > h4{font-size:9.5px;text-transform:uppercase;letter-spacing:.1em;color:var(--ink-3);font-weight:600;
+  margin:0 0 10px;display:flex;align-items:center;gap:8px}
+.ksec > h4 .tag{margin-left:auto}
+/* one joint: name, value, slider, travel and the servo's load */
+.kj{display:grid;grid-template-columns:1fr auto auto;gap:3px 8px;align-items:center;padding:7px 10px 8px;
+  margin:0 -10px;border-radius:12px;transition:background .2s}
+.kj:hover,.kj.on{background:rgba(255,255,255,.62)}
+.kj .nm{font-size:12px;font-weight:500}
+.kj .nm em{font-style:normal;color:var(--ink-3);font-weight:400}
+.kj input[type=number]{width:74px;padding:3px 6px;text-align:right;border:1px solid var(--hair-2);border-radius:8px;
+  background:rgba(255,255,255,.65);font-family:var(--mono);font-size:12px}
+.kj input[type=number]:focus{border-color:var(--accent);outline:none;background:#fff;box-shadow:0 0 0 3px rgba(42,120,214,.14)}
+.kj input[type=range]{grid-column:1/-1;width:100%;height:18px;-webkit-appearance:none;appearance:none;background:none;margin:0}
+.kj .lim{grid-column:1/3;font-size:10px;font-family:var(--mono);color:var(--ink-3)}
+.kj.stop .lim{color:var(--warn-ink)}
+.chip{font-family:var(--mono);font-size:10px;padding:1px 7px;border-radius:var(--r-pill);justify-self:end;
+  border:1px solid transparent;transition:background .3s,color .3s}
+.chip.ok{background:rgba(12,163,12,.09);color:var(--good-ink)}
+.chip.tight{background:rgba(250,178,25,.15);color:var(--warn-ink)}
+.chip.over{background:rgba(208,59,59,.10);color:var(--crit-ink)}
+.chip.mute{background:rgba(30,48,94,.06);color:var(--ink-3)}
+.kacts{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+.kread{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.kread > div{background:rgba(255,255,255,.55);border:1px solid var(--hair);border-radius:11px;padding:6px 9px 7px;
+  transition:transform .4s var(--spring),background .2s}
+.kread > div:hover{transform:translateY(-2px);background:#fff}
+.kread .k{font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:var(--ink-3);font-weight:600}
+.kread .v{font-family:var(--mono);font-size:13px;font-weight:500;letter-spacing:-.01em}
+.kread .v small{font-size:10px;color:var(--ink-3);font-weight:400}
+.ktbl{width:100%;border-collapse:collapse;font-size:11.5px}
+.ktbl th{font-size:9.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-3);font-weight:600;
+  text-align:right;padding:3px 6px;border-bottom:1px solid var(--hair)}
+.ktbl th:first-child,.ktbl td:first-child{text-align:left}
+.ktbl td{font-family:var(--mono);text-align:right;padding:4px 6px;border-bottom:1px solid var(--grid)}
+.ktbl td.live{color:var(--accent-deep)}
+.kmat{display:grid;grid-template-columns:repeat(4,1fr);gap:2px 4px;font-family:var(--mono);font-size:11px;
+  padding:8px 10px;border-radius:10px;background:rgba(30,48,94,.04);border-left:2px solid var(--accent);
+  border-radius:0 10px 10px 0}
+.kmat span{text-align:right}
+.kmat span.t{color:var(--accent-deep);font-weight:500}
+.kin-note{font-size:11px;color:var(--ink-3);line-height:1.5;margin:8px 0 0}
+/* inverse: target fields, solution cards, jog pad */
+.ktgt{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.ktgt label{display:grid;gap:2px;font-size:10px;color:var(--ink-3);font-weight:600;letter-spacing:.06em;text-transform:uppercase}
+.ktgt input{width:100%;padding:5px 7px;text-align:right;border:1px solid var(--hair-2);border-radius:9px;
+  background:rgba(255,255,255,.65);font-family:var(--mono);font-size:12px;transition:border-color .16s,box-shadow .16s,background .16s,opacity .2s}
+.ktgt input:focus{border-color:var(--accent);outline:none;background:#fff;box-shadow:0 0 0 3px rgba(42,120,214,.14)}
+.ktgt input:disabled{opacity:.45}
+.kswitches{display:flex;gap:14px;flex-wrap:wrap;margin-top:10px}
+.kswitches .swrow{border:0;padding:0;margin:0;font-size:11.5px}
+.ksols{display:grid;gap:6px}
+.ksol{display:grid;grid-template-columns:1fr auto;gap:2px 8px;text-align:left;border:1px solid var(--hair);
+  background:rgba(255,255,255,.5);border-radius:12px;padding:8px 11px 9px;cursor:pointer;font:inherit;color:inherit;
+  transition:transform .4s var(--spring),background .18s,border-color .18s,box-shadow .2s}
+.ksol:hover:not(:disabled){background:#fff;transform:translateY(-1px)}
+.ksol.best{border-color:rgba(42,120,214,.55);box-shadow:0 0 0 3px rgba(42,120,214,.10)}
+.ksol.cur{background:rgba(42,120,214,.07)}
+.ksol:disabled{cursor:default;opacity:.55}
+.ksol b{font-size:12px;font-weight:600}
+.ksol .q{grid-column:1/-1;font-family:var(--mono);font-size:10.5px;color:var(--ink-2)}
+.ksol .why{grid-column:1/-1;font-size:10.5px;color:var(--ink-3)}
+.ksol.bad .why{color:var(--crit-ink)}
+.jog{display:grid;grid-template-columns:auto repeat(2,1fr);gap:5px 6px;align-items:center}
+.jog span{font-size:11px;font-weight:600;color:var(--ink-2);font-family:var(--mono);width:22px}
+.jog button{border:1px solid var(--hair-2);background:rgba(255,255,255,.6);border-radius:10px;padding:6px 0;
+  font-family:var(--mono);font-size:12px;cursor:pointer;user-select:none;-webkit-user-select:none;touch-action:none;
+  transition:background .15s,transform .15s var(--ease),color .15s}
+.jog button:hover{background:#fff}
+.jog button:active,.jog button.held{transform:scale(.96);background:var(--ink);color:#fff;border-color:var(--ink)}
+.jog button.blocked{animation:nudge .32s var(--ease)}
+@keyframes nudge{0%,100%{transform:none}30%{transform:translateX(-3px)}70%{transform:translateX(3px)}}
+.ksteps{display:flex;gap:2px;padding:3px;border-radius:var(--r-pill);background:rgba(30,48,94,.06);margin-left:auto}
+.ksteps button{border:0;background:none;padding:2px 9px;border-radius:var(--r-pill);font-size:10.5px;
+  font-family:var(--mono);color:var(--ink-2);cursor:pointer;transition:background .25s var(--spring)}
+.ksteps button.on{background:#fff;color:var(--ink);box-shadow:0 1px 3px rgba(30,48,94,.18)}
+.kstat{font-size:11.5px;margin-top:9px;padding:7px 10px;border-radius:10px;line-height:1.45}
+.kstat.ok{background:rgba(12,163,12,.08);color:var(--good-ink)}
+.kstat.bad{background:rgba(208,59,59,.08);color:var(--crit-ink)}
+.kstat.mute{background:rgba(30,48,94,.05);color:var(--ink-2)}
+.keq{font-family:var(--mono);font-size:11px;line-height:1.8;padding:9px 11px;background:rgba(30,48,94,.04);
+  border-left:2px solid var(--accent);border-radius:0 10px 10px 0;white-space:pre-wrap;overflow-x:auto}
+.ksec details.insp{margin:0}
+@media (max-width:900px){
+  .kpanel{left:8px;right:8px;width:auto;top:auto;height:54vh;transform:translateY(calc(100% + 20px))}
+  body.kin #three{transform:translateY(-22vh)}
+  body.kin .dock{opacity:0;pointer-events:none}
+}
+
 @media (max-width:900px){
   .posebar{display:none}
   .sheet{padding:20px 15px 130px}
@@ -982,6 +1101,7 @@ details.insp .body{padding:14px}
     <nav class="tabs" role="tablist" aria-label="Views">
       <i class="glide" id="tabGlide"></i>
       <button class="tab" role="tab" data-tab="analysis" aria-selected="true">Analysis</button>
+      <button class="tab" role="tab" data-tab="kinematics" aria-selected="false">Kinematics</button>
       <button class="tab" role="tab" data-tab="optimize" aria-selected="false">Optimiser</button>
       <button class="tab" role="tab" data-tab="sweep" aria-selected="false">Sweep</button>
       <button class="tab" role="tab" data-tab="equations" aria-selected="false">Equations</button>
@@ -1024,6 +1144,22 @@ details.insp .body{padding:14px}
 </div>
 
 <div class="dock glass" id="tiles"></div>
+
+<!-- ============ KINEMATICS: drive the arm by joint angle or by tool target ==== -->
+<aside class="kpanel glass-deep" id="kinPanel" aria-label="Kinematics controls">
+  <header>
+    <div><h3>Kinematics</h3><div class="sub" id="kinSub">drive the arm</div></div>
+    <div class="kseg" role="tablist" aria-label="Kinematics mode">
+      <i class="kglide" id="kGlide"></i>
+      <button role="tab" data-km="fk" aria-selected="true">Forward</button>
+      <button role="tab" data-km="ik" aria-selected="false">Inverse</button>
+    </div>
+  </header>
+  <div class="kbody" id="kinBody">
+    <div class="kview" id="kv-fk"></div>
+    <div class="kview" id="kv-ik" hidden></div>
+  </div>
+</aside>
 
 <!-- ============ PARAMETERS: summoned, never resident ============ -->
 <div class="scrim" id="paramScrim"></div>
@@ -1104,6 +1240,9 @@ details.insp .body{padding:14px}
     </div>
   </section>
 
+  <!-- the arm stays in view here: the controls float beside it, there is no sheet -->
+  <section class="panel" role="tabpanel" aria-label="Kinematics" id="panel-kinematics" hidden></section>
+
   <section class="panel" role="tabpanel" aria-label="Optimiser" id="panel-optimize" hidden>
     <div class="sheet tall">
       <div class="sheethead"><h2>Optimiser</h2>
@@ -1147,6 +1286,7 @@ details.insp .body{padding:14px}
     </div>
     <footer>
       <button class="btn primary" id="exRun">Download PDF</button>
+      <button class="btn" id="exJson" title="Your working design and every saved design, as a file you can import later">Settings (.json)</button>
       <button class="btn" id="exCancel">Cancel</button>
       <span class="exportmsg" id="exMsg"></span>
     </footer>
@@ -1205,7 +1345,8 @@ const DEFAULTS = {
   derate:0.50, sfMin:1.25, alpha:3.0, tauFric:0.5, dynOn:1,
   // geometry (mm / deg)
   h0:90, L1:100, L2:85, L3:55,
-  q1:0, q2:0, q3:0, worst:1,
+  q0:22, q1:0, q2:0, q3:0, worst:1,
+  limBaseMin:-180, limBaseMax:180,
   limShMin:-20, limShMax:135, limElMin:-140, limElMax:10, limWrMin:-100, limWrMax:100,
   // structure
   section:"rect",
@@ -1520,7 +1661,9 @@ const CONTROLS = [
    {t:"head", text:"Optimiser search bounds"},
    {t:"num", key:"lMin", label:"Min link length", unit:"mm", min:10, max:200, step:5},
    {t:"num", key:"lMax", label:"Max link length", unit:"mm", min:60, max:600, step:5},
-   {t:"head", text:"Joint travel (reach envelope)"},
+   {t:"head", text:"Joint travel"},
+   {t:"num", key:"limBaseMin", label:"θ₀ min", unit:"°", min:-180, max:0, step:5},
+   {t:"num", key:"limBaseMax", label:"θ₀ max", unit:"°", min:0, max:180, step:5},
    {t:"num", key:"limShMin", label:"θ₁ min", unit:"°", min:-90, max:90, step:5},
    {t:"num", key:"limShMax", label:"θ₁ max", unit:"°", min:0, max:180, step:5},
    {t:"num", key:"limElMin", label:"θ₂ min", unit:"°", min:-180, max:0, step:5},
@@ -1743,6 +1886,7 @@ function render(opts){
   drawSide(R);
   draw3D(R);
   renderReveals(R);
+  if (typeof syncKin === "function") syncKin();
   saveSession();
   if (light) return;                 /* the rest is too heavy for a drag frame */
   renderRecs(R);
@@ -1784,7 +1928,7 @@ function renderVerdict(res){
     ' · '+j.name.replace(" (yaw)","")+' '+fx(j.util,0)+'%</span>';
   $("#poseLabel").textContent = res.useWorst
     ? "worst case — fully extended, horizontal"
-    : "θ = "+fx(P.q1,0)+"° / "+fx(P.q2,0)+"° / "+fx(P.q3,0)+"°";
+    : "θ = "+fx(P.q0,0)+"° / "+fx(P.q1,0)+"° / "+fx(P.q2,0)+"° / "+fx(P.q3,0)+"°";
 }
 
 const _tween = {};
@@ -1926,10 +2070,12 @@ function moveGlide(){
 }
 let _lastScrollY = 0;
 function syncStageHint(){
+  const kin = activeTab === "kinematics";
   const onStage = activeTab === "analysis", y = scrollY;
+  document.body.classList.toggle("kin", kin);
   $("#stageHint").classList.toggle("on", onStage && y < 140);
   /* the pose bar and view buttons only make sense while the arm is visible */
-  document.body.classList.toggle("stage-away", !onStage || y > innerHeight*0.5);
+  document.body.classList.toggle("stage-away", !kin && (!onStage || y > innerHeight*0.5));
   const dy = y - _lastScrollY;
   if (y < 90) document.body.classList.remove("dock-away");
   else if (dy > 8) document.body.classList.add("dock-away");
@@ -1950,6 +2096,7 @@ function setTab(name){
   if (name==="optimize")  refreshOptStatic();
   if (name==="sweep")     buildSweepControls();
   if (name==="analysis")  { drawEnvelope(R); drawPayloadReach(R); }
+  if (typeof onKinTab === "function") onKinTab(name==="kinematics");
   observeCards();
 }
 </script>
@@ -2125,7 +2272,18 @@ function drawSide(res){
    also answers "what is under the cursor" - hover, select and drag all
    read from it. No separate picking pass, no colour buffer.
    ===================================================================== */
-const cam = {az: -38*D2R, el: 20*D2R, zoom: 1, yaw: 22*D2R};
+const cam = {az: -38*D2R, el: 20*D2R, zoom: 1};
+/* The base yaw is a real joint, θ₀ = P.q0, so it persists, is reported and
+   can be driven by the kinematics. cam.yaw stays as a radian view onto it, so
+   the renderer and the drag code keep their existing arithmetic. */
+Object.defineProperty(cam, "yaw", {
+  enumerable:true,
+  get(){ return P.q0*D2R; },
+  set(v){
+    let d = ((v/D2R + 180) % 360 + 360) % 360 - 180;
+    P.q0 = Math.max(P.limBaseMin, Math.min(P.limBaseMax, d));
+  },
+});
 const EXPORT = {scale: 0};                 // >0 while capturing for export
 const outDpr = () => EXPORT.scale || Math.min(devicePixelRatio||1, 2);
 
@@ -2142,8 +2300,107 @@ const PARTS = {
   "ee":        {name:"End effector",   kind:"ee",     group:"Loads", key:"mEE"},
   "payload":   {name:"Payload",        kind:"payload",group:"Loads", key:"payload"},
 };
-const STAGE = {quads:[], hover:null, sel:null, drag:null, w:0, h:0, rings:{}};
+const STAGE = {quads:[], hover:null, sel:null, drag:null, w:0, h:0, rings:{},
+               gizmo:null, gizmoLimit:false, ikDrag:null, kinTarget:null,
+               /* framing: held still while a hand is on the arm, then it glides */
+               fit:null, holdFrame:false, fitT:0, fitRaf:0,
+               reduced: matchMedia("(prefers-reduced-motion: reduce)").matches};
 const RING  = {phase:0, hover:null};
+
+/* ---- kinematic overlay: the joint you are about to move, drawn on the model.
+   A protractor in the joint's own plane shows its travel, its zero reference
+   and where it is now; it turns amber at a stop. The base gets one on the
+   floor. An IK drag shows the requested point and whether it is reachable. */
+const GZ = {blue:[42,120,214], amber:[214,138,12], red:[208,59,59], green:[12,140,12]};
+const rgba = (c,a)=>"rgba("+c[0]+","+c[1]+","+c[2]+","+a+")";
+function gizmoLabel(g, x, y, text, col){
+  g.font = "600 11px 'IBM Plex Mono', ui-monospace, monospace";
+  const w = g.measureText(text).width + 14, h = 20;
+  g.fillStyle = "rgba(255,255,255,.86)"; g.strokeStyle = rgba(col,.45); g.lineWidth = 1;
+  g.beginPath();
+  if (g.roundRect) g.roundRect(x-w/2, y-h/2, w, h, 10); else g.rect(x-w/2, y-h/2, w, h);
+  g.fill(); g.stroke();
+  g.fillStyle = rgba(col,1); g.textAlign = "center"; g.textBaseline = "middle";
+  g.fillText(text, x, y+0.5); g.textBaseline = "alphabetic";
+}
+function drawKinOverlay(g, proj, res, pt, uYaw){
+  const j = STAGE.gizmo, limit = STAGE.gizmoLimit;
+  const col = limit ? GZ.amber : GZ.blue;
+  const D = D2R;
+  const N = res.N.map(n=>({r:n.r*1000, z:n.z*1000}));
+  if (j === 0){
+    /* base yaw: a protractor on the floor */
+    const rad = Math.max(P.footR*1.5, Math.min(140, res.reachMax*1000*0.34));
+    const ring = (a0, a1)=>{ const pts = [], n = Math.max(8, Math.ceil(Math.abs(a1-a0)/4));
+      for (let i=0;i<=n;i++){ const a = (a0 + (a1-a0)*i/n)*D; pts.push(proj([Math.cos(a)*rad, Math.sin(a)*rad, 0.5])); }
+      return pts; };
+    const path = (pts)=>{ g.beginPath(); pts.forEach((p,i)=>i?g.lineTo(p[0],p[1]):g.moveTo(p[0],p[1])); };
+    g.save(); g.lineCap = "round";
+    path(ring(P.limBaseMin, P.limBaseMax)); g.strokeStyle = rgba(col,.16); g.lineWidth = 7; g.stroke();
+    const o = proj([0,0,0.5]);
+    const sweep = ring(0, P.q0);
+    g.beginPath(); g.moveTo(o[0],o[1]); sweep.forEach(p=>g.lineTo(p[0],p[1])); g.closePath();
+    g.fillStyle = rgba(col,.10); g.fill();
+    path(sweep); g.strokeStyle = rgba(col,.85); g.lineWidth = 2.2; g.stroke();
+    const z0 = proj([rad*1.12, 0, 0.5]);
+    g.setLineDash([3,4]); g.strokeStyle = rgba(GZ.blue,.35); g.lineWidth = 1;
+    g.beginPath(); g.moveTo(o[0],o[1]); g.lineTo(z0[0],z0[1]); g.stroke(); g.setLineDash([]);
+    const e = proj([Math.cos(P.q0*D)*rad, Math.sin(P.q0*D)*rad, 0.5]);
+    g.fillStyle = "#fff"; g.strokeStyle = rgba(col,1); g.lineWidth = 2;
+    g.beginPath(); g.arc(e[0], e[1], 4.5, 0, 7); g.fill(); g.stroke();
+    const l = proj([Math.cos(P.q0*D)*rad*1.28, Math.sin(P.q0*D)*rad*1.28, 0.5]);
+    gizmoLabel(g, l[0], l[1], "θ₀ " + P.q0.toFixed(0) + "°", col);
+    g.restore();
+  } else if (j >= 1 && j <= 3){
+    const i = j - 1, c = N[i];
+    const len = [P.L1, P.L2, P.L3][i];
+    const rad = Math.max(26, Math.min(72, len*0.42));
+    const ref = i===0 ? 0 : res.ang[i-1], cur = res.ang[i];
+    const lim = [["limShMin","limShMax"],["limElMin","limElMax"],["limWrMin","limWrMax"]][i];
+    const at = (a, r)=>{ r = r || rad; return proj(pt(c.r + Math.cos(a)*r, c.z + Math.sin(a)*r)); };
+    const arc = (a0, a1, r)=>{ const pts = [], n = Math.max(6, Math.ceil(Math.abs(a1-a0)/(3*D)));
+      for (let k=0;k<=n;k++) pts.push(at(a0 + (a1-a0)*k/n, r)); return pts; };
+    const path = pts=>{ g.beginPath(); pts.forEach((p,k)=>k?g.lineTo(p[0],p[1]):g.moveTo(p[0],p[1])); };
+    const o = at(0, 0);
+    g.save(); g.lineCap = "round";
+    path(arc(ref + P[lim[0]]*D, ref + P[lim[1]]*D)); g.strokeStyle = rgba(col,.16); g.lineWidth = 7; g.stroke();
+    [P[lim[0]], P[lim[1]]].forEach(v=>{ const a = at(ref+v*D, rad-6), b = at(ref+v*D, rad+6);
+      g.strokeStyle = rgba(col,.45); g.lineWidth = 1.4; g.beginPath(); g.moveTo(a[0],a[1]); g.lineTo(b[0],b[1]); g.stroke(); });
+    const sw = arc(ref, cur);
+    g.beginPath(); g.moveTo(o[0],o[1]); sw.forEach(p=>g.lineTo(p[0],p[1])); g.closePath();
+    g.fillStyle = rgba(col,.11); g.fill();
+    path(sw); g.strokeStyle = rgba(col,.9); g.lineWidth = 2.2; g.stroke();
+    const z = at(ref, rad*1.25);
+    g.setLineDash([3,4]); g.strokeStyle = rgba(GZ.blue,.4); g.lineWidth = 1;
+    g.beginPath(); g.moveTo(o[0],o[1]); g.lineTo(z[0],z[1]); g.stroke(); g.setLineDash([]);
+    const e = at(cur);
+    g.fillStyle = "#fff"; g.strokeStyle = rgba(col,1); g.lineWidth = 2;
+    g.beginPath(); g.arc(e[0], e[1], 4.5, 0, 7); g.fill(); g.stroke();
+    const mid = (ref + cur)/2, lp = at(Math.abs(cur-ref) < 20*D ? cur + 24*D : mid, rad + 24);
+    const q = P.worst ? 0 : P["q"+j];
+    gizmoLabel(g, lp[0], lp[1], ["θ₁","θ₂","θ₃"][i] + " " + q.toFixed(0) + "°" + (limit ? " · stop" : ""), col);
+    g.restore();
+  }
+  /* IK: the point being asked for, with its plumb line to the floor */
+  const T = STAGE.ikDrag || STAGE.kinTarget;
+  if (T){
+    const live = !!STAGE.ikDrag, c2 = T.ok ? (live ? GZ.blue : GZ.green) : GZ.red;
+    const p = proj([T.x, T.y, T.z]), f = proj([T.x, T.y, 0]);
+    g.save();
+    g.setLineDash([2,4]); g.strokeStyle = rgba(c2,.45); g.lineWidth = 1;
+    g.beginPath(); g.moveTo(p[0],p[1]); g.lineTo(f[0],f[1]); g.stroke(); g.setLineDash([]);
+    g.save(); g.translate(f[0], f[1]); g.scale(1, Math.max(0.12, Math.abs(Math.sin(cam.el))));
+    g.beginPath(); g.arc(0, 0, 9, 0, 7); g.fillStyle = rgba(c2,.12); g.fill(); g.restore();
+    g.strokeStyle = rgba(c2,.95); g.lineWidth = 1.6;
+    g.beginPath(); g.arc(p[0], p[1], 8, 0, 7); g.stroke();
+    g.beginPath(); g.moveTo(p[0]-13,p[1]); g.lineTo(p[0]-4,p[1]); g.moveTo(p[0]+4,p[1]); g.lineTo(p[0]+13,p[1]);
+    g.moveTo(p[0],p[1]-13); g.lineTo(p[0],p[1]-4); g.moveTo(p[0],p[1]+4); g.lineTo(p[0],p[1]+13); g.stroke();
+    if (!T.ok) gizmoLabel(g, p[0], p[1]-24, "out of reach", c2);
+    else if (live) gizmoLabel(g, p[0], p[1]-24,
+      fx(T.x,0)+", "+fx(T.y,0)+", "+fx(T.z,0)+" mm", c2);
+    g.restore();
+  }
+}
 
 function draw3D(res){
   if (!res) return;
@@ -2237,9 +2494,35 @@ function draw3D(res){
   const grow = p => { const a=dot(p,right), b=dot(p,up);
     if(a<ux0)ux0=a; if(a>ux1)ux1=a; if(b<uy0)uy0=b; if(b>uy1)uy1=b; };
   quads.forEach(q=>q.p.forEach(grow));
-  const availW = cssW-2*insX, availH = cssH-insT-insB;
-  const s = Math.min(availW/Math.max(ux1-ux0,1), availH/Math.max(uy1-uy0,1)) * 0.86 * cam.zoom;
-  const cx = cssW/2 - (ux0+ux1)/2*s, cy = insT + availH/2 + (uy0+uy1)/2*s;
+  /* in Kinematics the panel covers the left of the canvas (which is shifted to
+     compensate), so the arm is framed in what is left */
+  const sideInset = !exporting && document.body.classList.contains("kin") && cssW > 900 ? 400 : 0;
+  const availW = cssW-2*insX-sideInset, availH = cssH-insT-insB;
+  const ts = Math.min(availW/Math.max(ux1-ux0,1), availH/Math.max(uy1-uy0,1)) * 0.86;
+  /* The fit is kept in camera units (centre along right/up, scale before zoom)
+     so orbiting and zooming stay exact. While a hand is on the arm the fit is
+     held - the model must not slide out from under the pointer - and
+     afterwards it eases to the new silhouette instead of snapping. */
+  const tgt = {a:(ux0+ux1)/2, b:(uy0+uy1)/2, s:ts, w:cssW, h:cssH, az:cam.az, el:cam.el};
+  let F = tgt;
+  if (!exporting){
+    const now = performance.now(), prev = STAGE.fit;
+    /* an orbit re-frames exactly, every frame: lag there would read as wobble */
+    const orbiting = prev && (prev.az !== cam.az || prev.el !== cam.el);
+    if (prev && prev.w===cssW && prev.h===cssH && !STAGE.reduced && !orbiting){
+      if (STAGE.holdFrame) F = prev;
+      else {
+        const k = 1 - Math.exp(-Math.min(80, now - (STAGE.fitT || now)) / 110);
+        F = {a:prev.a+(tgt.a-prev.a)*k, b:prev.b+(tgt.b-prev.b)*k, s:prev.s+(tgt.s-prev.s)*k, w:cssW, h:cssH, az:cam.az, el:cam.el};
+        const far = Math.abs(F.a-tgt.a)*F.s > 0.4 || Math.abs(F.b-tgt.b)*F.s > 0.4 || Math.abs(F.s/tgt.s-1) > 0.002;
+        if (!far) F = tgt;
+        else if (!STAGE.fitRaf) STAGE.fitRaf = requestAnimationFrame(()=>{ STAGE.fitRaf = 0; draw3D(R); });
+      }
+    }
+    STAGE.fit = F; STAGE.fitT = now;
+  }
+  const s = F.s * cam.zoom;
+  const cx = cssW/2 - F.a*s, cy = insT + availH/2 + F.b*s;
   const proj = p => [cx + dot(p,right)*s, cy - dot(p,up)*s];
   STAGE.proj = proj; STAGE.right = right; STAGE.up = up; STAGE.eye = eye; STAGE.s = s;
 
@@ -2333,6 +2616,7 @@ function draw3D(res){
   g.fillStyle = "rgba(30,48,94,.62)"; g.font = "500 10px var(--mono), monospace"; g.textAlign = "center";
   g.fillText("CoM", cP[0], cP[1]-13);
   STAGE.comScreen = cP;
+  if (!exporting) drawKinOverlay(g, proj, res, pt, uYaw);
 
   function line3(gg,a,b){ const p1=proj(a),p2=proj(b);
     gg.beginPath(); gg.moveTo(p1[0],p1[1]); gg.lineTo(p2[0],p2[1]); gg.stroke(); }
@@ -2444,47 +2728,240 @@ function pointInPoly(x, y, poly){
 }
 
 /* =====================================================================
+   KINEMATICS  -  closed-form forward and inverse kinematics
+   Joint convention, identical to the static solver:
+     θ₀  base yaw about the vertical axis
+     θ₁  shoulder pitch, measured from horizontal
+     θ₂  elbow, θ₃ wrist - each relative to the previous link
+     positive angles raise the link. The tool centre point (TCP) is the
+     end of L₃.
+   Standard DH, one row per joint:
+     [θ₀, h₀, 0, 90°]  [θ₁, 0, L₁, 0]  [θ₂, 0, L₂, 0]  [θ₃, 0, L₃, 0]
+   Tool pitch φ is reported in the world: the tool's elevation above
+   horizontal, with its horizontal part pointing away from the base axis.
+   That is what makes a target orientation mean the same thing for the
+   front and the over-the-shoulder ("back") solution families.
+   Verified against the static solver: FK matches its node positions, the
+   DH product matches FK, and IK round-trips to ~1e-13 mm.
+   ===================================================================== */
+const KIN = (()=>{
+  const R2D = 180/Math.PI, DR = Math.PI/180;
+  const wrap = a => { let x = ((a + 180) % 360 + 360) % 360 - 180; return x === -180 ? 180 : x; };
+
+  function fk(p, q){
+    const a1 = q.q1*DR, a2 = (q.q1+q.q2)*DR, a3 = (q.q1+q.q2+q.q3)*DR;
+    const rE = p.L1*Math.cos(a1),        zE = p.L1*Math.sin(a1);
+    const rW = rE + p.L2*Math.cos(a2),   zW = zE + p.L2*Math.sin(a2);
+    const r  = rW + p.L3*Math.cos(a3),   zt = zW + p.L3*Math.sin(a3);
+    const c0 = Math.cos(q.q0*DR), s0 = Math.sin(q.q0*DR);
+    const out = r < -1e-9 ? -1 : 1;              // which way is "away from the base"
+    return {
+      x:r*c0, y:r*s0, z:p.h0+zt, r,
+      phi: wrap(Math.atan2(Math.sin(a3), out*Math.cos(a3))*R2D),
+      phiPlane: wrap(q.q1+q.q2+q.q3),
+      elbow:{x:rE*c0, y:rE*s0, z:p.h0+zE, r:rE},
+      wrist:{x:rW*c0, y:rW*s0, z:p.h0+zW, r:rW},
+    };
+  }
+  function dhTable(p, q){
+    return [{th:q.q0, d:p.h0, a:0,    al:90},
+            {th:q.q1, d:0,    a:p.L1, al:0},
+            {th:q.q2, d:0,    a:p.L2, al:0},
+            {th:q.q3, d:0,    a:p.L3, al:0}];
+  }
+  function mul(A, B){
+    const C = [[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0]];
+    for (let i=0;i<4;i++) for (let j=0;j<4;j++){
+      let s = 0; for (let k=0;k<4;k++) s += A[i][k]*B[k][j]; C[i][j] = s; }
+    return C;
+  }
+  /** T₀⁴ = A₁A₂A₃A₄ with A = Rot_z(θ)·Trans_z(d)·Trans_x(a)·Rot_x(α) */
+  function dhMatrix(p, q){
+    let M = [[1,0,0,0],[0,1,0,0],[0,0,1,0],[0,0,0,1]];
+    dhTable(p, q).forEach(r=>{
+      const ct = Math.cos(r.th*DR), st = Math.sin(r.th*DR), ca = Math.cos(r.al*DR), sa = Math.sin(r.al*DR);
+      M = mul(M, [[ct, -st*ca,  st*sa, r.a*ct],
+                  [st,  ct*ca, -ct*sa, r.a*st],
+                  [0,   sa,     ca,    r.d   ],
+                  [0,   0,      0,     1     ]]);
+    });
+    return M;
+  }
+  const LIMS = [["limBaseMin","limBaseMax"],["limShMin","limShMax"],["limElMin","limElMax"],["limWrMin","limWrMax"]];
+  function limitIssues(p, q){
+    const out = [];
+    ["q0","q1","q2","q3"].forEach((k,i)=>{
+      const lo = p[LIMS[i][0]], hi = p[LIMS[i][1]];
+      if (q[k] < lo - 1e-6 || q[k] > hi + 1e-6) out.push({k, i, v:q[k], lo, hi});
+    });
+    return out;
+  }
+  /** Every closed-form solution for a TCP target t (mm) at tool pitch phi (deg):
+   *  front and back families, elbow up and elbow down. */
+  function ik(p, t, phi, q0Hint){
+    const rT  = Math.hypot(t.x, t.y);
+    const yaw = rT > 1e-6 ? Math.atan2(t.y, t.x)*R2D : (q0Hint || 0);
+    const L1 = p.L1, L2 = p.L2, sols = [];
+    [false, true].forEach(back=>{
+      const q0 = wrap(yaw + (back ? 180 : 0));
+      const r  = back ? -rT : rT;
+      const ph = (back ? 180 - phi : phi) * DR;  // the same world orientation, seen from the flipped plane
+      const rw = r - p.L3*Math.cos(ph), zw = t.z - p.h0 - p.L3*Math.sin(ph);
+      const wd = Math.hypot(rw, zw);
+      const D  = (rw*rw + zw*zw - L1*L1 - L2*L2) / (2*L1*L2);
+      const reachable = Math.abs(D) <= 1 + 1e-9;
+      [true, false].forEach(up=>{
+        const s = {back, up, reachable, wristDist:wd, maxW:L1+L2, minW:Math.abs(L1-L2), issues:[], ok:false};
+        if (reachable){
+          const c2 = Math.max(-1, Math.min(1, D));
+          const q2 = (up ? -1 : 1) * Math.acos(c2);
+          const q1 = Math.atan2(zw, rw) - Math.atan2(L2*Math.sin(q2), L1 + L2*Math.cos(q2));
+          s.q = {q0, q1:wrap(q1*R2D), q2:wrap(q2*R2D), q3:wrap((ph - q1 - q2)*R2D)};
+          s.issues = limitIssues(p, s.q);
+          s.ok = s.issues.length === 0;
+        }
+        sols.push(s);
+      });
+    });
+    return sols;
+  }
+  function jdist(a, b){
+    let d = 0; ["q0","q1","q2","q3"].forEach(k=>{ const x = wrap(a[k]-b[k]); d += x*x; });
+    return Math.sqrt(d);
+  }
+  /** In-limit solution closest to `cur` in joint space - what a controller picks
+   *  so the arm never jumps between branches. lockYaw keeps the base still. */
+  function best(p, t, phi, cur, lockYaw){
+    let ok = ik(p, t, phi, cur.q0).filter(s=>s.ok);
+    if (lockYaw) ok = ok.filter(s=>Math.abs(wrap(s.q.q0 - cur.q0)) < 0.5);
+    if (!ok.length) return null;
+    ok.sort((a,b)=>jdist(a.q, cur) - jdist(b.q, cur));
+    return ok[0];
+  }
+  /** Position-only IK: reach the point, holding the tool pitch as close to
+   *  phiPref as the geometry and the joint limits allow. */
+  function bestFreePhi(p, t, phiPref, cur, lockYaw){
+    for (let d=0; d<=180; d+=1){
+      for (const sg of (d ? [1,-1] : [1])){
+        const ph = wrap(phiPref + sg*d), s = best(p, t, ph, cur, lockYaw);
+        if (s) return Object.assign(s, {phi:ph});
+      }
+    }
+    return null;
+  }
+  return {fk, dhTable, dhMatrix, ik, best, bestFreePhi, limitIssues, jdist, wrap};
+})();
+
+/* the displayed pose: in worst case the solver draws every pitch joint at 0 */
+const curQ = () => P.worst ? {q0:P.q0, q1:0, q2:0, q3:0} : {q0:P.q0, q1:P.q1, q2:P.q2, q3:P.q3};
+
+/** Leaving worst case from a drag or a control starts from the pose on
+ *  screen - the fully extended one - so nothing jumps when it switches off. */
+function leaveWorst(){
+  if (!P.worst) return false;
+  P.q1 = 0; P.q2 = 0; P.q3 = 0; P.worst = 0;
+  showToast("Worst case off — you are driving the arm now");
+  return true;
+}
+
+/* =====================================================================
    DIRECT MANIPULATION
    Drag a link and the joint at its proximal end follows the pointer, in
-   the arm's own working plane. The plane's two screen-space basis vectors
-   are taken from the live projection and inverted, so the arm tracks the
-   cursor exactly whatever the camera is doing.
+   the arm's own working plane. Drag the gripper or payload and the whole
+   arm solves inverse kinematics to put the tool centre under the pointer;
+   hold Shift to slide it across the floor plane instead, swinging the base.
    Drag the base to swing the yaw axis. Drag empty space to orbit.
+   Every plane's screen-space basis is read from the live projection and
+   inverted, so the arm tracks the cursor exactly at any camera angle, and
+   each drag keeps the offset it was grabbed at - nothing snaps on grab.
    ===================================================================== */
-const DRAG_JOINT = {"link:0":0, "servo:sh":0, "link:1":1, "servo:el":1,
-                    "link:2":2, "servo:wr":2, "ee":2, "payload":2};
+const DRAG_JOINT = {"link:0":0, "servo:sh":0, "link:1":1, "servo:el":1, "link:2":2, "servo:wr":2};
 const JOINT_LIM = [["limShMin","limShMax"], ["limElMin","limElMax"], ["limWrMin","limWrMax"]];
 
-function armPlaneBasis(node){
-  const ps = cam.yaw, u = [Math.cos(ps), Math.sin(ps), 0];
-  const o  = STAGE.proj(node);
-  const e1 = STAGE.proj([node[0]+u[0]*100, node[1]+u[1]*100, node[2]]);
-  const e2 = STAGE.proj([node[0], node[1], node[2]+100]);
-  return {o, e1:[e1[0]-o[0], e1[1]-o[1]], e2:[e2[0]-o[0], e2[1]-o[1]]};
+/** screen point -> (a, b) in a world plane through `o` spanned by e1, e2 (mm) */
+function planePoint(o, e1, e2, mx, my){
+  const so = STAGE.proj(o);
+  const s1 = STAGE.proj([o[0]+e1[0]*100, o[1]+e1[1]*100, o[2]+e1[2]*100]);
+  const s2 = STAGE.proj([o[0]+e2[0]*100, o[1]+e2[1]*100, o[2]+e2[2]*100]);
+  const b1 = [s1[0]-so[0], s1[1]-so[1]], b2 = [s2[0]-so[0], s2[1]-so[1]];
+  const det = b1[0]*b2[1] - b1[1]*b2[0];
+  if (Math.abs(det) < 1e-3) return null;               // plane seen edge-on
+  const dx = mx-so[0], dy = my-so[1];
+  return [100*( dx*b2[1] - dy*b2[0])/det, 100*(-dx*b1[1] + dy*b1[0])/det];
 }
-/** screen point -> absolute angle in the arm plane, measured at `node` */
+const yawU = () => [Math.cos(cam.yaw), Math.sin(cam.yaw), 0];
+/** screen point -> absolute angle (deg) in the arm plane, measured at `node` */
 function angleAt(node, mx, my){
-  const B = armPlaneBasis(node);
-  const det = B.e1[0]*B.e2[1] - B.e1[1]*B.e2[0];
-  if (Math.abs(det) < 1e-6) return null;               // plane seen edge-on
-  const dx = mx-B.o[0], dy = my-B.o[1];
-  const a = ( dx*B.e2[1] - dy*B.e2[0]) / det;
-  const b = (-dx*B.e1[1] + dy*B.e1[0]) / det;
-  if (Math.hypot(a,b) < 1e-4) return null;
-  return Math.atan2(b, a) / D2R;
+  const ab = planePoint(node, yawU(), [0,0,1], mx, my);
+  if (!ab || Math.hypot(ab[0], ab[1]) < 1e-6) return null;
+  return Math.atan2(ab[1], ab[0]) / D2R;
 }
-function applyJointDrag(j, mx, my){
-  const node = (()=>{ const ps=cam.yaw, n=R.N[j];
-    return [Math.cos(ps)*n.r*1000, Math.sin(ps)*n.r*1000, n.z*1000]; })();
-  const abs = angleAt(node, mx, my);
-  if (abs===null) return false;
+const nodeWorld = j => { const n = R.N[j], u = yawU(); return [u[0]*n.r*1000, u[1]*n.r*1000, n.z*1000]; };
+const absAngle = (j, q) => j===0 ? q.q1 : j===1 ? q.q1+q.q2 : q.q1+q.q2+q.q3;
+
+function beginJointDrag(mode, mx, my){
+  const node = nodeWorld(mode.j), ptr = angleAt(node, mx, my);
+  mode.offset = ptr===null ? 0 : KIN.wrap(absAngle(mode.j, curQ()) - ptr);
+}
+function applyJointDrag(mode, mx, my){
+  const node = nodeWorld(mode.j), sp = STAGE.proj(node);
+  if (Math.hypot(mx-sp[0], my-sp[1]) < 14) return false;    // too close to the pivot to mean anything
+  const ptr = angleAt(node, mx, my);
+  if (ptr===null) return false;
+  const abs = ptr + mode.offset, q = curQ(), j = mode.j;
+  let rel = j===0 ? abs : j===1 ? abs - q.q1 : abs - q.q1 - q.q2;
+  rel = KIN.wrap(rel);
   const lim = JOINT_LIM[j], lo = P[lim[0]], hi = P[lim[1]];
-  let rel;
-  if (j===0) rel = abs;
-  else if (j===1) rel = abs - P.q1;
-  else rel = abs - P.q1 - P.q2;
-  while (rel > 180) rel -= 360; while (rel < -180) rel += 360;
   P["q"+(j+1)] = Math.max(lo, Math.min(hi, rel));
+  mode.atLimit = rel <= lo + 0.01 || rel >= hi - 0.01;
+  return true;
+}
+
+/** IK drag: where should the tool centre go for this pointer position? */
+function ikPointerTarget(mode, mx, my){
+  if (mode.horizontal){
+    const ab = planePoint([0,0,mode.z0], [1,0,0], [0,1,0], mx, my);
+    return ab && {x:ab[0]+mode.off[0], y:ab[1]+mode.off[1], z:mode.z0};
+  }
+  const ab = planePoint([0,0,0], yawU(), [0,0,1], mx, my);
+  if (!ab) return null;
+  const r = ab[0]+mode.off[0], u = yawU();
+  return {x:u[0]*r, y:u[1]*r, z:ab[1]+mode.off[1]};
+}
+function beginIkDrag(mode, mx, my){
+  const f = KIN.fk(P, curQ());
+  mode.phi0 = f.phi; mode.z0 = f.z;
+  if (mode.horizontal){
+    const ab = planePoint([0,0,f.z], [1,0,0], [0,1,0], mx, my);
+    mode.off = ab ? [f.x-ab[0], f.y-ab[1]] : [0,0];
+  } else {
+    const ab = planePoint([0,0,0], yawU(), [0,0,1], mx, my);
+    mode.off = ab ? [f.r-ab[0], f.z-ab[1]] : [0,0];
+  }
+}
+/** Solve for the pointer target, holding the tool pitch where it was grabbed
+ *  when the geometry allows. Out of reach, the target is pulled back toward
+ *  the shoulder until it is reachable, so the arm stretches toward the pointer
+ *  instead of freezing. */
+function applyIkDrag(mode, mx, my){
+  let t = ikPointerTarget(mode, mx, my);
+  if (!t) return false;
+  const cur = curQ(), lockYaw = !mode.horizontal;
+  let s = KIN.bestFreePhi(P, t, mode.phi0, cur, lockYaw);
+  if (!s){
+    const u = yawU(), r = mode.horizontal ? Math.hypot(t.x, t.y) : t.x*u[0] + t.y*u[1];
+    const dz = t.z - P.h0, len = Math.hypot(r, dz), maxL = (P.L1+P.L2+P.L3)*0.995;
+    for (let k=1; k<=24 && !s; k++){
+      const f = (len > maxL ? maxL/len : 1) * (1 - k*0.02);
+      const rr = r*f, zz = P.h0 + dz*f;
+      const tt = mode.horizontal ? {x:t.x*f, y:t.y*f, z:zz} : {x:u[0]*rr, y:u[1]*rr, z:zz};
+      s = KIN.bestFreePhi(P, tt, mode.phi0, cur, lockYaw);
+      if (s) t = tt;
+    }
+  }
+  mode.target = Object.assign({}, t, {ok:!!s});
+  if (!s) return false;
+  P.q0 = s.q.q0; P.q1 = s.q.q1; P.q2 = s.q.q2; P.q3 = s.q.q3;
   return true;
 }
 
@@ -2518,7 +2995,7 @@ function partInfo(part){
     rows.push(["I effective", fx(l.sec.I_eff,0)+" mm⁴"]);
     rows.push(["Root stress", fx(l.sigmaMPa,2)+" MPa"]);
     rows.push(["Material SF", fx(l.sfMat,0)+"×"]);
-    act = "Click to change · drag to pose";
+    act = "Click to change · drag to rotate θ"+["₁","₂","₃"][d.i];
   } else if (d.kind==="column"){
     sub = "Fixed structure";
     rows.push(["Height", fx(P.h0,0)+" mm"]);
@@ -2538,15 +3015,17 @@ function partInfo(part){
     rows.push(["Mass", fx(P.mEE,0)+" g"]);
     rows.push(["Reach", fx(R.reach*1000,0)+" mm"]);
     rows.push(["Wrist load", fx(R.joints.wr.util,0)+" %"]);
-    act = "Click to change · drag to pose";
+    act = "Drag to move the tool — the arm solves IK · Shift-drag to swing round the base";
   } else if (d.kind==="payload"){
     const cap = maxFeasiblePayload();
     sub = "At the tool centre point";
     rows.push(["Mass", fx(R.payload_g,0)+" g"]);
     rows.push(["Capacity here", fx(cap,0)+" g"]);
     rows.push(["Shoulder load", fx(R.joints.sh.util,0)+" %"]);
-    act = "Click to change · drag to pose";
+    act = "Drag to move the tool — the arm solves IK · Shift-drag to swing round the base";
   }
+  if (d.kind==="servo" && d.jk!=="base") act = "Click to change · drag to rotate θ"+({sh:"₁",el:"₂",wr:"₃"})[d.jk];
+  if (d.kind==="servo" && d.jk==="base")  act = "Click to change · drag to swing θ₀";
   return {title, sub, rows, act};
 }
 function showPartCard(part, mx, my){
@@ -2608,7 +3087,7 @@ function showRingTip(hit){
     '<div class="v">'+fx(hit.radius,0)+' <small>mm radius</small></div>'+
     '<div class="m">'+(isMax
       ? "L₁+L₂+L₃ swept by the base — the farthest the tool centre can ever get"
-      : "tool-centre radius in this pose · yaw ψ "+fx(cam.yaw/D2R,0)+"°")+'</div>';
+      : "tool-centre radius in this pose · base yaw θ₀ "+fx(P.q0,0)+"°")+'</div>';
   el.classList.add("on");
   const w = el.offsetWidth || 220, h = el.offsetHeight || 70;
   el.style.left = Math.max(w/2+8, Math.min(innerWidth-w/2-8, hit.at[0])) + "px";
@@ -2631,74 +3110,150 @@ function showRingTip(hit){
   requestAnimationFrame(tick);
 })();
 
+/* ---------- camera motion: presets glide, an orbit flick carries on ---------- */
+const REDUCED = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const CAMFX = {raf:0};
+function cancelCamMotion(){ cancelAnimationFrame(CAMFX.raf); CAMFX.raf = 0; }
+function tweenCam(to, ms){
+  cancelCamMotion();
+  const from = {az:cam.az, el:cam.el, zoom:cam.zoom};
+  let daz = to.az - from.az;                          // the short way round
+  while (daz >  Math.PI) daz -= 2*Math.PI;
+  while (daz < -Math.PI) daz += 2*Math.PI;
+  if (REDUCED || !ms){ cam.az = from.az+daz; cam.el = to.el; cam.zoom = to.zoom; draw3D(R); return; }
+  const t0 = performance.now();
+  const step = now=>{
+    const k = Math.min(1, (now-t0)/ms), e = k<.5 ? 4*k*k*k : 1-Math.pow(-2*k+2,3)/2;
+    cam.az = from.az + daz*e; cam.el = from.el + (to.el-from.el)*e; cam.zoom = from.zoom + (to.zoom-from.zoom)*e;
+    STAGE.busy = k < 1; draw3D(R);
+    CAMFX.raf = k < 1 ? requestAnimationFrame(step) : 0;
+    if (k >= 1 && typeof saveSession === "function") saveSession();
+  };
+  CAMFX.raf = requestAnimationFrame(step);
+}
+function orbitInertia(vaz, vel){
+  if (REDUCED || Math.hypot(vaz, vel) < 0.00012) return;   // rad/ms - a release, not a flick
+  cancelCamMotion();
+  let last = performance.now();
+  const step = now=>{
+    const dt = Math.min(40, now-last); last = now;
+    cam.az += vaz*dt; cam.el = Math.max(-0.15, Math.min(1.45, cam.el + vel*dt));
+    const f = Math.pow(0.9, dt/16); vaz *= f; vel *= f;
+    STAGE.busy = true; draw3D(R);
+    if (Math.hypot(vaz, vel) > 0.00002) CAMFX.raf = requestAnimationFrame(step);
+    else { CAMFX.raf = 0; STAGE.busy = false; if (typeof saveSession === "function") saveSession(); }
+  };
+  CAMFX.raf = requestAnimationFrame(step);
+}
+
+/* which joint's angle gizmo a part shows on hover: 0 base … 3 wrist */
+const HOVER_GIZMO = {"servo:base":0, "plate":0, "column":0, "link:0":1, "servo:sh":1,
+                     "link:1":2, "servo:el":2, "link:2":3, "servo:wr":3};
+
 (function stageInteraction(){
   const cv = $("#three");
-  let mode = null, start = null;
+  let mode = null, start = null, pending = null, raf = 0;
+  const local = e => { const b = cv.getBoundingClientRect(); return [e.clientX-b.left, e.clientY-b.top]; };
 
   cv.addEventListener("pointerdown", e=>{
-    const b = cv.getBoundingClientRect(), mx = e.clientX-b.left, my = e.clientY-b.top;
+    if (e.pointerType === "mouse" && e.button !== 0) return;
+    cancelCamMotion();
+    if (typeof cancelPoseTween === "function") cancelPoseTween();
+    const [mx, my] = local(e);
     const part = pickPart(mx, my);
-    const j = part!=null ? DRAG_JOINT[part] : undefined;
-    if (j!==undefined){
-      mode = {kind:"joint", j, armed:false}; STAGE.sel = part;
-    } else if (part==="plate" || part==="column"){
-      mode = {kind:"yaw", yaw0:cam.yaw, x0:e.clientX}; STAGE.sel = part;
+    if (part==="ee" || part==="payload"){
+      mode = {kind:"ik", armed:false, horizontal:e.shiftKey};
+    } else if (DRAG_JOINT[part] !== undefined){
+      mode = {kind:"joint", j:DRAG_JOINT[part], armed:false};
+    } else if (part==="plate" || part==="column" || part==="servo:base"){
+      mode = {kind:"yaw", armed:false};
     } else {
-      mode = {kind:"orbit", az:cam.az, el:cam.el, x0:e.clientX, y0:e.clientY};
-      STAGE.sel = null;
+      mode = {kind:"orbit", az:cam.az, el:cam.el, hist:[]};
     }
-    start = {mx,my}; STAGE.busy = true;
+    STAGE.sel = mode.kind==="orbit" ? null : part;
+    start = {mx, my, x:e.clientX, y:e.clientY, part};
+    STAGE.busy = true;
     cv.setPointerCapture(e.pointerId);
     cv.classList.add("grabbing");
     $("#partCard").classList.remove("on"); showRingTip(null);
     e.preventDefault();
   });
 
+  /* the pointer can report several moves per frame; solve once, for the latest */
+  function frame(){
+    raf = 0;
+    if (!mode || !pending) return;
+    const {mx, my, x, y} = pending; pending = null;
+    if (mode.kind==="orbit"){
+      cam.az = mode.az - (x-start.x)*0.008;
+      cam.el = Math.max(-0.15, Math.min(1.45, mode.el + (y-start.y)*0.006));
+      mode.hist.push({t:performance.now(), az:cam.az, el:cam.el});
+      if (mode.hist.length > 6) mode.hist.shift();
+      draw3D(R);
+      return;
+    }
+    if (!mode.armed){
+      if (Math.hypot(mx-start.mx, my-start.my) < 4) return;   // still a click
+      mode.armed = true;
+      STAGE.holdFrame = true;
+      if (mode.kind==="yaw"){ mode.yaw0 = cam.yaw; STAGE.gizmo = 0; }
+      if (mode.kind==="joint"){ if (leaveWorst()){ R = solve(P); syncPose(); } beginJointDrag(mode, mx, my); STAGE.gizmo = mode.j+1; }
+      if (mode.kind==="ik"){ if (leaveWorst()){ R = solve(P); syncPose(); } beginIkDrag(mode, mx, my); STAGE.gizmo = null; }
+    }
+    if (mode.kind==="yaw"){
+      cam.yaw = mode.yaw0 - (x-start.x)*0.010;
+      render({light:true}); syncPose();
+    } else if (mode.kind==="joint"){
+      if (applyJointDrag(mode, mx, my)){ STAGE.gizmoLimit = !!mode.atLimit; render({light:true}); syncPose(); }
+    } else if (mode.kind==="ik"){
+      const moved = applyIkDrag(mode, mx, my);
+      STAGE.ikDrag = mode.target || null;
+      if (moved){ render({light:true}); syncPose(); } else draw3D(R);
+    }
+  }
+
   cv.addEventListener("pointermove", e=>{
-    const b = cv.getBoundingClientRect(), mx = e.clientX-b.left, my = e.clientY-b.top;
+    const [mx, my] = local(e);
     if (!mode){
       const part = pickPart(mx, my);
       const ring = part ? null : ringHit(mx, my);
-      cv.classList.toggle("pickable", part!=null && part!=="plate");
+      cv.classList.toggle("pickable", part!=null);
       cv.style.cursor = ring ? "help" : "";
       const rk = ring ? ring.key : null;
-      if (part !== STAGE.hover || rk !== RING.hover){ STAGE.hover = part; RING.hover = rk; draw3D(R); }
+      const gz = part!=null && HOVER_GIZMO[part]!==undefined ? HOVER_GIZMO[part] : null;
+      if (part !== STAGE.hover || rk !== RING.hover || gz !== STAGE.gizmo){
+        STAGE.hover = part; RING.hover = rk; STAGE.gizmo = gz; STAGE.gizmoLimit = false; draw3D(R);
+      }
       if (part) showPartCard(part, e.clientX, e.clientY);
       else $("#partCard").classList.remove("on");
       showRingTip(ring);
       return;
     }
-    if (mode.kind==="orbit"){
-      cam.az = mode.az - (e.clientX-mode.x0)*0.008;
-      cam.el = Math.max(-0.15, Math.min(1.45, mode.el + (e.clientY-mode.y0)*0.006));
-      draw3D(R);
-    } else if (mode.kind==="yaw"){
-      cam.yaw = mode.yaw0 - (e.clientX-mode.x0)*0.010;
-      draw3D(R); syncPose();
-    } else if (mode.kind==="joint"){
-      if (!mode.armed){
-        if (Math.hypot(mx-start.mx, my-start.my) < 4) return;   // still a click
-        mode.armed = true;
-        if (P.worst){                                  // posing implies leaving worst case
-          P.worst = 0; syncPose();
-          showToast("Worst case off — the arm follows your pointer now");
-        }
-      }
-      if (applyJointDrag(mode.j, mx, my)){ render({light:true}); syncPose(); }
-    }
+    pending = {mx, my, x:e.clientX, y:e.clientY};
+    if (!raf) raf = requestAnimationFrame(frame);
   });
 
   const end = ()=>{
-    if (mode && mode.kind==="joint" && mode.armed) render();   // full recompute once, on release
-    mode = null; STAGE.busy = false; cv.classList.remove("grabbing");
+    if (raf){ cancelAnimationFrame(raf); raf = 0; frame(); }
+    const m = mode;
+    mode = null; STAGE.busy = false; STAGE.ikDrag = null; STAGE.gizmoLimit = false; STAGE.holdFrame = false;
+    cv.classList.remove("grabbing");
+    if (m && m.armed && m.kind!=="orbit"){
+      render();                                        // full recompute once, on release
+      if (typeof onArmMovedByHand === "function") onArmMovedByHand();
+    }
+    if (m && m.kind==="orbit" && m.hist.length >= 2){
+      const a = m.hist[0], b = m.hist[m.hist.length-1], dt = b.t - a.t;
+      if (dt > 0 && performance.now() - b.t < 70) orbitInertia((b.az-a.az)/dt, (b.el-a.el)/dt);
+    }
+    draw3D(R);
     if (typeof saveSession === "function") saveSession();
   };
   cv.addEventListener("pointerup", e=>{
     if (mode && start){
-      const b = cv.getBoundingClientRect();
-      const moved = Math.hypot(e.clientX-b.left-start.mx, e.clientY-b.top-start.my);
-      if (moved < 4){                                  // a click, not a drag
-        const part = pickPart(e.clientX-b.left, e.clientY-b.top);
+      const [mx, my] = local(e);
+      if (Math.hypot(mx-start.mx, my-start.my) < 4 && !mode.armed){   // a click, not a drag
+        const part = pickPart(mx, my);
         if (part) openParamsFor(part);
       }
     }
@@ -2707,7 +3262,8 @@ function showRingTip(hit){
   cv.addEventListener("pointercancel", end);
   cv.addEventListener("pointerleave", ()=>{
     if (!mode){ $("#partCard").classList.remove("on"); showRingTip(null);
-      if (STAGE.hover || RING.hover){ STAGE.hover = null; RING.hover = null; draw3D(R); } }
+      if (STAGE.hover || RING.hover || STAGE.gizmo!==null){
+        STAGE.hover = null; RING.hover = null; STAGE.gizmo = null; draw3D(R); } }
   });
   /* The stage fills the viewport, so a plain wheel has to scroll the page —
      otherwise the analysis below is unreachable. Zoom is the pinch gesture,
@@ -2715,31 +3271,42 @@ function showRingTip(hit){
   cv.addEventListener("wheel", e=>{
     if (!e.ctrlKey && !e.metaKey) return;             // let the page scroll
     e.preventDefault();
-    cam.zoom = Math.max(0.45, Math.min(3.2, cam.zoom*(e.deltaY>0?0.92:1.08)));
+    cancelCamMotion();
+    cam.zoom = Math.max(0.45, Math.min(3.2, cam.zoom*Math.exp(-e.deltaY*0.0035)));
     draw3D(R);
     if (typeof saveSession === "function") saveSession();
   }, {passive:false});
 
-  $("#v3dIso").onclick   = ()=>{ cam.az=-38*D2R; cam.el=20*D2R; cam.zoom=1; draw3D(R); };
-  $("#v3dTop").onclick   = ()=>{ cam.az=-90*D2R; cam.el=88*D2R; cam.zoom=1; draw3D(R); };
-  $("#v3dFront").onclick = ()=>{ cam.az=-90*D2R; cam.el=2*D2R;  cam.zoom=1; draw3D(R); };
+  $("#v3dIso").onclick   = ()=>tweenCam({az:-38*D2R, el:20*D2R, zoom:1}, 560);
+  $("#v3dTop").onclick   = ()=>tweenCam({az:-90*D2R, el:88*D2R, zoom:1}, 560);
+  $("#v3dFront").onclick = ()=>tweenCam({az:-90*D2R, el:2*D2R,  zoom:1}, 560);
 })();
 
 /* ---------- pose bar: mirrors what dragging the model does ---------- */
-const POSE_ROWS = [["q1","θ₁ shoulder","limShMin","limShMax"],
+const POSE_ROWS = [["q0","θ₀ base yaw","limBaseMin","limBaseMax"],
+                   ["q1","θ₁ shoulder","limShMin","limShMax"],
                    ["q2","θ₂ elbow","limElMin","limElMax"],
                    ["q3","θ₃ wrist","limWrMin","limWrMax"]];
 function buildPose(){
   $("#poseRows").innerHTML = POSE_ROWS.map(([k,lab])=>
     '<div class="row" data-pk="'+k+'"><span>'+lab+'</span><b id="pv_'+k+'"></b>'+
     '<input type="range" id="pr_'+k+'" aria-label="'+lab+'"></div>').join("");
-  POSE_ROWS.forEach(([k,lab,lo,hi])=>{
+  POSE_ROWS.forEach(([k,lab,lo,hi],idx)=>{
     const r = $("#pr_"+k);
+    /* the slider shows its joint's protractor on the model while in use */
+    const show = on=>{ STAGE.gizmo = on ? idx : null; STAGE.gizmoLimit = false; draw3D(R); };
+    r.addEventListener("pointerdown", ()=>show(true));
+    r.addEventListener("focus", ()=>show(true));
+    r.addEventListener("blur", ()=>show(false));
     r.addEventListener("input", ()=>{
-      if (P.worst){ P.worst = 0; }
-      P[k] = +r.value; syncPose(); render({light:true});
+      if (typeof cancelPoseTween === "function") cancelPoseTween();
+      if (k !== "q0") leaveWorst();
+      P[k] = +r.value; STAGE.gizmo = idx;
+      STAGE.gizmoLimit = (+r.value <= P[lo] || +r.value >= P[hi]);
+      syncPose(); render({light:true});
+      if (typeof syncKin === "function") syncKin();
     });
-    r.addEventListener("change", ()=>render());
+    r.addEventListener("change", ()=>{ render(); if (typeof saveSession === "function") saveSession(); });
   });
   $("#poseWorst").addEventListener("change", e=>{
     P.worst = e.target.checked ? 1 : 0; syncPose(); render();
@@ -2752,15 +3319,14 @@ function syncPose(){
   POSE_ROWS.forEach(([k,lab,lo,hi])=>{
     const r = $("#pr_"+k), v = $("#pv_"+k), row = document.querySelector('.row[data-pk="'+k+'"]');
     r.min = P[lo]; r.max = P[hi]; r.step = 1;
-    if (document.activeElement !== r) r.value = P[k];
-    v.textContent = (worst ? 0 : P[k]).toFixed(0) + "°";
-    row.style.opacity = worst ? .4 : 1;
-    r.disabled = worst;
+    const pitch = k !== "q0";
+    if (document.activeElement !== r) r.value = worst && pitch ? 0 : P[k];
+    v.textContent = (worst && pitch ? 0 : P[k]).toFixed(0) + "°";
+    row.style.opacity = worst && pitch ? .55 : 1;
   });
   $("#poseHint").textContent = worst
-    ? "Every moment arm is at its maximum. Switch off to pose the arm by dragging it."
-    : "Drag a link to pose it, the base to swing yaw (ψ " + fx(cam.yaw/D2R,0) +
-      "°), empty space to orbit. Pinch to zoom.";
+    ? "Every moment arm is at its maximum. Move a slider or drag the arm to pose it."
+    : "Drag a link to rotate its joint, the gripper to move the tool (IK), the base to swing θ₀, empty space to orbit. Pinch to zoom.";
   const f = document.querySelector('.f[data-key="worst"]');
   if (f){ const c = f.querySelector("input[type=checkbox]"); if (c) c.checked = worst; }
 }
@@ -3950,7 +4516,7 @@ function renderInspector(res){
 
   $("#inspBody").innerHTML =
     '<div class="card"><header><h3>Intermediate calculations</h3>'+
-      '<span class="sub">'+(res.useWorst?"worst-case pose":"pose θ "+fx(P.q1,0)+"/"+fx(P.q2,0)+"/"+fx(P.q3,0)+"°")+
+      '<span class="sub">'+(res.useWorst?"worst-case pose":"pose θ "+fx(P.q0,0)+"/"+fx(P.q1,0)+"/"+fx(P.q2,0)+"/"+fx(P.q3,0)+"°")+
       ' · '+MATERIALS[P.material].name+' · '+SECTIONS[P.section]+'</span></header><div class="pad">'+
 
     sec("Cross sections and link mass", "mm, mm², mm⁴, g",
@@ -4318,7 +4884,7 @@ async function buildPDF(opts){
     st==="ok" ? "Within all limits" : st==="tight" ? "Below target margin" : "Over limit",
     peak.name+" is the limiting joint at "+fx(peak.util,0)+"% of usable torque (SF "+fx(peak.sf,2)+
     "x, target "+fx(P.sfMin,2)+"x)"+(res.useWorst?" - worst-case pose":" - pose theta "+
-    fx(P.q1,0)+"/"+fx(P.q2,0)+"/"+fx(P.q3,0)+" deg"));
+    fx(P.q0,0)+"/"+fx(P.q1,0)+"/"+fx(P.q2,0)+"/"+fx(P.q3,0)+" deg"));
 
   const maxPay = maxFeasiblePayload();
   L.stats([
@@ -4427,7 +4993,7 @@ async function buildPDF(opts){
       ["L2 elbow to wrist", fx(P.L2,1)+" mm"],
       ["L3 wrist to TCP", fx(P.L3,1)+" mm"],
       ["Pose", res.useWorst ? "worst case - fully extended, horizontal"
-         : "theta1 "+fx(P.q1,0)+" deg, theta2 "+fx(P.q2,0)+" deg, theta3 "+fx(P.q3,0)+" deg"],
+         : "theta0 "+fx(P.q0,0)+" deg, theta1 "+fx(P.q1,0)+" deg, theta2 "+fx(P.q2,0)+" deg, theta3 "+fx(P.q3,0)+" deg"],
       ["TCP position", "r "+fx(res.N[3].r*1000,1)+" mm, z "+fx(res.N[3].z*1000,1)+" mm"],
     ]);
 
@@ -4629,12 +5195,14 @@ function syncExportUI(){
     msg.className = "exportmsg err";
     msg.textContent = "Downloads are unavailable in this view.";
     $("#exRun").disabled = true;
+    const j = $("#exJson"); if (j) j.disabled = true;
   }
 }
 function openExport(){
   buildExportUI();
   $("#exMsg").className = "exportmsg"; $("#exMsg").textContent = "";
   $("#exRun").disabled = false;
+  if ($("#exJson")) $("#exJson").disabled = false;
   syncExportUI();
   $("#exportModal").hidden = false;
   $("#exRun").focus();
@@ -4696,6 +5264,433 @@ async function savePNG(btn){
 <script>
 "use strict";
 /* =====================================================================
+   KINEMATICS PANEL
+   Forward: set the four joint angles, read where the tool centre lands,
+   with the DH table and the T₀⁴ transform live. Inverse: ask for a tool
+   position and pitch, see all four closed-form solutions with their joint
+   limits and servo load, and move to one; or jog the tool in Cartesian
+   steps. Everything drives the same P the 3D and the analysis read.
+   ===================================================================== */
+const KSTATE = {mode:"fk", tgt:null, dirty:false, free:false, follow:false, step:10, sel:-1, built:false};
+const KJ = [
+  {k:"q0", nm:"θ₀", lab:"base yaw", lim:["limBaseMin","limBaseMax"], jk:"base"},
+  {k:"q1", nm:"θ₁", lab:"shoulder", lim:["limShMin","limShMax"],   jk:"sh"},
+  {k:"q2", nm:"θ₂", lab:"elbow",    lim:["limElMin","limElMax"],   jk:"el"},
+  {k:"q3", nm:"θ₃", lab:"wrist",    lim:["limWrMin","limWrMax"],   jk:"wr"}];
+const KPRESETS = [
+  {id:"zero",  name:"Zero",     q:{q1:0,  q2:0,    q3:0}},
+  {id:"ready", name:"Ready",    q:{q1:55, q2:-95,  q3:-35}},
+  {id:"tuck",  name:"Tucked",   q:{q1:90, q2:-150, q3:60}},
+  {id:"up",    name:"Straight up", q:{q1:90, q2:0, q3:0}}];
+const clampJ = (k, v) => { const j = KJ.find(x=>x.k===k); return Math.max(P[j.lim[0]], Math.min(P[j.lim[1]], v)); };
+const tcpNow = () => { const f = KIN.fk(P, curQ()); return {x:f.x, y:f.y, z:f.z, phi:f.phi}; };
+const f1 = v => (Math.abs(v) < 0.05 ? 0 : v).toFixed(1);
+
+/* ---------- smooth pose moves: every programmatic move glides ---------- */
+const PTW = {raf:0};
+function cancelPoseTween(){
+  if (!PTW.raf) return;
+  cancelAnimationFrame(PTW.raf); PTW.raf = 0; STAGE.busy = false;
+  render();
+}
+function animatePose(q, opt){
+  opt = opt || {};
+  if (PTW.raf){ cancelAnimationFrame(PTW.raf); PTW.raf = 0; }
+  if (leaveWorst()) R = solve(P);
+  const from = curQ(), to = Object.assign({}, from, q);
+  ["q0","q1","q2","q3"].forEach(k=>{ to[k] = clampJ(k, to[k]); });
+  const fullTurn = P.limBaseMin <= -180 && P.limBaseMax >= 180;
+  const d0 = fullTurn ? KIN.wrap(to.q0 - from.q0) : to.q0 - from.q0;
+  const dist = KIN.jdist(from, to);
+  const ms = opt.ms != null ? opt.ms : Math.min(950, 240 + dist*3.2);
+  const put = e=>{
+    P.q0 = KIN.wrap(from.q0 + d0*e);
+    if (!fullTurn) P.q0 = clampJ("q0", from.q0 + d0*e);
+    ["q1","q2","q3"].forEach(k=>{ P[k] = from[k] + (to[k]-from[k])*e; });
+  };
+  if (REDUCED || ms <= 0 || dist < 0.05){ put(1); P.q0 = to.q0; render(); syncPose(); if (opt.done) opt.done(); return; }
+  const t0 = performance.now();
+  STAGE.busy = true;
+  const step = now=>{
+    const k = Math.min(1, (now - t0)/ms), e = k<.5 ? 4*k*k*k : 1 - Math.pow(-2*k+2, 3)/2;
+    put(e);
+    if (k < 1){ render({light:true}); syncPose(); PTW.raf = requestAnimationFrame(step); }
+    else {
+      PTW.raf = 0; STAGE.busy = false;
+      Object.assign(P, {q0:to.q0, q1:to.q1, q2:to.q2, q3:to.q3});
+      render(); syncPose(); if (opt.done) opt.done();
+    }
+  };
+  PTW.raf = requestAnimationFrame(step);
+}
+/* the 3D drag just moved the arm: the IK target follows the tool */
+function onArmMovedByHand(){ KSTATE.dirty = false; KSTATE.sel = -1; syncKin(); }
+
+/* ---------- inverse: the four solutions for the current target ---------- */
+const _utilCache = new Map();
+function poseLoad(q){
+  const key = [q.q0,q.q1,q.q2,q.q3].map(v=>v.toFixed(3)).join(",") + "|" + _renderSeq;
+  if (_utilCache.has(key)) return _utilCache.get(key);
+  const r = solve(Object.assign({}, P, q, {worst:0})), j = r.joints[r.peak];
+  const out = {util:j.util, peak:j.name.replace(" (yaw)",""), state:jointState(j)};
+  if (_utilCache.size > 64) _utilCache.clear();
+  _utilCache.set(key, out);
+  return out;
+}
+function kinSolve(){
+  const t = KSTATE.tgt, cur = curQ();
+  let phi = t.phi;
+  if (KSTATE.free){
+    const b = KIN.bestFreePhi(P, t, KIN.fk(P, cur).phi, cur, false);
+    if (b) phi = b.phi;
+  }
+  const sols = KIN.ik(P, t, phi, cur.q0);
+  sols.forEach(s=>{
+    s.label = (s.back ? "Over the shoulder" : "Front") + " · elbow " + (s.up ? "up" : "down");
+    if (s.q){ s.d = KIN.jdist(s.q, cur); if (s.ok) s.load = poseLoad(s.q); }
+  });
+  const ok = sols.filter(s=>s.ok).sort((a,b)=>a.d-b.d);
+  return {phi, sols, best: ok[0] || null, nOk: ok.length};
+}
+
+/* ---------- building the panel (once) ---------- */
+function buildKin(){
+  if (KSTATE.built) return;
+  KSTATE.built = true;
+  /* forward */
+  const fk = $("#kv-fk");
+  fk.innerHTML =
+    '<section class="ksec"><h4>Joint angles <span class="tag">forward kinematics</span></h4>' +
+      '<label class="swrow" style="margin-bottom:6px"><input type="checkbox" id="kWorst"><span class="sw-toggle"></span>' +
+      '<span>Worst case &mdash; fully extended</span></label>' +
+      KJ.map((j,i)=>
+        '<div class="kj" data-i="'+i+'" id="kj_'+j.k+'">' +
+          '<span class="nm">'+j.nm+' <em>'+j.lab+'</em></span>' +
+          '<input type="number" id="kn_'+j.k+'" step="0.5" aria-label="'+j.nm+' '+j.lab+' in degrees">' +
+          '<span class="chip mute" id="kc_'+j.k+'" title="servo load in this pose">—</span>' +
+          '<input type="range" id="kr_'+j.k+'" step="0.5" aria-label="'+j.nm+' '+j.lab+'">' +
+          '<span class="lim" id="kl_'+j.k+'"></span>' +
+        '</div>').join("") +
+      '<div class="kacts">' + KPRESETS.map(p=>'<button class="btn sm" data-preset="'+p.id+'">'+p.name+'</button>').join("") + '</div>' +
+    '</section>' +
+    '<section class="ksec"><h4>Tool centre point</h4>' +
+      '<div class="kread" id="kRead"></div>' +
+      '<p class="kin-note" id="kNodes"></p>' +
+    '</section>' +
+    '<section class="ksec"><details class="insp" open><summary>Denavit&ndash;Hartenberg <span class="tag">standard DH</span></summary>' +
+      '<div class="body"><table class="ktbl" id="kDH"></table>' +
+      '<p class="kin-note" style="margin:10px 0 6px">T₀⁴ = A₁A₂A₃A₄, each A = Rot<sub>z</sub>(θ)·Trans<sub>z</sub>(d)·Trans<sub>x</sub>(a)·Rot<sub>x</sub>(α). ' +
+      'Last column: the tool centre in mm.</p>' +
+      '<div class="kmat" id="kMat"></div></div></details></section>' +
+    '<section class="ksec"><details class="insp"><summary>How it&rsquo;s computed</summary>' +
+      '<div class="body"><div class="keq" id="kFkEq"></div></div></details></section>';
+
+  /* inverse */
+  const ik = $("#kv-ik");
+  ik.innerHTML =
+    '<section class="ksec"><h4>Target <span class="tag">inverse kinematics</span></h4>' +
+      '<div class="ktgt">' +
+        [["x","X","mm"],["y","Y","mm"],["z","Z","mm"],["phi","Pitch φ","°"]].map(([k,l,u])=>
+          '<label>'+l+' <input type="number" id="kt_'+k+'" step="'+(k==="phi"?1:1)+'" aria-label="target '+l+' in '+u+'"></label>').join("") +
+      '</div>' +
+      '<div class="kswitches">' +
+        '<label class="swrow"><input type="checkbox" id="kFree"><span class="sw-toggle"></span><span>Free pitch</span></label>' +
+        '<label class="swrow"><input type="checkbox" id="kFollow"><span class="sw-toggle"></span><span>Move as I type</span></label>' +
+      '</div>' +
+      '<div class="kacts"><button class="btn sm primary" id="kGo">Move to target</button>' +
+        '<button class="btn sm" id="kGrab">Use current tool position</button></div>' +
+      '<div class="kstat mute" id="kStat"></div>' +
+    '</section>' +
+    '<section class="ksec"><h4>Solutions <span class="tag">closed form · 4 branches</span></h4>' +
+      '<div class="ksols" id="kSols"></div>' +
+      '<p class="kin-note">The closest in-limit branch is outlined — it is what a controller would pick, so the arm never flips. Click any reachable one to move there.</p>' +
+    '</section>' +
+    '<section class="ksec"><h4>Jog the tool <span class="ksteps" id="kSteps">' +
+        [1,5,10,25].map(v=>'<button data-step="'+v+'">'+v+'</button>').join("") + '</span></h4>' +
+      '<div class="jog" id="kJog">' +
+        [["x","X"],["y","Y"],["z","Z"],["phi","φ"]].map(([a,l])=>
+          '<span>'+l+'</span><button data-ax="'+a+'" data-sg="-1" aria-label="'+l+' minus">−</button>' +
+          '<button data-ax="'+a+'" data-sg="1" aria-label="'+l+' plus">+</button>').join("") +
+      '</div>' +
+      '<p class="kin-note">Hold to repeat. Steps are mm, or degrees for φ. Keys: ← → for X, ↑ ↓ for Z, Shift ↑ ↓ for Y.</p>' +
+    '</section>' +
+    '<section class="ksec"><details class="insp"><summary>How it&rsquo;s solved</summary>' +
+      '<div class="body"><div class="keq" id="kIkEq"></div>' +
+      '<p class="kin-note">φ is the tool&rsquo;s elevation above horizontal, positive up, with its horizontal part pointing away from the base. ' +
+      'The over-the-shoulder family turns the base 180° and works in the flipped plane, so the same φ means the same tool direction in the room.</p>' +
+      '</div></details></section>';
+
+  /* ---- wiring: mode switch ---- */
+  $$(".kseg button").forEach(b=>b.addEventListener("click", ()=>setKinMode(b.dataset.km)));
+
+  /* ---- forward ---- */
+  KJ.forEach((j,i)=>{
+    const r = $("#kr_"+j.k), n = $("#kn_"+j.k), row = $("#kj_"+j.k);
+    const gz = on=>{ STAGE.gizmo = on ? i : null; STAGE.gizmoLimit = false; draw3D(R); };
+    row.addEventListener("pointerenter", ()=>{ if (!STAGE.holdFrame) gz(true); });
+    row.addEventListener("pointerleave", ()=>{ if (document.activeElement !== r && document.activeElement !== n) gz(false); });
+    [r, n].forEach(x=>{ x.addEventListener("focus", ()=>gz(true)); x.addEventListener("blur", ()=>gz(false)); });
+    r.addEventListener("input", ()=>{
+      if (PTW.raf){ cancelAnimationFrame(PTW.raf); PTW.raf = 0; STAGE.busy = false; }
+      if (j.k !== "q0") leaveWorst();
+      P[j.k] = clampJ(j.k, +r.value);
+      STAGE.gizmo = i; STAGE.gizmoLimit = P[j.k] <= P[j.lim[0]] || P[j.k] >= P[j.lim[1]];
+      render({light:true}); syncPose();
+    });
+    r.addEventListener("change", ()=>render());
+    const commit = ()=>{
+      const v = parseFloat(n.value);
+      if (!isFinite(v)){ syncKin(); return; }
+      const q = {}; q[j.k] = clampJ(j.k, v);
+      if (q[j.k] !== v) showToast(j.nm + " held at its travel limit, " + q[j.k].toFixed(1) + "°");
+      animatePose(q);
+    };
+    n.addEventListener("change", commit);
+    n.addEventListener("keydown", e=>{ if (e.key==="Enter"){ e.preventDefault(); n.blur(); } });
+  });
+  $("#kWorst").addEventListener("change", e=>{
+    if (PTW.raf){ cancelAnimationFrame(PTW.raf); PTW.raf = 0; STAGE.busy = false; }
+    P.worst = e.target.checked ? 1 : 0; syncPose(); render();
+  });
+  $$("[data-preset]").forEach(b=>b.addEventListener("click", ()=>{
+    const p = KPRESETS.find(x=>x.id===b.dataset.preset);
+    animatePose(p.q);
+  }));
+
+  /* ---- inverse ---- */
+  ["x","y","z","phi"].forEach(k=>{
+    const inp = $("#kt_"+k);
+    inp.addEventListener("input", ()=>{
+      const v = parseFloat(inp.value); if (!isFinite(v)) return;
+      KSTATE.tgt[k] = k==="phi" ? KIN.wrap(v) : v;
+      KSTATE.dirty = true; KSTATE.sel = -1;
+      if (KSTATE.follow) followTarget(); else syncKin();
+    });
+    inp.addEventListener("keydown", e=>{ if (e.key==="Enter"){ e.preventDefault(); moveToTarget(); } });
+  });
+  $("#kFree").addEventListener("change", e=>{ KSTATE.free = e.target.checked; KSTATE.sel = -1; syncKin(); saveSession(); });
+  $("#kFollow").addEventListener("change", e=>{ KSTATE.follow = e.target.checked; if (KSTATE.follow && KSTATE.dirty) followTarget(); saveSession(); });
+  $("#kGo").addEventListener("click", moveToTarget);
+  $("#kGrab").addEventListener("click", ()=>{ KSTATE.dirty = false; KSTATE.sel = -1; syncKin(); });
+  $$("#kSteps button").forEach(b=>b.addEventListener("click", ()=>{ KSTATE.step = +b.dataset.step; syncKin(); saveSession(); }));
+  $$("#kJog button").forEach(b=>{
+    let t = 0, raf = 0, last = 0;
+    const stop = ()=>{
+      clearTimeout(t); cancelAnimationFrame(raf); t = 0; raf = 0;
+      if (b.classList.contains("held")){ b.classList.remove("held"); STAGE.busy = false; render(); }
+    };
+    b.addEventListener("pointerdown", e=>{
+      e.preventDefault(); b.setPointerCapture(e.pointerId);
+      b.classList.add("held");
+      if (!jog(b.dataset.ax, +b.dataset.sg, true)) return stop();
+      t = setTimeout(()=>{
+        STAGE.busy = true;
+        const loop = now=>{
+          if (now - last > 70){ last = now; if (!jog(b.dataset.ax, +b.dataset.sg, false)) return stop(); }
+          raf = requestAnimationFrame(loop);
+        };
+        raf = requestAnimationFrame(loop);
+      }, 380);
+    });
+    ["pointerup","pointercancel","lostpointercapture"].forEach(ev=>b.addEventListener(ev, stop));
+    b.addEventListener("click", e=>{ if (e.detail === 0) jog(b.dataset.ax, +b.dataset.sg, true); });  // keyboard
+  });
+}
+
+function setKinMode(m){
+  KSTATE.mode = m === "ik" ? "ik" : "fk";
+  $$(".kseg button").forEach(b=>b.setAttribute("aria-selected", String(b.dataset.km===KSTATE.mode)));
+  $("#kv-fk").hidden = KSTATE.mode !== "fk";
+  $("#kv-ik").hidden = KSTATE.mode !== "ik";
+  moveKGlide();
+  if (KSTATE.mode === "ik"){ KSTATE.dirty = false; KSTATE.sel = -1; }
+  syncKin(); draw3D(R);
+  saveSession();
+}
+function moveKGlide(){
+  const on = document.querySelector('.kseg button[aria-selected="true"]'), gl = $("#kGlide");
+  if (!on || !gl || !on.offsetWidth) return;
+  gl.style.width = on.offsetWidth + "px"; gl.style.transform = "translateX(" + (on.offsetLeft) + "px)";
+}
+function onKinTab(on){
+  if (on){ buildKin(); setKinMode(KSTATE.mode); requestAnimationFrame(moveKGlide); }
+  else { STAGE.kinTarget = null; if (STAGE.gizmo !== null){ STAGE.gizmo = null; } draw3D(R); }
+}
+
+/* ---------- inverse actions ---------- */
+function chosenSolution(K){
+  const s = KSTATE.sel >= 0 ? K.sols[KSTATE.sel] : null;
+  return s && s.ok ? s : K.best;
+}
+function moveToTarget(){
+  if (!KSTATE.tgt) return;
+  const K = kinSolve(), s = chosenSolution(K);
+  if (!s){ flashStat(); return; }
+  animatePose(s.q, {done:()=>{ KSTATE.dirty = false; KSTATE.sel = -1; syncKin(); }});
+}
+function followTarget(){
+  const K = kinSolve(), s = chosenSolution(K);
+  if (!s){ syncKin(); return; }
+  if (PTW.raf){ cancelAnimationFrame(PTW.raf); PTW.raf = 0; STAGE.busy = false; }
+  leaveWorst();
+  Object.assign(P, {q0:s.q.q0, q1:s.q.q1, q2:s.q.q2, q3:s.q.q3});
+  KSTATE.dirty = false;
+  render({light:true}); syncPose();
+  clearTimeout(followTarget._t); followTarget._t = setTimeout(()=>render(), 220);
+}
+function flashStat(){ const s = $("#kStat"); if (!s) return; s.classList.remove("blocked"); void s.offsetWidth; s.style.animation = "nudge .32s"; setTimeout(()=>s.style.animation="", 340); }
+
+/** One Cartesian step of the tool. Keeps the pitch; if the pitch cannot be
+ *  kept there, the closest one that works is taken and the panel says so. */
+function jog(ax, sg, first){
+  const base = KSTATE.dirty && KSTATE.tgt ? Object.assign({}, KSTATE.tgt) : tcpNow();
+  const t = Object.assign({}, base);
+  if (ax === "phi") t.phi = KIN.wrap(t.phi + sg*KSTATE.step); else t[ax] += sg*KSTATE.step;
+  const cur = curQ();
+  let s = KIN.best(P, t, t.phi, cur, false), adj = false;
+  if (!s){ s = KIN.bestFreePhi(P, t, t.phi, cur, false); adj = !!s; if (s) t.phi = s.phi; }
+  const btn = document.querySelector('#kJog button[data-ax="'+ax+'"][data-sg="'+sg+'"]');
+  if (!s || (ax !== "phi" && adj && Math.abs(KIN.wrap(s.phi - base.phi)) > 45)){
+    if (btn){ btn.classList.remove("blocked"); void btn.offsetWidth; btn.classList.add("blocked"); }
+    KSTATE.jogMsg = "Can’t go further in " + (ax==="phi"?"φ":ax.toUpperCase()) + (sg>0?"+":"−") + " — joint limits or reach.";
+    syncKin();
+    return false;
+  }
+  KSTATE.jogMsg = adj ? "Pitch eased to " + fx(t.phi,0) + "° to keep moving." : "";
+  KSTATE.dirty = false; KSTATE.sel = -1;
+  const jump = KIN.jdist(s.q, cur);
+  if (jump > 25 && first){ animatePose(s.q); return false; }    // a branch change: glide, don't snap
+  if (jump > 25) return false;
+  if (PTW.raf){ cancelAnimationFrame(PTW.raf); PTW.raf = 0; }
+  leaveWorst();
+  Object.assign(P, {q0:s.q.q0, q1:s.q.q1, q2:s.q.q2, q3:s.q.q3});
+  render({light:true}); syncPose();
+  return true;
+}
+addEventListener("keydown", e=>{
+  if (activeTab !== "kinematics" || KSTATE.mode !== "ik") return;
+  const t = e.target, tag = t && t.tagName;
+  if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || (t && t.isContentEditable)) return;
+  if (document.body.classList.contains("params-open")) return;
+  const map = {ArrowLeft:["x",-1], ArrowRight:["x",1], ArrowUp:[e.shiftKey?"y":"z",1], ArrowDown:[e.shiftKey?"y":"z",-1]};
+  const m = map[e.key]; if (!m) return;
+  e.preventDefault();
+  if (jog(m[0], m[1], !e.repeat)) { clearTimeout(jog._t); jog._t = setTimeout(()=>render(), 200); }
+});
+
+/* ---------- keeping the panel in step with P (cheap: values only) ---------- */
+function syncKin(){
+  if (!KSTATE.built || activeTab !== "kinematics") return;
+  const q = curQ(), F = KIN.fk(P, q), worst = !!P.worst;
+  if (!KSTATE.dirty || !KSTATE.tgt) KSTATE.tgt = {x:F.x, y:F.y, z:F.z, phi:F.phi};
+  $("#kinSub").textContent = KSTATE.mode === "fk" ? "angles → tool" : "target → angles";
+
+  if (KSTATE.mode === "fk"){
+    $("#kWorst").checked = worst;
+    KJ.forEach(j=>{
+      const r = $("#kr_"+j.k), n = $("#kn_"+j.k), lo = P[j.lim[0]], hi = P[j.lim[1]], v = q[j.k];
+      r.min = lo; r.max = hi;
+      if (document.activeElement !== r) r.value = v;
+      if (document.activeElement !== n) n.value = f1(v);
+      n.min = lo; n.max = hi;
+      const stop = v <= lo + 0.05 || v >= hi - 0.05;
+      $("#kj_"+j.k).classList.toggle("stop", stop);
+      $("#kl_"+j.k).textContent = "travel " + fx(lo,0) + "° … " + fx(hi,0) + "°" + (stop ? " · at stop" : "");
+      const jt = R.joints[j.jk], c = $("#kc_"+j.k);
+      if (jt){ const st = jointState(jt); c.className = "chip " + st; c.textContent = fx(jt.util,0) + "%"; }
+    });
+    const cell = (k, v, u)=>'<div><div class="k">'+k+'</div><div class="v">'+v+' <small>'+u+'</small></div></div>';
+    $("#kRead").innerHTML =
+      cell("X", f1(F.x), "mm") + cell("Y", f1(F.y), "mm") + cell("Z", f1(F.z), "mm") +
+      cell("Radius r", f1(F.r), "mm") + cell("Pitch φ", f1(F.phi), "°") +
+      cell("Shoulder → TCP", f1(Math.hypot(F.r, F.z - P.h0)), "mm");
+    $("#kNodes").textContent = "Elbow at r " + f1(F.elbow.r) + ", z " + f1(F.elbow.z) + " mm · wrist at r " +
+      f1(F.wrist.r) + ", z " + f1(F.wrist.z) + " mm" + (worst ? " · worst case draws every pitch joint at 0°" : "");
+    const T = KIN.dhTable(P, q);
+    $("#kDH").innerHTML = '<thead><tr><th>i</th><th>θᵢ</th><th>dᵢ</th><th>aᵢ</th><th>αᵢ</th></tr></thead><tbody>' +
+      T.map((r,i)=>'<tr><td>'+(i+1)+'</td><td class="live">'+f1(r.th)+'°</td><td>'+fx(r.d,0)+'</td><td>'+fx(r.a,0)+'</td><td>'+r.al+'°</td></tr>').join("") +
+      '</tbody>';
+    const M = KIN.dhMatrix(P, q);
+    $("#kMat").innerHTML = M.map((row,i)=>row.map((v,j)=>
+      '<span'+(j===3 && i<3 ? ' class="t"' : '')+'>'+(j===3 ? f1(v) : (Math.abs(v)<5e-4?0:v).toFixed(3))+'</span>').join("")).join("");
+    const a1 = q.q1, a2 = q.q1+q.q2, a3 = q.q1+q.q2+q.q3;
+    $("#kFkEq").textContent =
+      "r = L₁cos θ₁ + L₂cos(θ₁+θ₂) + L₃cos(θ₁+θ₂+θ₃)\n" +
+      "  = "+fx(P.L1,0)+"·cos "+f1(a1)+"° + "+fx(P.L2,0)+"·cos "+f1(a2)+"° + "+fx(P.L3,0)+"·cos "+f1(a3)+"° = "+f1(F.r)+" mm\n" +
+      "z = h₀ + L₁sin θ₁ + L₂sin(θ₁+θ₂) + L₃sin(θ₁+θ₂+θ₃) = "+f1(F.z)+" mm\n" +
+      "x = r cos θ₀ = "+f1(F.x)+" mm      y = r sin θ₀ = "+f1(F.y)+" mm\n" +
+      "φ = θ₁ + θ₂ + θ₃ = "+f1(F.phiPlane)+"°" + (F.r < 0 ? "  → "+f1(F.phi)+"° seen from the room (tool behind the base axis)" : "");
+  } else {
+    const t = KSTATE.tgt;
+    ["x","y","z","phi"].forEach(k=>{ const inp = $("#kt_"+k); if (document.activeElement !== inp) inp.value = f1(t[k]); });
+    $("#kt_phi").disabled = KSTATE.free;
+    $("#kFree").checked = KSTATE.free; $("#kFollow").checked = KSTATE.follow;
+    $$("#kSteps button").forEach(b=>b.classList.toggle("on", +b.dataset.step === KSTATE.step));
+    const K = kinSolve(), chosen = chosenSolution(K);
+    /* the solutions */
+    $("#kSols").innerHTML = K.sols.map((s,i)=>{
+      const atPose = s.q && s.d < 0.05;
+      let why;
+      if (!s.reachable) why = "Out of reach — the wrist centre is " + fx(s.wristDist,0) + " mm from the shoulder; L₁ and L₂ span " +
+        fx(s.minW,0) + "–" + fx(s.maxW,0) + " mm";
+      else if (!s.ok) why = "Outside travel: " + s.issues.map(x=>KJ[x.i].nm+" "+f1(x.v)+"° (limit "+fx(x.lo,0)+"…"+fx(x.hi,0)+")").join(", ");
+      else why = "Peak load " + s.load.peak + " " + fx(s.load.util,0) + "% · " + (atPose ? "this is the current pose" : "Δ " + fx(s.d,0) + "° in joint space");
+      const chip = s.ok ? '<span class="chip '+s.load.state+'">'+fx(s.load.util,0)+'%</span>' :
+                          '<span class="chip over">'+(s.reachable?"limits":"no reach")+'</span>';
+      return '<button class="ksol'+(s===chosen?" best":"")+(atPose?" cur":"")+(s.ok?"":" bad")+'" data-i="'+i+'"'+(s.ok?"":" disabled")+'>' +
+        '<b>'+s.label+'</b>'+chip+
+        (s.q ? '<span class="q">θ '+f1(s.q.q0)+"° · "+f1(s.q.q1)+"° · "+f1(s.q.q2)+"° · "+f1(s.q.q3)+'°</span>' : '') +
+        '<span class="why">'+why+'</span></button>';
+    }).join("");
+    $$("#kSols .ksol").forEach(b=>b.addEventListener("click", ()=>{
+      const i = +b.dataset.i, s = K.sols[i]; if (!s || !s.ok) return;
+      KSTATE.sel = i;
+      animatePose(s.q, {done:()=>{ KSTATE.sel = -1; KSTATE.dirty = false; syncKin(); }});
+    }));
+    /* status line */
+    const st = $("#kStat");
+    if (KSTATE.jogMsg){ st.className = "kstat " + (KSTATE.jogMsg.indexOf("Can’t")===0 ? "bad" : "mute"); st.textContent = KSTATE.jogMsg; }
+    else if (!K.best){
+      const anyReach = K.sols.some(s=>s.reachable);
+      st.className = "kstat bad";
+      st.textContent = anyReach ? "Reachable in geometry, but every branch breaks a joint limit." + (KSTATE.free ? "" : " Try Free pitch.")
+                                : "Out of reach at this pitch." + (KSTATE.free ? "" : " Free pitch may find one that works.");
+    } else if (!KSTATE.dirty){
+      st.className = "kstat ok";
+      st.textContent = "Tool is at the target · " + K.nOk + " of 4 branches within limits" + (KSTATE.free ? " · pitch " + f1(K.phi) + "°" : "");
+    } else {
+      st.className = "kstat mute";
+      st.textContent = K.nOk + " of 4 branches reach it" + (KSTATE.free ? " at pitch " + f1(K.phi) + "°" : "") +
+        " · press Move or Enter" + (chosen ? " — " + chosen.label.toLowerCase() + ", Δ " + fx(chosen.d,0) + "°" : "");
+    }
+    $("#kGo").disabled = !chosen || !KSTATE.dirty;
+    /* worked numbers for the branch that would be used */
+    const s = chosen || K.sols.find(x=>x.reachable) || K.sols[0];
+    const rT = Math.hypot(t.x, t.y), r = s.back ? -rT : rT, ph = (s.back ? 180 - K.phi : K.phi);
+    const rw = r - P.L3*Math.cos(ph*D2R), zw = t.z - P.h0 - P.L3*Math.sin(ph*D2R);
+    const Dc = (rw*rw + zw*zw - P.L1*P.L1 - P.L2*P.L2)/(2*P.L1*P.L2);
+    $("#kIkEq").textContent =
+      "branch: " + s.label.toLowerCase() + "\n" +
+      "θ₀ = atan2(y, x)" + (s.back ? " + 180°" : "") + (s.q ? " = " + f1(s.q.q0) + "°" : "") + "\n" +
+      "r = " + (s.back ? "−" : "") + "√(x² + y²) = " + f1(r) + " mm" + (s.back ? "      φ′ = 180° − φ = " + f1(ph) + "°" : "") + "\n" +
+      "wrist  r_w = r − L₃cos φ" + (s.back?"′":"") + " = " + f1(rw) + " mm\n" +
+      "       z_w = z − h₀ − L₃sin φ" + (s.back?"′":"") + " = " + f1(zw) + " mm\n" +
+      "cos θ₂ = (r_w² + z_w² − L₁² − L₂²) / 2L₁L₂ = " + Dc.toFixed(4) + (Math.abs(Dc) > 1 ? "  → |cos| > 1, no solution" : "") + "\n" +
+      (s.q ? "θ₂ = " + (s.up ? "−" : "+") + "acos(" + Dc.toFixed(4) + ") = " + f1(s.q.q2) + "°   (− elbow up, + elbow down)\n" +
+             "θ₁ = atan2(z_w, r_w) − atan2(L₂sin θ₂, L₁ + L₂cos θ₂) = " + f1(s.q.q1) + "°\n" +
+             "θ₃ = φ" + (s.back?"′":"") + " − θ₁ − θ₂ = " + f1(s.q.q3) + "°" : "");
+    STAGE.kinTarget = KSTATE.dirty ? {x:t.x, y:t.y, z:t.z, ok:!!K.best} : null;
+  }
+  if (KSTATE.mode === "fk") STAGE.kinTarget = null;
+  /* the target marker lives on the stage: redraw only when it changed */
+  const sig = STAGE.kinTarget ? [STAGE.kinTarget.x, STAGE.kinTarget.y, STAGE.kinTarget.z, STAGE.kinTarget.ok].join() : "";
+  if (sig !== syncKin._sig){ syncKin._sig = sig; draw3D(R); }
+}
+</script>
+
+<script>
+"use strict";
+/* =====================================================================
    SESSION + PORTABLE DESIGNS
    P is a flat object of primitives keyed 1:1 against DEFAULTS, so a design
    serialises to JSON directly. A snapshot stores only what DIFFERS from the
@@ -4708,7 +5703,7 @@ async function savePNG(btn){
    the address bar is claude.ai anyway, so a hash link is not copyable.
    ===================================================================== */
 const SNAP_V = 1;
-const TAB_IDS = ["analysis","optimize","sweep","equations","inspector"];
+const TAB_IDS = ["analysis","kinematics","optimize","sweep","equations","inspector"];
 const K_SESSION = "armbench.session.v1";
 const K_DESIGNS = "armbench.designs.v1";
 
@@ -4752,7 +5747,8 @@ function snapshot(){
   return {v:SNAP_V, p:d, t:activeTab,
           c:[cam.az, cam.el, cam.zoom, cam.yaw].map(x=>Math.round(x*1e4)/1e4),
           sw:Object.assign({}, SW.cfg),
-          o:{mode:OPT.mode, payload:OPT.payload, target:OPT.target, res:OPT.res}};
+          o:{mode:OPT.mode, payload:OPT.payload, target:OPT.target, res:OPT.res},
+          k:{m:KSTATE.mode, f:KSTATE.free?1:0, fo:KSTATE.follow?1:0, st:KSTATE.step}};
 }
 
 /** Apply a snapshot. Pasted text is untrusted, so every key is checked
@@ -4779,13 +5775,15 @@ function applySnapshot(s, opt){
   /* flags are 0/1; pose angles are bounded by the joint travel that came with
      this same snapshot, so they are clamped after every key is in place */
   ["worst","dynOn","bolted"].forEach(k=>{ next[k] = next[k] ? 1 : 0; });
-  [["q1","limShMin","limShMax"],["q2","limElMin","limElMax"],["q3","limWrMin","limWrMax"]]
+  [["q0","limBaseMin","limBaseMax"],["q1","limShMin","limShMax"],["q2","limElMin","limElMax"],["q3","limWrMin","limWrMax"]]
     .forEach(([q,lo,hi])=>{ next[q] = Math.min(next[hi], Math.max(next[lo], next[q])); });
   P = next;
 
   if (Array.isArray(s.c) && s.c.length===4 && s.c.every(x=>typeof x==="number" && isFinite(x))){
     cam.az = s.c[0]; cam.el = Math.max(-0.15, Math.min(1.45, s.c[1]));
-    cam.zoom = Math.max(0.45, Math.min(3.2, s.c[2])); cam.yaw = s.c[3];
+    cam.zoom = Math.max(0.45, Math.min(3.2, s.c[2]));
+    /* older codes kept the base yaw only here; newer ones carry θ₀ exactly in p */
+    if (Math.abs(s.c[3] - P.q0*D2R) > 0.002) cam.yaw = s.c[3];
   }
   if (s.sw && typeof s.sw === "object"){
     Object.keys(SW.cfg).forEach(k=>{
@@ -4797,6 +5795,12 @@ function applySnapshot(s, opt){
     if (s.o.mode === "reach" || s.o.mode === "payload") OPT.mode = s.o.mode;
     ["payload","target","res"].forEach(k=>{
       if (typeof s.o[k] === "number" && isFinite(s.o[k]) && s.o[k] >= 0) OPT[k] = s.o[k]; });
+  }
+  if (s.k && typeof s.k === "object"){
+    if (s.k.m === "fk" || s.k.m === "ik") KSTATE.mode = s.k.m;
+    KSTATE.free = s.k.f === 1; KSTATE.follow = s.k.fo === 1;
+    if ([1,5,10,25].indexOf(s.k.st) >= 0) KSTATE.step = s.k.st;
+    KSTATE.dirty = false; KSTATE.sel = -1;
   }
   if (!opt.keepTab && TAB_IDS.indexOf(s.t) >= 0) applySnapshot._tab = s.t;
   return n;
@@ -4827,16 +5831,142 @@ function loadSession(){
 }
 
 /* ---------- named designs ---------- */
+const MAX_DESIGNS = 30;
 const listDesigns = () => { const d = store.get(K_DESIGNS); return Array.isArray(d) ? d : []; };
+const newId = () => "d" + Date.now().toString(36) + Math.random().toString(36).slice(2,6);
+const summarise = res => ({reach:Math.round(res.reach*1000), pay:Math.round(res.payload_g),
+  peak:res.joints[res.peak].name.replace(" (yaw)",""), util:Math.round(res.joints[res.peak].util)});
 function saveDesign(name){
   const list = listDesigns();
-  const rec = {id:"d"+Date.now().toString(36), name:String(name||"").slice(0,40) || "Untitled",
-               ts:Date.now(), snap:snapshot(),
-               sum:{reach:Math.round(R.reach*1000), pay:Math.round(R.payload_g),
-                    peak:R.joints[R.peak].name.replace(" (yaw)",""), util:Math.round(R.joints[R.peak].util)}};
+  const rec = {id:newId(), name:String(name||"").slice(0,40) || "Untitled",
+               ts:Date.now(), snap:snapshot(), sum:summarise(R)};
   list.unshift(rec);
-  store.set(K_DESIGNS, list.slice(0,12));
+  store.set(K_DESIGNS, list.slice(0,MAX_DESIGNS));
   return rec;
+}
+
+/* ---------- settings files: download everything, import it back ----------
+   A file is untrusted input exactly like a pasted code. Records are rebuilt
+   field by field: names are cut to length and escaped when shown, ids are
+   minted fresh, the parameter map keeps only known keys of the right type,
+   and the summary line is recomputed by the solver rather than trusted. */
+const FILE_FORMAT = "armbench-designs";
+function cleanSnap(snap){
+  if (!snap || typeof snap !== "object" || snap.v !== SNAP_V || !snap.p || typeof snap.p !== "object") return null;
+  const p = {};
+  Object.keys(snap.p).forEach(k=>{
+    if (!Object.prototype.hasOwnProperty.call(DEFAULTS, k)) return;
+    const v = snap.p[k];
+    if (typeof v !== typeof DEFAULTS[k]) return;
+    if (typeof v === "number" && !isFinite(v)) return;
+    if (typeof v === "string" && (v.length > 40 || (ENUMS[k] && !Object.prototype.hasOwnProperty.call(ENUMS[k], v)))) return;
+    const L = LIMITS[k];
+    p[k] = (typeof v === "number" && L) ? Math.min(L.max, Math.max(L.min, v)) : v;
+  });
+  const out = {v:SNAP_V, p};
+  if (TAB_IDS.indexOf(snap.t) >= 0) out.t = snap.t;
+  if (Array.isArray(snap.c) && snap.c.length===4 && snap.c.every(x=>typeof x==="number" && isFinite(x))) out.c = snap.c.slice();
+  ["sw","o","k"].forEach(key=>{
+    const o = snap[key]; if (!o || typeof o !== "object" || Array.isArray(o)) return;
+    const c = {};
+    Object.keys(o).slice(0,12).forEach(f=>{ const v = o[f];
+      if ((typeof v === "number" && isFinite(v)) || (typeof v === "string" && v.length <= 12)) c[f] = v; });
+    out[key] = c;
+  });
+  return out;
+}
+function cleanRecord(r, fallbackName){
+  if (!r || typeof r !== "object") return null;
+  let snap = r.snap;
+  if (!snap && typeof r.code === "string") snap = decodeDesign(r.code);
+  snap = cleanSnap(snap);
+  if (!snap) return null;
+  let sum = null;
+  try { sum = summarise(solve(Object.assign({}, DEFAULTS, snap.p))); } catch(e){ sum = null; }
+  const ts = typeof r.ts === "number" && isFinite(r.ts) && r.ts > 0 && r.ts < 8.64e15 ? r.ts : Date.now();
+  const name = (typeof r.name === "string" ? r.name : "").replace(/[\u0000-\u001f]/g, "").trim().slice(0,40) || fallbackName || "Imported design";
+  return {id:newId(), name, ts, snap, sum};
+}
+const stamp = ts => new Date(ts).toISOString().slice(0,16).replace("T"," ");
+function libraryPayload(){
+  const code = snap => "ARM1:" + b64e(JSON.stringify(snap));
+  const cur = snapshot();
+  return {
+    format: FILE_FORMAT, version: 1,
+    app: "4-DOF Arm Design Bench",
+    exported: new Date().toISOString(),
+    note: "Import this file from Parameters > Designs, or paste any code below into the bench.",
+    current: {name:"Working design", ts:Date.now(), snap:cur, sum:summarise(R), code:code(cur)},
+    designs: listDesigns().map(d=>({name:d.name, ts:d.ts, snap:d.snap, sum:d.sum, code:code(d.snap)}))
+  };
+}
+async function downloadPayload(obj, filename, msgEl){
+  const bytes = new TextEncoder().encode(JSON.stringify(obj, null, 2));
+  const r = await saveFile(filename, bytes.buffer, "application/json");
+  const text = r.ok ? "Saved " + filename : (SAVE_MSG[r.code] || SAVE_MSG.unavailable);
+  if (msgEl){ msgEl.className = "exportmsg " + (r.ok ? "ok" : "err"); msgEl.textContent = text; }
+  else showToast(text);
+  return r.ok;
+}
+function downloadLibrary(msgEl){
+  const n = listDesigns().length;
+  return downloadPayload(libraryPayload(), "arm-designs-" + new Date().toISOString().slice(0,10) + ".json", msgEl)
+    .then(ok=>{ if (ok && !msgEl) showToast("Saved the working design + " + n + " saved design" + (n===1?"":"s")); return ok; });
+}
+function downloadOne(rec){
+  const slug = String(rec.name).toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"").slice(0,40) || "design";
+  return downloadPayload({format:FILE_FORMAT, version:1, app:"4-DOF Arm Design Bench", exported:new Date().toISOString(),
+    designs:[{name:rec.name, ts:rec.ts, snap:rec.snap, sum:rec.sum, code:"ARM1:"+b64e(JSON.stringify(rec.snap))}]},
+    "arm-design-" + slug + ".json");
+}
+/** Add records to the library, skipping ones already there. */
+function mergeDesigns(recs){
+  const list = listDesigns();
+  const key = d => d.name + "|" + JSON.stringify(d.snap && d.snap.p);
+  const have = new Set(list.map(key));
+  const fresh = recs.filter(r=>{ const k = key(r); if (have.has(k)) return false; have.add(k); return true; });
+  const all = fresh.concat(list);
+  store.set(K_DESIGNS, all.slice(0, MAX_DESIGNS));
+  return {added: Math.min(fresh.length, MAX_DESIGNS), dropped: Math.max(0, all.length - MAX_DESIGNS)};
+}
+/** Anything a person might hand the bench: a settings file, a single
+ *  snapshot, a report, or a bare code. */
+function ingestText(text, source){
+  text = String(text || "");
+  if (text.length > 4e6){ showToast("That file is too large to be a design file"); return false; }
+  let obj = null;
+  try { obj = JSON.parse(text); } catch(e){ obj = null; }
+  if (obj && typeof obj === "object" && !Array.isArray(obj)){
+    if (obj.format === FILE_FORMAT && Array.isArray(obj.designs)){
+      const recs = obj.designs.slice(0, 200).map(d=>cleanRecord(d)).filter(Boolean);
+      const cur = obj.current && cleanRecord(obj.current, "Working design");
+      if (cur) cur.name = "Session · " + stamp(cur.ts);
+      if (cur) recs.unshift(cur);
+      if (!recs.length){ showToast("No valid designs in that file"); return false; }
+      const m = mergeDesigns(recs);
+      renderDesignList();
+      const open = document.querySelector("details.group.designs"); if (open) open.open = true;
+      showToast(m.added ? "Imported " + m.added + " design" + (m.added===1?"":"s") + (m.dropped ? " (oldest " + m.dropped + " dropped)" : "") + " — click one to load it"
+                        : "Everything in that file is already saved");
+      return true;
+    }
+    if (obj.v === SNAP_V && obj.p){
+      const snap = cleanSnap(obj);
+      return !!(snap && loadInto(snap, (source || "Settings") + " loaded"));
+    }
+  }
+  const snap = decodeDesign(text);
+  if (snap) return loadInto(snap, (source || "Design") + " loaded");
+  showToast("No design found in " + (source ? "that " + source.toLowerCase() : "that text"));
+  return false;
+}
+function importFile(file){
+  if (!file) return;
+  if (file.size > 4e6){ showToast("That file is too large to be a design file"); return; }
+  const rd = new FileReader();
+  rd.onload = ()=>{ if (ingestText(rd.result, "File")) syncDesignActions(); };
+  rd.onerror = ()=>showToast("Couldn’t read that file");
+  rd.readAsText(file);
 }
 const deleteDesign = id => store.set(K_DESIGNS, listDesigns().filter(d=>d.id!==id));
 
@@ -4885,8 +6015,15 @@ function buildDesignsGroup(){
                    '<button class="btn sm" id="dUndo">Undo load</button>';
   body.append(acts);
 
+  /* files: the way past settings leave this browser and come back */
+  const files = el("div","dacts dfiles");
+  files.innerHTML = '<button class="btn sm" id="dDownload" title="The working design and every saved design, in one .json file">↓ Download all (.json)</button>' +
+                    '<button class="btn sm" id="dImport" title="Load a .json settings file">Import file…</button>' +
+                    '<input type="file" id="dFile" accept=".json,.txt,application/json,text/plain" hidden>';
+  body.append(files);
+
   body.append(el("p","note","Paste a code above, or press ⌘V / Ctrl+V anywhere on the page. "+
-    "Saved designs live in this browser only; your last session is remembered automatically."));
+    "Saved designs live in this browser; download them to keep a file you can import anywhere — or drop one on this panel."));
 
   queueMicrotask(()=>{
     renderDesignList();
@@ -4914,10 +6051,17 @@ function buildDesignsGroup(){
     $("#dLoad").onclick = ()=>{
       const box = $("#dPasteBox");
       const snap = decodeDesign(box.value);
-      if (!snap){ showToast(box.value.trim() ? "No design code found in that text" : "Paste a design code first"); return; }
+      if (!snap){
+        if (!box.value.trim()){ showToast("Paste a design code first"); return; }
+        if (ingestText(box.value, "Text")){ box.value = ""; syncDesignActions(); }
+        return;
+      }
       if (loadInto(snap, "Design loaded")){ box.value = ""; syncDesignActions(); }
     };
     $("#dUndo").onclick = undoLoad;
+    $("#dDownload").onclick = ()=>downloadLibrary();
+    $("#dImport").onclick = ()=>$("#dFile").click();
+    $("#dFile").addEventListener("change", e=>{ importFile(e.target.files && e.target.files[0]); e.target.value = ""; });
     syncDesignActions();
   });
   return d;
@@ -4927,16 +6071,20 @@ function renderDesignList(){
   const host = $("#dList"); if (!host) return;
   const list = listDesigns();
   if (!list.length){ host.innerHTML = '<p class="note dempty">No saved designs yet.</p>'; return; }
-  host.innerHTML = list.map(d=>
-    '<div class="drow" data-id="'+d.id+'">' +
+  const num = v => (typeof v === "number" && isFinite(v)) ? Math.round(v) : "—";
+  host.innerHTML = list.map((d,i)=>
+    '<div class="drow" data-ix="'+i+'">' +
       '<button class="dload" title="Load this design">' +
         '<b>'+escapeHTML(d.name)+'</b>' +
-        '<em>'+(d.sum ? d.sum.reach+" mm · "+d.sum.pay+" g · "+escapeHTML(d.sum.peak)+" "+d.sum.util+"%" : "saved design")+'</em>' +
+        '<em>'+(d.sum ? num(d.sum.reach)+" mm · "+num(d.sum.pay)+" g · "+escapeHTML(String(d.sum.peak||"").slice(0,24))+" "+num(d.sum.util)+"%" : "saved design")+
+          (d.ts ? " · "+escapeHTML(stamp(d.ts).slice(5)) : "")+'</em>' +
       '</button>' +
+      '<button class="ddl" title="Download this design">↓</button>' +
       '<button class="ddel" title="Delete">×</button>' +
     '</div>').join("");
   host.querySelectorAll(".drow").forEach(rowEl=>{
-    const rec = list.find(x=>x.id===rowEl.dataset.id);
+    const rec = list[+rowEl.dataset.ix];
+    rowEl.querySelector(".ddl").onclick = ()=>downloadOne(rec);
     rowEl.querySelector(".dload").onclick = ()=>{
       if (loadInto(rec.snap, "Loaded “"+rec.name+"”")) syncDesignActions();
     };
@@ -4950,6 +6098,20 @@ function renderDesignList(){
   });
 }
 function escapeHTML(t){ return String(t).replace(/[&<>"]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
+
+/* drop a settings file on the parameters panel (or anywhere) to import it */
+(function fileDrop(){
+  const hasFile = e => e.dataTransfer && Array.from(e.dataTransfer.types || []).indexOf("Files") >= 0;
+  addEventListener("dragover", e=>{ if (!hasFile(e)) return; e.preventDefault();
+    document.body.classList.add("dropping"); });
+  addEventListener("dragleave", e=>{ if (e.target === document.documentElement || !e.relatedTarget) document.body.classList.remove("dropping"); });
+  addEventListener("drop", e=>{
+    if (!hasFile(e)) return;
+    e.preventDefault(); document.body.classList.remove("dropping");
+    const f = e.dataTransfer.files && e.dataTransfer.files[0];
+    if (f) importFile(f);
+  });
+})();
 
 /* paste a code anywhere on the page and it loads */
 addEventListener("paste", e=>{
@@ -4978,7 +6140,7 @@ function buildReport(){
   L.push("  column h0        "+fx(P.h0,1)+" mm");
   L.push("  L1 / L2 / L3     "+fx(P.L1,1)+" / "+fx(P.L2,1)+" / "+fx(P.L3,1)+" mm");
   L.push("  reach            "+fx(res.reach*1000,1)+" mm   (pose: "+(res.useWorst?"worst case, fully extended":
-        "θ "+fx(P.q1,0)+"/"+fx(P.q2,0)+"/"+fx(P.q3,0)+"°")+")");
+        "θ "+fx(P.q0,0)+"/"+fx(P.q1,0)+"/"+fx(P.q2,0)+"/"+fx(P.q3,0)+"°")+")");
   L.push("");
   L.push("STRUCTURE");
   L.push("  material         "+MATERIALS[P.material].name+"  ρ="+MATERIALS[P.material].rho+" kg/m³  E="+
@@ -5058,6 +6220,7 @@ function toggleParams(){ document.body.classList.contains("params-open") ? close
   $("#exClose").onclick = closeExport;
   $("#exCancel").onclick = closeExport;
   $("#exRun").onclick = runExport;
+  $("#exJson").onclick = ()=>downloadLibrary($("#exMsg"));
   $("#exportModal").addEventListener("click", e=>{ if (e.target.id==="exportModal") closeExport(); });
   addEventListener("keydown", e=>{ if (e.key==="Escape" && !$("#exportModal").hidden) closeExport(); });
   $$("[data-png]").forEach(b=>{ if (b.classList.contains("savebtn") && !b.textContent.trim())
@@ -5072,7 +6235,7 @@ function toggleParams(){ document.body.classList.contains("params-open") ? close
   let rt = 0;
   addEventListener("resize", ()=>{
     if (R) draw3D(R);                                  // the stage is full-viewport: track it live
-    moveGlide();
+    moveGlide(); moveKGlide();
     clearTimeout(rt); rt = setTimeout(()=>{
       if (R && !$("#panel-analysis").hidden){ drawEnvelope(R); drawPayloadReach(R); } }, 200);
   });
